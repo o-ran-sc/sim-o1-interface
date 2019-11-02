@@ -1,0 +1,18 @@
+[submodule "cJSON"]
+	path = external/cJSON
+	url = https://github.com/Melacon/cJSON.git
+[submodule "libnetconf2"]
+	path = external/libnetconf2
+	url = https://github.com/Melacon/libnetconf2.git
+[submodule "libyang"]
+	path = external/libyang
+	url = https://github.com/Melacon/libyang.git
+[submodule "Netopeer2"]
+	path = external/Netopeer2
+	url = https://github.com/Melacon/Netopeer2.git
+[submodule "pyang"]
+	path = external/pyang
+	url = https://github.com/Melacon/pyang.git
+[submodule "sysrepo"]
+	path = external/sysrepo
+	url = https://github.com/Melacon/sysrepo.git
