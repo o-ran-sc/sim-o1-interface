@@ -62,8 +62,8 @@ RUN mkdir /opt/dev
 WORKDIR /opt/dev
 
 # libcjson
-COPY ./cJSON /opt/dev/cJSON
 RUN \
+	  git clone https://github.com/Melacon/cJSON.git && \
       cd cJSON && mkdir build && cd build && \
       cmake .. -DENABLE_CJSON_UTILS=On -DENABLE_CJSON_TEST=Off -DCMAKE_INSTALL_PREFIX=/usr .. && \
       make -j2 && \
@@ -71,8 +71,8 @@ RUN \
       ldconfig
 
 # libyang
-COPY ./libyang /opt/dev/libyang
 RUN \
+	  git clone https://github.com/Melacon/libyang.git && \
       cd libyang && mkdir build && cd build && \
       cmake -DCMAKE_BUILD_TYPE:String="Release" -DENABLE_BUILD_TESTS=OFF .. && \
       make -j2 && \
@@ -80,8 +80,8 @@ RUN \
       ldconfig
 
 # sysrepo
-COPY ./sysrepo /opt/dev/sysrepo
 RUN \
+	  git clone https://github.com/Melacon/sysrepo.git && \
       sed -i 's/#define MAX_BLOCKS_AVAIL_FOR_ALLOC    3/#define MAX_BLOCKS_AVAIL_FOR_ALLOC    6/g' ./sysrepo/src/common/sr_mem_mgmt.h && \
       cd sysrepo && mkdir build && cd build && \
       cmake -DCMAKE_BUILD_TYPE:String="Release" -DENABLE_TESTS=OFF -DREPOSITORY_LOC:PATH=/etc/sysrepo -DREQUEST_TIMEOUT=60 -DOPER_DATA_PROVIDE_TIMEOUT=60 .. && \
@@ -90,8 +90,8 @@ RUN \
       ldconfig
 
 # libnetconf2
-COPY ./libnetconf2 /opt/dev/libnetconf2
 RUN \
+	  git clone https://github.com/Melacon/libnetconf2.git && \
       cd libnetconf2 && mkdir build && cd build && \
       cmake -DCMAKE_BUILD_TYPE:String="Release" -DENABLE_BUILD_TESTS=OFF .. && \
       make -j2 && \
@@ -99,8 +99,9 @@ RUN \
       ldconfig
 
 # keystore
-COPY ./Netopeer2 /opt/dev/Netopeer2
 RUN \
+	  cd /opt/dev && \
+	  git clone https://github.com/Melacon/Netopeer2.git && \
       cd /opt/dev && \
       cd Netopeer2 && \
       cd keystored && mkdir build && cd build && \
