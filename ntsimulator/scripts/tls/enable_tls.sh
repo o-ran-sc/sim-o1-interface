@@ -1,6 +1,6 @@
 #! /bin/bash
 
-sleep 5
+sleep 10
 
 openssl genrsa -out melacon.server.key 2048
 
@@ -16,7 +16,7 @@ echo '<private-key>'"$MELACON_SERVER_KEY"'</private-key></load-private-key></pri
 netopeer2-cli <<END
 auth pref publickey 1000
 auth keys add /home/netconf/.ssh/id_dsa.pub /home/netconf/.ssh/id_dsa
-connect --login netconf
+connect --host 127.0.0.1 --login netconf
 user-rpc --content=load_private_key.xml
 disconnect
 END
