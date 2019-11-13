@@ -34,7 +34,7 @@ repositories:
     - 'sim/o1-interface'
 committers:
     - <<: *oran_sim_o1-interface_ptl
-    - name: 'Michael Drre'
+    - name: 'Michael Duerre'
       email: 'michael.duerre@highstreet-technologies.com'
       company: 'highstreet technologies GmbH'
       id: 'metaljackL'

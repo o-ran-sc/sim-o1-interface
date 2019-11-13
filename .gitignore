@@ -1,0 +1,6 @@
+.cproject
+.project
+
+# documentation
+.tox
+docs/_build/
