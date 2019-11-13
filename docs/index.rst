@@ -11,6 +11,7 @@ Welcome to O-RAN SC sim/o1-interface Documentation
    :caption: Contents:
 
    overview.rst
+   release-notes.rst
 
 
 * :ref:`genindex`
