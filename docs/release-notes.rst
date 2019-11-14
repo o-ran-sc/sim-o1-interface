@@ -1,6 +1,6 @@
 .. This work is licensed under a Creative Commons Attribution 4.0 International License.
 .. SPDX-License-Identifier: CC-BY-4.0
-.. Copyright (C) 2019 highstreet technologies GmbH
+.. Copyright (C) 2019 highstreet technologies GmbH and others
 
 
 Release Notes
@@ -21,13 +21,7 @@ Version history
 | **Date**           | **Ver.**           | **Author**         | **Comment**        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
-| 2019-11-13         | 0.1.0              |                    | First draft        |
-|                    |                    |                    |                    |
-+--------------------+--------------------+--------------------+--------------------+
-|                    | 0.1.1              |                    |                    |
-|                    |                    |                    |                    |
-+--------------------+--------------------+--------------------+--------------------+
-|                    | 1.0                |                    |                    |
+| 2019-11-13         | 0.0.1              |  Alex Stancu       | First draft        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
 
@@ -40,68 +34,16 @@ The O1 interface simulator is a framework that provides simulated devices with a
 
 Release Data
 ------------
-<STATE RELEVANT RELEASE DATA/RECORDS>
-
-<EXAMPLE>:
-
-+--------------------------------------+--------------------------------------+
-| **Project**                          | E.g. project  		              |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
-| **Repo/commit-ID**                   | E.g. genesis/adf634a0d4.....         |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
-| **Release designation**              | E.g. Arno RC2                        |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
-| **Release date**                     | E.g. 2015-04-16                      |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
-| **Purpose of the delivery**          | 	 		     	      |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
-
-
-
+N/A
 
 Feature Additions
 ^^^^^^^^^^^^^^^^^
-<STATE ADDED FEATURES BY REFERENCE TO JIRA>
-
-<EXAMPLE>:
-
-**JIRA BACK-LOG:**
-
-+--------------------------------------+--------------------------------------+
-| **JIRA REFERENCE**                   | **SLOGAN**                           |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
-| 		                       | 				      |
-|                                      | 				      |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
-| 	                               |  				      |
-|                                      |  				      |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
+N/A
 
 Bug Corrections
 ^^^^^^^^^^^^^^^
 
-**JIRA TICKETS:**
-
-+--------------------------------------+--------------------------------------+
-| **JIRA REFERENCE**                   | **SLOGAN**                           |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
-| 		                       | 				      |
-|                                      | 				      |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
-| 	                               |  				      |
-|                                      |  				      |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
+N/A
 
 Deliverables
 ^^^^^^^^^^^^
@@ -109,60 +51,37 @@ Deliverables
 Software Deliverables
 +++++++++++++++++++++
 
-<STATE WHAT SOFTWARE DELIVERABLES THAT ARE RELATED TO THIS VERSION, AND WHERE THOSE CAN BE RETRIEVED>
+Two docker containers are the resulting artefacts of the sim-o1-project:
 
+* **sim-o1-interface-manager** - this image contains the NTS Manager, which handles the simulation environment;
+
+* **sim-o1-interface-device** - this image contains a simulated device which exposes a management interface via NETCONF/YANG, implementing the O1 interface specifications.
 
 
 Documentation Deliverables
 ++++++++++++++++++++++++++
 
-<STATE WHAT DOCUMENTATION DELIVERABLES THAT ARE RELATED TO THIS VERSION, AND WHERE THOSE CAN BE RETRIEVED>
-
-
-
 
 Known Limitations, Issues and Workarounds
 -----------------------------------------
+N/A
 
 System Limitations
 ^^^^^^^^^^^^^^^^^^
-<STATE ALL RELEVANT SYSTEM LIMITATIONS, IF THERE IS ANY>
-
-
+N/A
 
 Known Issues
 ^^^^^^^^^^^^
-<STATE ALL KNOWN ISSUES WITH JIRA REFERENCE>
-
-<EXAMPLE>:
-
-**JIRA TICKETS:**
-
-+--------------------------------------+--------------------------------------+
-| **JIRA REFERENCE**                   | **SLOGAN**                           |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
-| 		                       | 				      |
-|                                      | 				      |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
-| 	                               |  				      |
-|                                      |  				      |
-|                                      |                                      |
-+--------------------------------------+--------------------------------------+
+N/A
 
 Workarounds
 ^^^^^^^^^^^
-
-<STATE ALL KNOWN WORKAROUNDS TO THE ISSUES STATED ABOVE, IF THERE IS ANY>
-
-
+N/A
 
 
 References
 ----------
-<STATE RELEVANT REFERENCES FOR THIS RELEASE/VERSION>
-
+`NTS Project <https://github.com/Melacon/ntsim>`_
 
 
 
