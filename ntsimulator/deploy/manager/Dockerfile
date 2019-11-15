@@ -139,7 +139,7 @@ RUN \
       make install
 
 #NTSimulator Manager
-COPY ./ntsimulator /opt/dev/ntsimulator
+COPY . /opt/dev/ntsimulator
 RUN \
       cd /opt/dev && \
       cd ntsimulator && mkdir build  && cd build && \
@@ -147,7 +147,7 @@ RUN \
       make -j2 && \
       make install
 
-COPY ntsimulator/deploy/manager/supervisord.conf.manager /etc/supervisord.conf
+COPY deploy/manager/supervisord.conf.manager /etc/supervisord.conf
 	  
 ENV EDITOR vim
 EXPOSE 830

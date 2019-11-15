@@ -144,7 +144,7 @@ RUN \
 	  cd pyang && python setup.py build && python setup.py install
 	  
 #NTSimulator Manager - notifications
-COPY ./ntsimulator /opt/dev/ntsimulator
+COPY . /opt/dev/ntsimulator
 RUN \
       cd /opt/dev && \
       cd ntsimulator && mkdir build  && cd build && \
@@ -152,11 +152,11 @@ RUN \
       make -j2&& \
       make install
 
-COPY ntsimulator/deploy/supervisord.conf /etc/supervisord.conf
+COPY deploy/supervisord.conf /etc/supervisord.conf
 
-COPY ./ntsimulator/scripts/tls /home/netconf/.ssh
+COPY ./scripts/tls /home/netconf/.ssh
 
-COPY ./ntsimulator/yang /opt/dev/yang
+COPY ./yang /opt/dev/yang
 WORKDIR /opt/dev
 RUN \
 	  cd yang && \
