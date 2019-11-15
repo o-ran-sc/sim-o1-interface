@@ -122,7 +122,7 @@ RUN \
       ldconfig
 
 # overwrite number of endpoints exposed by the NETCONF server
-COPY ./ntsimulator/scripts/stock_config.xml /opt/dev/Netopeer2/server/stock_config.xml
+COPY ./scripts/stock_config.xml /opt/dev/Netopeer2/server/stock_config.xml
 # netopeer2
 RUN \
       cd /opt/dev && \
