@@ -1,0 +1,10 @@
+---
+distribution_type: container
+container_release_tag: 0.0.1
+container_pull_registry: nexus3.o-ran-sc.org:10004
+container_push_registry: nexus3.o-ran-sc.org:10002
+project: sim/o1-interface
+ref: e37e7a56c329edffd085ebd89c875332675be94d
+containers:
+    - name: sim-o1-interface-device
+      version: 0.0.1
