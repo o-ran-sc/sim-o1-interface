@@ -28,6 +28,13 @@ shopt -s failglob
 
 declare -a excludedModules=()
 
+# Uninstall the NTS Manager YANG model
+$SYSREPOCTL -u -m network-topology-simulator
+# $SYSREPOCTL -u -m iana-if-type
+# $SYSREPOCTL -u -m ietf-ip
+# $SYSREPOCTL -u -m ietf-interfaces
+
+
 sleep 5
 
 pyang -f clearmust *.yang
