@@ -92,8 +92,8 @@ static cJSON* get_docker_container_bindings(void)
 	curl_easy_reset(curl);
 	set_curl_common_info();
 
-	char url[100];
-	sprintf(url, "http:/v%s/containers/NTS_Manager/json", getenv("DOCKER_ENGINE_VERSION"));
+	char url[200];
+	sprintf(url, "http:/v%s/containers/%s/json", getenv("DOCKER_ENGINE_VERSION"), getenv("HOSTNAME"));
 
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 
@@ -250,6 +250,12 @@ static char* create_docker_container_curl(int base_netconf_port, cJSON* managerB
     if (cJSON_AddStringToObject(labels, "NTS", "") == NULL)
     {
     	printf("Could not create JSON object: NTS\n");
+    	return NULL;
+    }
+
+	if (cJSON_AddStringToObject(labels, "NTS_Manager", getenv("HOSTNAME")) == NULL)
+    {
+    	printf("Could not create JSON object: NTS Manager\n");
     	return NULL;
     }
 
