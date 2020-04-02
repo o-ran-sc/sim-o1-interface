@@ -30,7 +30,7 @@ echo "Loading data into sysrepo..."
 #
 #ssh-keyscan -p 830 localhost >> ~/.ssh/known_hosts
 
-pyang -f sample-xml-skeleton --sample-xml-list-entries 3 *.yang
+pyang -f sample-xml-skeleton --sample-xml-list-entries 2 *.yang
 
 result=$(netopeer2-cli <<-END
 	connect --host 127.0.0.1 --login netconf
@@ -39,8 +39,11 @@ result=$(netopeer2-cli <<-END
 END
 )
 
-while [[ "$result" != "OK" ]]
+count=1
+
+while [[ $count -le 100 ]] && [[ "$result" != "OK" ]]
 do
+  ((count++))
   pyang -f sample-xml-skeleton --sample-xml-list-entries 2 *.yang
   
   result=$(netopeer2-cli <<-END
@@ -50,6 +53,11 @@ do
 END
 )
 done
-echo "Finished loading data into sysrepo..."
+
+echo "Finished loading data into sysrepo. Removing edit-config XML..."
+rm -f /opt/dev/yang/edit_config_operation.xml
+
+echo "Done..."
+
 
 exit 0

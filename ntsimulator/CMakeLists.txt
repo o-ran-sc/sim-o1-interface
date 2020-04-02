@@ -60,9 +60,6 @@ include_directories(${SYSREPO_INCLUDE_DIR})
 # add subdirectories
 add_subdirectory(src)
 
-# Configure install file
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/scripts/model-install.sh.in" "${PROJECT_BINARY_DIR}/model-install.sh" ESCAPE_QUOTES @ONLY)
-
 # find sysrepoctl
 if (NOT SYSREPOCTL_EXECUTABLE)
     find_program(SYSREPOCTL_EXECUTABLE sysrepoctl)
