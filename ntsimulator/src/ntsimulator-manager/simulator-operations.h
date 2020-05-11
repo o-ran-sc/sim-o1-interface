@@ -38,6 +38,7 @@
 typedef struct device {
 	char *device_id;
 	int netconf_port;
+    int device_number;
 	bool is_mounted;
 	char *operational_state;
 	struct device *next;
@@ -61,10 +62,11 @@ typedef struct controller
 
 
 device_stack_t *new_device_stack(void);
-void push_device(device_stack_t *theStack, char *dev_id, int port);
+void push_device(device_stack_t *theStack, char *dev_id, int port, int dev_num);
 void pop_device(device_stack_t *theStack);
 int get_netconf_port_next(device_stack_t *theStack);
 int get_netconf_port_base(void);
+int get_device_number_next(device_stack_t *theStack);
 char *get_id_last_device(device_stack_t *theStack);
 int get_current_number_of_devices(device_stack_t *theStack);
 int get_current_number_of_mounted_devices(device_stack_t *theStack);
@@ -85,6 +87,9 @@ int cleanup_curl(void);
 int _init_curl_odl(void);
 int cleanup_curl_odl(void);
 
+int _init_curl_k8s(void);
+int cleanup_curl_k8s(void);
+
 int start_device(device_stack_t *theStack);
 int stop_device(device_stack_t *theStack);
 
@@ -103,10 +108,13 @@ int ves_port_changed(int new_port);
 int ves_registration_changed(cJSON_bool new_bool);
 int is_netconf_available_changed(cJSON_bool new_bool);
 int is_ves_available_changed(cJSON_bool new_bool);
-
+int ssh_connections_changed(int number);
+int tls_connections_changed(int number);
 
 
 int add_key_pair_to_odl(controller_t *controller_list, int controller_list_size);
 
+int send_k8s_scale(int number_of_devices);
+int send_k8s_extend_port(void);
 
 #endif /* SRC_NTSIMULATOR_MANAGER_SIMULATOR_OPERATIONS_H_ */

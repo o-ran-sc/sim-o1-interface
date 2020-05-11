@@ -107,8 +107,6 @@ RUN \
       make install && \
       ldconfig
 
-# overwrite number of endpoints exposed by the NETCONF server
-COPY ./deploy/o-ran/ru-fh/stock_config.xml /opt/dev/Netopeer2/server/stock_config.xml
 # netopeer2
 RUN \
       cd /opt/dev/Netopeer2/server && mkdir build && cd build && \
@@ -205,7 +203,8 @@ RUN ldconfig
 
 WORKDIR /tmp
 RUN apt-get install -yqq wget \
-    openssh-client
+    openssh-client \
+    jq
 
 RUN mkdir py_install && cd py_install && \
     wget https://files.pythonhosted.org/packages/b9/9a/3e9da40ea28b8210dd6504d3fe9fe7e013b62bf45902b458d1cdc3c34ed9/ipaddress-1.0.23.tar.gz && \
@@ -246,6 +245,6 @@ ARG BUILD_DATE
 LABEL build-date=$BUILD_DATE
 	  
 ENV EDITOR vim
-EXPOSE 830-839
+EXPOSE 830-929
 
 CMD ["sh", "-c", "/usr/bin/supervisord -c /etc/supervisord.conf"]

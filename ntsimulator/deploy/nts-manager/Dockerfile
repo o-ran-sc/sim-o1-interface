@@ -2,12 +2,6 @@ FROM ubuntu:18.04 AS builder
 
 LABEL maintainer="alexandru.stancu@highstreet-technologies.com"
 
-ENV NETCONF_BASE=40000
-ENV NTS_IP="127.0.0.1"
-ENV SCRIPTS_DIR=/opt/dev/scripts
-ENV DOCKER_ENGINE_VERSION="1.40"
-ENV MODELS_IMAGE="ntsim_oran"
-
 RUN \
       apt-get update && apt-get install -y \
       # general tools
@@ -43,12 +37,15 @@ RUN \
       echo "netconf:netconf" | chpasswd
 
 # generate ssh keys for netconf user
+USER netconf
 RUN \
       mkdir -p /home/netconf/.ssh && \
       ssh-keygen -A && \
       ssh-keygen -t dsa -P '' -f /home/netconf/.ssh/id_dsa && \
-      cat /home/netconf/.ssh/id_dsa.pub > /home/netconf/.ssh/authorized_keys && \
+      cat /home/netconf/.ssh/id_dsa.pub > /home/netconf/.ssh/authorized_keys
 #echo "Host *\n    StrictHostKeyChecking accept-new" >> /home/netconf/.ssh/config
+USER root
+RUN \
       echo "    StrictHostKeyChecking no" >> /etc/ssh/ssh_config && \
       mkdir -p /root/.ssh && \
       cat /home/netconf/.ssh/id_dsa.pub > /root/.ssh/authorized_keys
@@ -136,20 +133,35 @@ ENV NTS_IP="127.0.0.1"
 ENV SCRIPTS_DIR=/opt/dev/scripts
 ENV DOCKER_ENGINE_VERSION="1.40"
 ENV MODELS_IMAGE="ntsim_oran"
+ENV VesHeartbeatPeriod=0
+ENV IsVesAvailable=true
+ENV IsNetconfAvailable=true
+ENV VesRegistration=false
+ENV VesEndpointPort=8080
+ENV VesEndpointIp="172.17.0.1"
+ENV SshConnections=1
+ENV TlsConnections=0
+ENV K8S_DEPLOYMENT=false
+ENV CONTAINER_NAME="ntsim"
 
 RUN \
-      apt-get update && apt-get install -y supervisor
+      apt-get update && apt-get install -y supervisor bc
 
 # add netconf user
 RUN \
       adduser --system netconf && \
       echo "netconf:netconf" | chpasswd
 
+USER netconf
 # generate ssh keys for netconf user
 RUN \
       mkdir -p /home/netconf/.ssh
 
 COPY --from=builder /home/netconf/.ssh /home/netconf/.ssh
+
+USER root
+COPY --from=builder /etc/ssh /etc/ssh
+COPY --from=builder /root/.ssh /root/.ssh
 COPY --from=builder /usr/local/lib /usr/local/lib
 COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /usr/local/include /usr/local/include
@@ -202,6 +214,8 @@ COPY --from=builder /usr/local/share/libnetconf2 /usr/local/share/libnetconf2
 RUN ldconfig
 
 COPY ./deploy/nts-manager/supervisord.conf /etc/supervisord.conf
+
+COPY ./deploy/nts-manager/docker_stats.sh /opt/dev/docker_stats.sh
 	  
 ARG BUILD_DATE
 LABEL build-date=$BUILD_DATE
