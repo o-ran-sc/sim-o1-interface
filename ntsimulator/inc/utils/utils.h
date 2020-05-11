@@ -31,7 +31,9 @@
 #define TRUE 1
 #define FALSE 0
 
-#define NETCONF_CONNECTIONS_PER_DEVICE 10
+#define NETCONF_CONNECTIONS_PER_DEVICE (getSshConnectionsFromConfigJson() + getTlsConnectionsFromConfigJson())
+#define SSH_CONNECTIONS_PER_DEVICE getSshConnectionsFromConfigJson()
+#define TLS_CONNECTIONS_PER_DEVICE getTlsConnectionsFromConfigJson()
 
 #define PREPARE_ADD_NEW_VALUE(v, num) 	{\
 										num++;\
@@ -72,6 +74,7 @@ cJSON*	vesCreateFaultFields(char *alarm_condition, char *alarm_object, char *sev
 
 char* 	readConfigFileInString(void);
 void 	writeConfigFile(char *config);
+int 	writeSkeletonConfigFile(void);
 
 int 	getFaultNotificationDelayPeriodFromConfigJson(int *period_array, int *count);
 int 	getVesHeartbeatPeriodFromConfigJson(void);
@@ -81,6 +84,8 @@ int 	getVesPortFromConfigJson(void);
 int 	getVesRegistrationFromConfigJson(void);
 int 	getNetconfAvailableFromConfigJson(void);
 int 	getVesAvailableFromConfigJson(void);
+int     getSshConnectionsFromConfigJson(void);
+int     getTlsConnectionsFromConfigJson(void);
 
 void	generateRandomMacAddress(char *mac_address);
 
@@ -94,5 +99,7 @@ int     removeDeviceEntryFromStatusFile(char *deviceName);
 cJSON*  getDeviceListFromStatusFile(void);
 int     compute_notifications_count(counterAlarms *ves_counter, counterAlarms *netconf_counter);
 int     getDeviceCounters(char *containerId, counterAlarms *ves_counter, counterAlarms *netconf_counter);
+
+int     getIntFromString(char *string, int def_value);
 
 #endif /* EXAMPLES_NTSIMULATOR_UTILS_H_ */

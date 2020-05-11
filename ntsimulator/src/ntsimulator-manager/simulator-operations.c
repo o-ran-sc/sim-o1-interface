@@ -28,6 +28,11 @@
 
 static 	CURL *curl; //share the same curl connection for communicating with the Docker Engine API
 static 	CURL *curl_odl; //share the same curl connection for mounting servers in ODL
+static 	CURL *curl_k8s; //share the same curl connection for communicating with the K8S cluster
+
+/*
+curl -X POST -H 'Content-Type: application/json' -i http://localhost:5000/scale --data '{"simulatedDevices":2}'
+*/
 
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
@@ -51,33 +56,47 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 
 static void set_curl_common_info()
 {
-	struct curl_slist *chunk = NULL;
-	chunk = curl_slist_append(chunk, "Content-Type: application/json");
-	chunk = curl_slist_append(chunk, "Accept: application/json");
+    struct curl_slist *chunk = NULL;
+    chunk = curl_slist_append(chunk, "Content-Type: application/json");
+    chunk = curl_slist_append(chunk, "Accept: application/json");
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
-	curl_easy_setopt(curl, CURLOPT_UNIX_SOCKET_PATH, "/var/run/docker.sock");
+    curl_easy_setopt(curl, CURLOPT_UNIX_SOCKET_PATH, "/var/run/docker.sock");
 
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-    curl_easy_setopt(curl_odl, CURLOPT_CONNECTTIMEOUT, 2L); // seconds timeout for a connection
-    curl_easy_setopt(curl_odl, CURLOPT_TIMEOUT, 5L); //seconds timeout for an operation
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 2L); // seconds timeout for a connection
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L); //seconds timeout for an operation
 
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 }
 
 static void set_curl_common_info_odl()
 {
-	struct curl_slist *chunk = NULL;
-	chunk = curl_slist_append(chunk, "Content-Type: application/xml");
-	chunk = curl_slist_append(chunk, "Accept: application/xml");
+    struct curl_slist *chunk = NULL;
+    chunk = curl_slist_append(chunk, "Content-Type: application/xml");
+    chunk = curl_slist_append(chunk, "Accept: application/xml");
 
     curl_easy_setopt(curl_odl, CURLOPT_HTTPHEADER, chunk);
 
     curl_easy_setopt(curl_odl, CURLOPT_CONNECTTIMEOUT, 2L); // seconds timeout for a connection
-    curl_easy_setopt(curl_odl, CURLOPT_TIMEOUT, 5L); //seconds timeout for an operation
+    curl_easy_setopt(curl_odl, CURLOPT_TIMEOUT, 10L); //seconds timeout for an operation
 
     curl_easy_setopt(curl_odl, CURLOPT_VERBOSE, 1L);
+}
+
+static void set_curl_common_info_k8s()
+{
+    struct curl_slist *chunk = NULL;
+    chunk = curl_slist_append(chunk, "Content-Type: application/json");
+    chunk = curl_slist_append(chunk, "Accept: application/json");
+
+    curl_easy_setopt(curl_k8s, CURLOPT_HTTPHEADER, chunk);
+
+    curl_easy_setopt(curl_k8s, CURLOPT_CONNECTTIMEOUT, 2L); // seconds timeout for a connection
+    curl_easy_setopt(curl_k8s, CURLOPT_TIMEOUT, 10L); //seconds timeout for an operation
+
+    curl_easy_setopt(curl_k8s, CURLOPT_VERBOSE, 1L);
 }
 
 static cJSON* get_docker_container_bindings(void)
@@ -146,14 +165,87 @@ static cJSON* get_docker_container_bindings(void)
 	return NULL;
 }
 
-static char* create_docker_container_curl(int base_netconf_port, cJSON* managerBinds)
+static cJSON* get_docker_container_network_node(void)
 {
-	if (managerBinds == NULL)
+    struct MemoryStruct curl_response_mem;
+
+    curl_response_mem.memory = malloc(1);  /* will be grown as needed by the realloc above */
+    curl_response_mem.size = 0;    /* no data at this point */
+
+    CURLcode res;
+
+    curl_easy_reset(curl);
+    set_curl_common_info();
+
+    char url[200];
+    sprintf(url, "http:/v%s/containers/%s/json", getenv("DOCKER_ENGINE_VERSION"), getenv("HOSTNAME"));
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
+
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&curl_response_mem);
+
+    res = curl_easy_perform(curl);
+
+    if (res != CURLE_OK)
+    {
+        return NULL;
+    }
+    else
+    {
+        cJSON *json_response = cJSON_Parse(curl_response_mem.memory);
+
+        printf("%lu bytes retrieved\n", (unsigned long)curl_response_mem.size);
+
+        if (json_response == NULL)
+        {
+            printf("Could not parse JSON response for url=\"%s\"\n", url);
+            return NULL;
+        }
+
+        cJSON *hostConfig = cJSON_GetObjectItemCaseSensitive(json_response, "HostConfig");
+
+        if (hostConfig == NULL)
+        {
+            printf("Could not get HostConfig object\n");
+            return NULL;
+        }
+
+        cJSON *networkMode = cJSON_GetObjectItemCaseSensitive(hostConfig, "NetworkMode");
+
+        if (networkMode == NULL)
+        {
+            printf("Could not get NetworkMode object\n");
+            return NULL;
+        }
+
+        cJSON *networkCopy = cJSON_Duplicate(networkMode, 1);
+
+        cJSON_Delete(json_response);
+
+        return networkCopy;
+    }
+
+    return NULL;
+}
+
+static char* create_docker_container_curl(int base_netconf_port, cJSON* managerBinds, cJSON* networkMode)
+{
+    if (managerBinds == NULL)
+    {
+        printf("Could not retrieve JSON object: Binds\n");
+        return NULL;
+    }
+    cJSON *binds = cJSON_Duplicate(managerBinds, 1);
+
+    if (networkMode == NULL)
 	{
-		printf("Could not retrieve JSON object: Binds\n");
+		printf("Could not retrieve JSON object: NetworkMode\n");
 		return NULL;
 	}
-	cJSON *binds = cJSON_Duplicate(managerBinds, 1);
+	cJSON *netMode = cJSON_Duplicate(networkMode, 1);
 
 	struct MemoryStruct curl_response_mem;
 
@@ -288,17 +380,29 @@ static char* create_docker_container_curl(int base_netconf_port, cJSON* managerB
 	}
     cJSON_AddItemToArray(env_variables_array, env_var_obj_2);
 
-	char scripts_dir[200];
-	sprintf(scripts_dir, "SCRIPTS_DIR=%s", getenv("SCRIPTS_DIR"));
-	cJSON *env_var_obj_3 = cJSON_CreateString(scripts_dir);
-	if (env_var_obj_3 == NULL)
-	{
-		printf("Could not create JSON object: Env array object SCRIPTS_DIR\n");
-		return NULL;
-	}
-	cJSON_AddItemToArray(env_variables_array, env_var_obj_3);
+    char scripts_dir[200];
+    sprintf(scripts_dir, "SCRIPTS_DIR=%s", getenv("SCRIPTS_DIR"));
+    cJSON *env_var_obj_3 = cJSON_CreateString(scripts_dir);
+    if (env_var_obj_3 == NULL)
+    {
+        printf("Could not create JSON object: Env array object SCRIPTS_DIR\n");
+        return NULL;
+    }
+    cJSON_AddItemToArray(env_variables_array, env_var_obj_3);
+
+    char k8s_deployment[50];
+    sprintf(k8s_deployment, "K8S_DEPLOYMENT=%s", getenv("K8S_DEPLOYMENT"));
+    cJSON *env_var_obj_4 = cJSON_CreateString(k8s_deployment);
+    if (env_var_obj_4 == NULL)
+    {
+        printf("Could not create JSON object: Env array object K8S_DEPLOYMENT\n");
+        return NULL;
+    }
+    cJSON_AddItemToArray(env_variables_array, env_var_obj_4);
 
     cJSON_AddItemToObject(hostConfig, "Binds", binds);
+
+    cJSON_AddItemToObject(hostConfig, "NetworkMode", netMode);
 
     char *post_data_string = NULL;
 
@@ -316,6 +420,11 @@ static char* create_docker_container_curl(int base_netconf_port, cJSON* managerB
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&curl_response_mem);
 
 	res = curl_easy_perform(curl);
+
+    if (post_data_string != NULL)
+    {
+        free(post_data_string);
+    }
 
 	if (res != CURLE_OK)
 	{
@@ -353,37 +462,76 @@ static char* create_docker_container_curl(int base_netconf_port, cJSON* managerB
 
 static int start_docker_container_curl(char *container_id)
 {
-	struct MemoryStruct curl_response_mem;
+    struct MemoryStruct curl_response_mem;
 
-	curl_response_mem.memory = malloc(1);  /* will be grown as needed by the realloc above */
-	curl_response_mem.size = 0;    /* no data at this point */
+    curl_response_mem.memory = malloc(1);  /* will be grown as needed by the realloc above */
+    curl_response_mem.size = 0;    /* no data at this point */
 
-	CURLcode res;
+    CURLcode res;
 
-	curl_easy_reset(curl);
-	set_curl_common_info();
+    curl_easy_reset(curl);
+    set_curl_common_info();
 
-	char url[100];
-	sprintf(url, "http:/v%s/containers/%s/start", getenv("DOCKER_ENGINE_VERSION"), container_id);
+    char url[100];
+    sprintf(url, "http:/v%s/containers/%s/start", getenv("DOCKER_ENGINE_VERSION"), container_id);
 
-	curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_URL, url);
 
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
 
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&curl_response_mem);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&curl_response_mem);
 
-	res = curl_easy_perform(curl);
+    res = curl_easy_perform(curl);
 
-	if (res != CURLE_OK)
-	{
-		return SR_ERR_OPERATION_FAILED;
-	}
-	else
-	{
-		printf("Container %s started successfully!\n", container_id);
-	}
+    if (res != CURLE_OK)
+    {
+        return SR_ERR_OPERATION_FAILED;
+    }
+    else
+    {
+        printf("Container %s started successfully!\n", container_id);
+    }
 
-	return SR_ERR_OK;
+    return SR_ERR_OK;
+}
+
+static int rename_docker_container_curl(char *container_id, int device_number)
+{
+    struct MemoryStruct curl_response_mem;
+
+    curl_response_mem.memory = malloc(1);  /* will be grown as needed by the realloc above */
+    curl_response_mem.size = 0;    /* no data at this point */
+
+    CURLcode res;
+
+    curl_easy_reset(curl);
+    set_curl_common_info();
+
+    char device_name[100];
+    sprintf(device_name, "%s-%d", getenv("CONTAINER_NAME"), device_number);
+
+    char url[100];
+    sprintf(url, "http:/v%s/containers/%s/rename?name=%s", getenv("DOCKER_ENGINE_VERSION"), container_id,
+                device_name);
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
+
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&curl_response_mem);
+
+    res = curl_easy_perform(curl);
+
+    if (res != CURLE_OK)
+    {
+        return SR_ERR_OPERATION_FAILED;
+    }
+    else
+    {
+        printf("Container %s renamed successfully to %s!\n", container_id, device_name);
+    }
+
+    return SR_ERR_OK;
 }
 
 static int kill_and_remove_docker_container_curl(char *container_id)
@@ -437,20 +585,20 @@ static int send_mount_device_instance_ssh(char *url, char *credentials, char *de
 	char post_data_xml[1500];
 
 	sprintf(post_data_xml,
-			"<node xmlns=\"urn:TBD:params:xml:ns:yang:network-topology\">"
-			"<node-id>%s_%d</node-id>"
-			"<host xmlns=\"urn:opendaylight:netconf-node-topology\">%s</host>"
-			"<port xmlns=\"urn:opendaylight:netconf-node-topology\">%d</port>"
-			"<username xmlns=\"urn:opendaylight:netconf-node-topology\">%s</username>"
-			"<password xmlns=\"urn:opendaylight:netconf-node-topology\">%s</password>"
-			"<tcp-only xmlns=\"urn:opendaylight:netconf-node-topology\">false</tcp-only>"
-			"<keepalive-delay xmlns=\"urn:opendaylight:netconf-node-topology\">120</keepalive-delay>"
-			"<reconnect-on-changed-schema xmlns=\"urn:opendaylight:netconf-node-topology\">false</reconnect-on-changed-schema>"
-			"<sleep-factor xmlns=\"urn:opendaylight:netconf-node-topology\">1.5</sleep-factor>"
-			"<connection-timeout-millis xmlns=\"urn:opendaylight:netconf-node-topology\">20000</connection-timeout-millis>"
-			"<max-connection-attempts xmlns=\"urn:opendaylight:netconf-node-topology\">100</max-connection-attempts>"
-			"<between-attempts-timeout-millis xmlns=\"urn:opendaylight:netconf-node-topology\">2000</between-attempts-timeout-millis>"
-			"</node>",
+            "<node xmlns=\"urn:TBD:params:xml:ns:yang:network-topology\">"
+            "<node-id>%s_%d</node-id>"
+            "<host xmlns=\"urn:opendaylight:netconf-node-topology\">%s</host>"
+            "<port xmlns=\"urn:opendaylight:netconf-node-topology\">%d</port>"
+            "<username xmlns=\"urn:opendaylight:netconf-node-topology\">%s</username>"
+            "<password xmlns=\"urn:opendaylight:netconf-node-topology\">%s</password>"
+            "<tcp-only xmlns=\"urn:opendaylight:netconf-node-topology\">false</tcp-only>"
+            "<keepalive-delay xmlns=\"urn:opendaylight:netconf-node-topology\">120</keepalive-delay>"
+            "<reconnect-on-changed-schema xmlns=\"urn:opendaylight:netconf-node-topology\">false</reconnect-on-changed-schema>"
+            "<sleep-factor xmlns=\"urn:opendaylight:netconf-node-topology\">1.5</sleep-factor>"
+            "<connection-timeout-millis xmlns=\"urn:opendaylight:netconf-node-topology\">20000</connection-timeout-millis>"
+            "<max-connection-attempts xmlns=\"urn:opendaylight:netconf-node-topology\">100</max-connection-attempts>"
+            "<between-attempts-timeout-millis xmlns=\"urn:opendaylight:netconf-node-topology\">2000</between-attempts-timeout-millis>"
+            "</node>",
 			device_name, device_port, getenv("NTS_IP"), device_port, "netconf", "netconf");
 
 	printf("Post data:\n%s\n", post_data_xml);
@@ -586,9 +734,10 @@ static int send_mount_device(device_t *current_device, controller_t controller_d
 {
 	int rc = SR_ERR_OK;
 	bool is_mounted = true;
+    int port = 0;
 
 	//This is where we hardcoded: 7 devices will have SSH connections and 3 devices will have TLS connections
-	for (int port = 0; port < NETCONF_CONNECTIONS_PER_DEVICE - 3; ++port)
+	for (int i = 0; i < SSH_CONNECTIONS_PER_DEVICE; ++port, ++i)
 	{
 		rc = send_mount_device_instance_ssh(controller_details.url, controller_details.credentials,
 				current_device->device_id, current_device->netconf_port + port);
@@ -597,7 +746,7 @@ static int send_mount_device(device_t *current_device, controller_t controller_d
 			is_mounted = false;
 		}
 	}
-	for (int port = NETCONF_CONNECTIONS_PER_DEVICE - 3; port < NETCONF_CONNECTIONS_PER_DEVICE; ++port)
+	for (int i = 0; i < TLS_CONNECTIONS_PER_DEVICE; ++port, ++i)
 	{
 		rc = send_mount_device_instance_tls(controller_details.url, controller_details.credentials,
 				current_device->device_id, current_device->netconf_port + port);
@@ -642,13 +791,14 @@ device_stack_t *new_device_stack(void)
 	return stack;
 }
 
-void push_device(device_stack_t *theStack, char *dev_id, int port)
+void push_device(device_stack_t *theStack, char *dev_id, int port, int dev_num)
 {
 	device_t *new_dev = malloc(sizeof(*new_dev));
 
 	if (new_dev) {
 		new_dev->device_id = strdup(dev_id);
 		new_dev->netconf_port = port;
+        new_dev->device_number = dev_num;
 		new_dev->is_mounted = false;
 		new_dev->operational_state = strdup("not-specified");
 
@@ -674,39 +824,38 @@ void pop_device(device_stack_t *theStack)
 
 int get_netconf_port_next(device_stack_t *theStack)
 {
-	if (theStack && theStack->stack_size > 0) {
-		return theStack->head->netconf_port + NETCONF_CONNECTIONS_PER_DEVICE;
-	}
+    if (theStack && theStack->stack_size > 0) {
+        return theStack->head->netconf_port + NETCONF_CONNECTIONS_PER_DEVICE;
+    }
 
-	return get_netconf_port_base();
+    return get_netconf_port_base();
 }
 
 int get_netconf_port_base()
 {
-	int netconf_port_base = 0, rc;
+    int netconf_port_base;
 
-	char *netconf_base_string = getenv("NETCONF_BASE");
+    netconf_port_base = getIntFromString(getenv("NETCONF_BASE"), 50000);
 
-	if (netconf_base_string != NULL)
-	{
-		rc = sscanf(netconf_base_string, "%d", &netconf_port_base);
-		if (rc != 1)
-		{
-			printf("Could not get the NETCONF_BASE port! Using the default 30.000...\n");
-			netconf_port_base = 30000;
-		}
-	}
-
-	return netconf_port_base;
+    return netconf_port_base;
 }
 
+// we start numbering the containers from 0
+int get_device_number_next(device_stack_t *theStack)
+{
+    if (theStack && theStack->stack_size > 0) {
+        return theStack->head->device_number + 1;
+    }
+
+    return 0;
+}
 
 char *get_id_last_device(device_stack_t *theStack)
 {
-	if (theStack && theStack->head) {
-		return theStack->head->device_id;
-	}
-	return NULL;
+    if (theStack && theStack->head) {
+        return theStack->head->device_id;
+    }
+    return NULL;
 }
 
 int get_current_number_of_mounted_devices(device_stack_t *theStack)
@@ -732,6 +881,12 @@ int get_current_number_of_mounted_devices(device_stack_t *theStack)
 
 int get_current_number_of_devices(device_stack_t *theStack)
 {
+    //TODO implement function for k8s deployment
+    if (strcmp(getenv("K8S_DEPLOYMENT"), "true") == 0)
+    {
+        return 0;
+    }
+
 	struct MemoryStruct curl_response_mem;
 
 	curl_response_mem.memory = malloc(1);  /* will be grown as needed by the realloc above */
@@ -743,8 +898,8 @@ int get_current_number_of_devices(device_stack_t *theStack)
 	set_curl_common_info();
 
 	char url[100];
-	sprintf(url, "http:/v%s/containers/json?all=true&filters={\"label\":[\"NTS\"],\"status\":[\"running\"]}",
-			getenv("DOCKER_ENGINE_VERSION"));
+	sprintf(url, "http:/v%s/containers/json?all=true&filters={\"label\":[\"NTS_Manager=%s\"],\"status\":[\"running\"]}",
+			getenv("DOCKER_ENGINE_VERSION"), getenv("HOSTNAME"));
 
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 
@@ -827,23 +982,40 @@ char* get_docker_container_operational_state(device_stack_t *theStack, char *con
 int start_device(device_stack_t *theStack)
 {
 	int rc = SR_ERR_OK;
-	static cJSON* managerBindings = NULL;
+	static cJSON *managerBindings = NULL, *networkMode = NULL;
 
-	if (managerBindings == NULL)
+    if (managerBindings == NULL)
+    {
+        managerBindings = get_docker_container_bindings();
+    }
+
+    if (networkMode == NULL)
 	{
-		managerBindings = get_docker_container_bindings();
+		networkMode = get_docker_container_network_node();
 	}
 
 	int netconf_base = get_netconf_port_next(theStack);
+    int device_number = get_device_number_next(theStack);
 
-	char *dev_id = create_docker_container_curl(netconf_base, managerBindings);
+	char *dev_id = create_docker_container_curl(netconf_base, managerBindings, networkMode);
+    if (dev_id == NULL)
+    {
+        printf("ERROR: Could not create docker container!\n");
+        return SR_ERR_OPERATION_FAILED;
+    }
 
-	push_device(theStack, dev_id, netconf_base);
+	push_device(theStack, dev_id, netconf_base, device_number);
 
 	rc = start_docker_container_curl(dev_id);
 	if (rc != SR_ERR_OK)
 	{
 		printf("Could not start device with device_id=\"%s\"\n", dev_id);
+	}
+
+    rc = rename_docker_container_curl(dev_id, device_number);
+	if (rc != SR_ERR_OK)
+	{
+		printf("Could not rename device with device_id=\"%s\"\n", dev_id);
 	}
 
 	if (dev_id) {
@@ -895,6 +1067,28 @@ int cleanup_curl_odl()
 	}
 
 	return SR_ERR_OK;
+}
+
+int _init_curl_k8s()
+{
+    curl_k8s = curl_easy_init();
+
+    if (curl_k8s == NULL) {
+        printf("cURL initialization error! Aborting call!\n");
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    return SR_ERR_OK;
+}
+
+int cleanup_curl_k8s()
+{
+    if (curl_k8s != NULL)
+    {
+        curl_easy_cleanup(curl_k8s);
+    }
+
+    return SR_ERR_OK;
 }
 
 int stop_device(device_stack_t *theStack)
@@ -975,6 +1169,13 @@ int unmount_device(device_stack_t *theStack, controller_t controller_list)
 
 int get_docker_containers_operational_state_curl(device_stack_t *theStack)
 {
+
+    //TODO implement function for k8s deployment
+    if (strcmp(getenv("K8S_DEPLOYMENT"), "true") == 0)
+    {
+        return SR_ERR_OK;
+    }
+
 	int rc = SR_ERR_OK;
 	struct MemoryStruct curl_response_mem;
 
@@ -987,7 +1188,8 @@ int get_docker_containers_operational_state_curl(device_stack_t *theStack)
 	set_curl_common_info();
 
 	char url[100];
-	sprintf(url, "http:/v%s/containers/json?all=true&filters={\"label\":[\"NTS\"]}", getenv("DOCKER_ENGINE_VERSION"));
+	sprintf(url, "http:/v%s/containers/json?all=true&filters={\"label\":[\"NTS_Manager=%s\"]}", 
+    getenv("DOCKER_ENGINE_VERSION"), getenv("HOSTNAME"));
 
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 
@@ -1047,13 +1249,19 @@ int get_docker_containers_operational_state_curl(device_stack_t *theStack)
 
 char* get_docker_container_resource_stats(device_stack_t *theStack)
 {
+    //TOD need to implement this for k8s deployment
+    if (strcmp(getenv("K8S_DEPLOYMENT"), "true"))
+    {
+        return strdup("CPU=0%;RAM=0MiB");
+    }
+
 	char line[LINE_BUFSIZE];
 	int linenr;
 	FILE *pipe;
 
 	/* Get a pipe where the output from the scripts comes in */
 	char script[200];
-	sprintf(script, "%s/docker_stats.sh", getenv("SCRIPTS_DIR"));
+	sprintf(script, "/opt/dev/docker_stats.sh %s", getenv("HOSTNAME"));
 
 	pipe = popen(script, "r");
 	if (pipe == NULL) {  /* check for errors */
@@ -1158,6 +1366,12 @@ int notification_delay_period_changed(sr_val_t *val, size_t count)
 	stringConfiguration = cJSON_Print(jsonConfig);
 	writeConfigFile(stringConfiguration);
 
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
+
 	cJSON_Delete(jsonConfig);
 
 	return SR_ERR_OK;
@@ -1210,6 +1424,12 @@ int ves_heartbeat_period_changed(int period)
 	//writing the new JSON to the configuration file
 	stringConfiguration = cJSON_Print(jsonConfig);
 	writeConfigFile(stringConfiguration);
+
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
 
 	cJSON_Delete(jsonConfig);
 
@@ -1462,6 +1682,12 @@ int ves_ip_changed(char *new_ip)
 	stringConfiguration = cJSON_Print(jsonConfig);
 	writeConfigFile(stringConfiguration);
 
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
+
 	cJSON_Delete(jsonConfig);
 
 	return SR_ERR_OK;
@@ -1514,6 +1740,12 @@ int ves_port_changed(int new_port)
 	//writing the new JSON to the configuration file
 	stringConfiguration = cJSON_Print(jsonConfig);
 	writeConfigFile(stringConfiguration);
+
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
 
 	cJSON_Delete(jsonConfig);
 
@@ -1568,6 +1800,12 @@ int ves_registration_changed(cJSON_bool new_bool)
 	stringConfiguration = cJSON_Print(jsonConfig);
 	writeConfigFile(stringConfiguration);
 
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
+
 	cJSON_Delete(jsonConfig);
 
 	return SR_ERR_OK;
@@ -1620,6 +1858,12 @@ int is_netconf_available_changed(cJSON_bool new_bool)
 	//writing the new JSON to the configuration file
 	stringConfiguration = cJSON_Print(jsonConfig);
 	writeConfigFile(stringConfiguration);
+
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
 
 	cJSON_Delete(jsonConfig);
 
@@ -1674,7 +1918,211 @@ int is_ves_available_changed(cJSON_bool new_bool)
 	stringConfiguration = cJSON_Print(jsonConfig);
 	writeConfigFile(stringConfiguration);
 
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
+
 	cJSON_Delete(jsonConfig);
 
 	return SR_ERR_OK;
+}
+
+    int ssh_connections_changed(int number)
+    {
+    char *stringConfiguration = readConfigFileInString();
+
+    if (stringConfiguration == NULL)
+    {
+        printf("Could not read configuration file!\n");
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    cJSON *jsonConfig = cJSON_Parse(stringConfiguration);
+    if (jsonConfig == NULL)
+    {
+        free(stringConfiguration);
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL)
+        {
+            fprintf(stderr, "Could not parse JSON configuration! Error before: %s\n", error_ptr);
+        }
+        return SR_ERR_OPERATION_FAILED;
+    }
+    //we don't need the string anymore
+    free(stringConfiguration);
+    stringConfiguration = NULL;
+
+    cJSON *sshConnections = cJSON_GetObjectItemCaseSensitive(jsonConfig, "ssh-connections");
+    if (!cJSON_IsNumber(sshConnections))
+    {
+        printf("Configuration JSON is not as expected: ssh-connections is not an object");
+        cJSON_Delete(jsonConfig);
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    //we set the value of the ssh-connections object
+    cJSON_SetNumberValue(sshConnections, number);
+
+    //writing the new JSON to the configuration file
+    stringConfiguration = cJSON_Print(jsonConfig);
+    writeConfigFile(stringConfiguration);
+
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
+
+    cJSON_Delete(jsonConfig);
+
+    return SR_ERR_OK;
+}
+
+int tls_connections_changed(int number)
+    {
+    char *stringConfiguration = readConfigFileInString();
+
+    if (stringConfiguration == NULL)
+    {
+        printf("Could not read configuration file!\n");
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    cJSON *jsonConfig = cJSON_Parse(stringConfiguration);
+    if (jsonConfig == NULL)
+    {
+        free(stringConfiguration);
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL)
+        {
+            fprintf(stderr, "Could not parse JSON configuration! Error before: %s\n", error_ptr);
+        }
+        return SR_ERR_OPERATION_FAILED;
+    }
+    //we don't need the string anymore
+    free(stringConfiguration);
+    stringConfiguration = NULL;
+
+    cJSON *tlsConnections = cJSON_GetObjectItemCaseSensitive(jsonConfig, "tls-connections");
+    if (!cJSON_IsNumber(tlsConnections))
+    {
+        printf("Configuration JSON is not as expected: tls-connections is not an object");
+        cJSON_Delete(jsonConfig);
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    //we set the value of the tls-connections object
+    cJSON_SetNumberValue(tlsConnections, number);
+
+    //writing the new JSON to the configuration file
+    stringConfiguration = cJSON_Print(jsonConfig);
+    writeConfigFile(stringConfiguration);
+
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
+
+    cJSON_Delete(jsonConfig);
+
+    return SR_ERR_OK;
+}
+
+/*
+curl -X POST -H 'Content-Type: application/json' -i http://localhost:5000/extend-ports --data '{"number-of-ports":12}'
+*/
+int send_k8s_extend_port(void)
+{
+    int num_of_ports = getSshConnectionsFromConfigJson() + getTlsConnectionsFromConfigJson();
+
+    CURLcode res;
+
+    curl_easy_reset(curl_k8s);
+    set_curl_common_info_k8s();
+
+    char url_for_curl[100];
+    sprintf(url_for_curl, "http://localhost:5000/extend-ports");
+
+    curl_easy_setopt(curl_k8s, CURLOPT_URL, url_for_curl);
+
+    char post_data_json[1500];
+
+    sprintf(post_data_json,
+            "{\"number-of-ports\":%d}",
+            num_of_ports);
+
+    printf("Post data:\n%s\n", post_data_json);
+
+    curl_easy_setopt(curl_k8s, CURLOPT_POSTFIELDS, post_data_json);
+    curl_easy_setopt(curl_k8s, CURLOPT_CUSTOMREQUEST, "POST");
+
+    res = curl_easy_perform(curl_k8s);
+    if (res != CURLE_OK)
+    {
+        printf("cURL failed to url=%s\n", url_for_curl);
+    }
+
+    long http_response_code = 0;
+    curl_easy_getinfo (curl_k8s, CURLINFO_RESPONSE_CODE, &http_response_code);
+    if (http_response_code >= 200 && http_response_code <= 226 && http_response_code != CURLE_ABORTED_BY_CALLBACK)
+    {
+        printf("cURL succeeded to url=%s\n", url_for_curl);
+    }
+    else
+    {
+        printf("cURL to url=%s failed with code=%ld\n", url_for_curl, http_response_code);
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    return SR_ERR_OK;
+}
+
+/*
+curl -X POST -H 'Content-Type: application/json' -i http://localhost:5000/scale --data '{"simulatedDevices":2}'
+*/
+int send_k8s_scale(int number_of_devices)
+{
+    CURLcode res;
+
+    curl_easy_reset(curl_k8s);
+    set_curl_common_info_k8s();
+
+    char url_for_curl[100];
+    sprintf(url_for_curl, "http://localhost:5000/scale");
+
+    curl_easy_setopt(curl_k8s, CURLOPT_URL, url_for_curl);
+
+    char post_data_json[1500];
+
+    sprintf(post_data_json,
+            "{\"simulatedDevices\":%d}",
+            number_of_devices);
+
+    printf("Post data:\n%s\n", post_data_json);
+
+    curl_easy_setopt(curl_k8s, CURLOPT_POSTFIELDS, post_data_json);
+    curl_easy_setopt(curl_k8s, CURLOPT_CUSTOMREQUEST, "POST");
+
+    res = curl_easy_perform(curl_k8s);
+    if (res != CURLE_OK)
+    {
+        printf("cURL failed to url=%s\n", url_for_curl);
+    }
+
+    long http_response_code = 0;
+    curl_easy_getinfo (curl_k8s, CURLINFO_RESPONSE_CODE, &http_response_code);
+    if (http_response_code >= 200 && http_response_code <= 226 && http_response_code != CURLE_ABORTED_BY_CALLBACK)
+    {
+        printf("cURL succeeded to url=%s\n", url_for_curl);
+    }
+    else
+    {
+        printf("cURL to url=%s failed with code=%ld\n", url_for_curl, http_response_code);
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    return SR_ERR_OK;
 }
