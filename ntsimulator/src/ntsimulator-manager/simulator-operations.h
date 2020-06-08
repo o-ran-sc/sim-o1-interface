@@ -111,10 +111,21 @@ int is_ves_available_changed(cJSON_bool new_bool);
 int ssh_connections_changed(int number);
 int tls_connections_changed(int number);
 
+int controller_ip_changed(char *new_ip);
+int controller_port_changed(int new_port);
+int controller_netconf_call_home_port_changed(int new_port);
+int controller_username_changed(char *new_username);
+int controller_password_changed(char *new_password);
+int netconf_call_home_changed(cJSON_bool new_bool);
+
 
 int add_key_pair_to_odl(controller_t *controller_list, int controller_list_size);
 
 int send_k8s_scale(int number_of_devices);
 int send_k8s_extend_port(void);
+
+int invoke_device_notification(char *device_id, char *module_name, char *notification_string);
+
+int pull_docker_image_of_simulated_device(void);
 
 #endif /* SRC_NTSIMULATOR_MANAGER_SIMULATOR_OPERATIONS_H_ */

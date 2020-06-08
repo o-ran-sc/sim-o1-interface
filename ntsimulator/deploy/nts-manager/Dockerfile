@@ -41,7 +41,7 @@ USER netconf
 RUN \
       mkdir -p /home/netconf/.ssh && \
       ssh-keygen -A && \
-      ssh-keygen -t dsa -P '' -f /home/netconf/.ssh/id_dsa && \
+      ssh-keygen -t rsa -P '' -f /home/netconf/.ssh/id_dsa && \
       cat /home/netconf/.ssh/id_dsa.pub > /home/netconf/.ssh/authorized_keys
 #echo "Host *\n    StrictHostKeyChecking accept-new" >> /home/netconf/.ssh/config
 USER root
@@ -96,7 +96,7 @@ RUN \
       git clone https://github.com/Melacon/Netopeer2.git && \
       cd Netopeer2 && \
       cd keystored && mkdir build && cd build && \
-      cmake -DCMAKE_BUILD_TYPE:String="Release" .. && \
+      cmake -DCMAKE_BUILD_TYPE:String="Release" -DKEYSTORED_KEYS_DIR=/home/netconf/.ssh .. && \
       make -j2 && \
       make install && \
       ldconfig
@@ -143,6 +143,13 @@ ENV SshConnections=1
 ENV TlsConnections=0
 ENV K8S_DEPLOYMENT=false
 ENV CONTAINER_NAME="ntsim"
+ENV ControllerIp="172.17.0.1"
+ENV ControllerPort=8181
+ENV NetconfCallHomePort=6666
+ENV ControllerUsername="admin"
+ENV ControllerPassword="admin"
+ENV NetconfCallHome=false
+ENV Ipv6Enabled=false
 
 RUN \
       apt-get update && apt-get install -y supervisor bc
@@ -207,8 +214,8 @@ COPY --from=builder /lib/x86_64-linux-gnu/libkeyutils.so.1 /lib/x86_64-linux-gnu
 COPY --from=builder /etc/sysrepo /etc/sysrepo
 COPY --from=builder /var/run /var/run
 
-COPY --from=builder /usr/local/etc/keystored/keys/ssh_host_rsa_key.pem /usr/local/etc/keystored/keys/ssh_host_rsa_key.pem
-COPY --from=builder /usr/local/etc/keystored/keys/ssh_host_rsa_key.pem.pub /usr/local/etc/keystored/keys/ssh_host_rsa_key.pem.pub
+#COPY --from=builder /usr/local/etc/keystored/keys/ssh_host_rsa_key.pem /usr/local/etc/keystored/keys/ssh_host_rsa_key.pem
+#COPY --from=builder /usr/local/etc/keystored/keys/ssh_host_rsa_key.pem.pub /usr/local/etc/keystored/keys/ssh_host_rsa_key.pem.pub
 COPY --from=builder /usr/local/share/libnetconf2 /usr/local/share/libnetconf2
 
 RUN ldconfig
@@ -216,6 +223,10 @@ RUN ldconfig
 COPY ./deploy/nts-manager/supervisord.conf /etc/supervisord.conf
 
 COPY ./deploy/nts-manager/docker_stats.sh /opt/dev/docker_stats.sh
+# Fix for the NETCONF notifications
+RUN \
+    echo "Fixing the NETCONF notifications..." && \
+    mkdir -p /var/run/sysrepo-subscriptions/ietf-crypto-types
 	  
 ARG BUILD_DATE
 LABEL build-date=$BUILD_DATE

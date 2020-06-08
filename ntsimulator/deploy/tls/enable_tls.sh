@@ -24,6 +24,24 @@ openssl genrsa -out melacon.server.key 2048
 openssl req -new -sha256 -key melacon.server.key -subj "/C=US/ST=CA/O=MeLaCon, Inc./CN=melacon.com" -out melacon.server.csr
 openssl x509 -req -in melacon.server.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out melacon.server.crt -days 500 -sha256
 rm melacon.server.csr
+ssh-keygen -y -f melacon.server.key > melacon.server.key.pub
+
+SSH_PUB_KEY="$(cat /home/netconf/.ssh/id_dsa.pub| awk '{print $2}')"
+SSH_PUB_KEY_MELACON="$(cat melacon.server.key.pub | awk '{print $2}')"
+
+echo '<system xmlns="urn:ietf:params:xml:ns:yang:ietf-system"><authentication><user><name>netconf</name>'  >> load_auth_pubkey.xml
+echo '<authorized-key><name>ssh_key</name><algorithm>ssh-dss</algorithm>' >> load_auth_pubkey.xml
+echo '<key-data>'"$SSH_PUB_KEY"'</key-data></authorized-key>' >> load_auth_pubkey.xml
+echo '<authorized-key><name>melacon_server_key</name><algorithm>ssh-rsa</algorithm>' >> load_auth_pubkey.xml
+echo '<key-data>'"$SSH_PUB_KEY_MELACON"'</key-data></authorized-key></user></authentication></system>' >> load_auth_pubkey.xml
+
+sysrepocfg --merge=load_auth_pubkey.xml --format=xml ietf-system
+rm load_auth_pubkey.xml
+
+if [ $IPv6Enabled = "true" ]; then
+   ssh-keyscan -p 830 :: >> ~/.ssh/known_hosts
+fi
+ssh-keyscan -p 830 127.0.0.1 >> /root/.ssh/known_hosts
 
 MELACON_SERVER_KEY="$(sed '1d;$d' melacon.server.key)"
 

@@ -21,6 +21,7 @@
 #include <string.h>
 #include <math.h>
 #include <linux/limits.h>
+#include <unistd.h>
 
 #include "utils.h"
 
@@ -231,7 +232,7 @@ static cJSON* get_docker_container_network_node(void)
     return NULL;
 }
 
-static char* create_docker_container_curl(int base_netconf_port, cJSON* managerBinds, cJSON* networkMode)
+static char* create_docker_container_curl(int base_netconf_port, cJSON* managerBinds, cJSON* networkMode, int device_number)
 {
     if (managerBinds == NULL)
     {
@@ -270,26 +271,35 @@ static char* create_docker_container_curl(int base_netconf_port, cJSON* managerB
     cJSON *postDataJson = cJSON_CreateObject();
 
     if (cJSON_AddStringToObject(postDataJson, "Image", models_var) == NULL)
-	{
-    	printf("Could not create JSON object: Image\n");
-		return NULL;
-	}
+    {
+        printf("Could not create JSON object: Image\n");
+        return NULL;
+    }
+
+    char device_name[100];
+    sprintf(device_name, "%s-%d", getenv("CONTAINER_NAME"), device_number);
+
+    if (cJSON_AddStringToObject(postDataJson, "Hostname", device_name) == NULL)
+    {
+        printf("Could not create JSON object: Hostname\n");
+        return NULL;
+    }    
 
     cJSON *hostConfig = cJSON_CreateObject();
     if (hostConfig == NULL)
-	{
-    	printf("Could not create JSON object: HostConfig\n");
-		return NULL;
-	}
+    {
+        printf("Could not create JSON object: HostConfig\n");
+        return NULL;
+    }
 
     cJSON_AddItemToObject(postDataJson, "HostConfig", hostConfig);
 
     cJSON *portBindings = cJSON_CreateObject();
     if (portBindings == NULL)
-	{
-    	printf("Could not create JSON object: PortBindings\n");
-		return NULL;
-	}
+    {
+        printf("Could not create JSON object: PortBindings\n");
+        return NULL;
+    }
 
     cJSON_AddItemToObject(hostConfig, "PortBindings", portBindings);
 
@@ -399,6 +409,16 @@ static char* create_docker_container_curl(int base_netconf_port, cJSON* managerB
         return NULL;
     }
     cJSON_AddItemToArray(env_variables_array, env_var_obj_4);
+
+    char ipv6_enabled[50];
+    sprintf(ipv6_enabled, "IPv6Enabled=%s", getenv("IPv6Enabled"));
+    cJSON *env_var_obj_5 = cJSON_CreateString(ipv6_enabled);
+    if (env_var_obj_5 == NULL)
+    {
+        printf("Could not create JSON object: Env array object IPv6Enabled\n");
+        return NULL;
+    }
+    cJSON_AddItemToArray(env_variables_array, env_var_obj_5);
 
     cJSON_AddItemToObject(hostConfig, "Binds", binds);
 
@@ -725,7 +745,6 @@ static int send_unmount_device_instance(char *url, char *credentials, char *devi
 		return SR_ERR_OPERATION_FAILED;
 	}
 
-
 	return SR_ERR_OK;
 }
 
@@ -736,11 +755,16 @@ static int send_mount_device(device_t *current_device, controller_t controller_d
 	bool is_mounted = true;
     int port = 0;
 
+    char device_name[100];
+    sprintf(device_name, "%s-%d", getenv("CONTAINER_NAME"), current_device->device_number);
+
 	//This is where we hardcoded: 7 devices will have SSH connections and 3 devices will have TLS connections
 	for (int i = 0; i < SSH_CONNECTIONS_PER_DEVICE; ++port, ++i)
 	{
+        
+
 		rc = send_mount_device_instance_ssh(controller_details.url, controller_details.credentials,
-				current_device->device_id, current_device->netconf_port + port);
+				device_name, current_device->netconf_port + port);
 		if (rc != SR_ERR_OK)
 		{
 			is_mounted = false;
@@ -749,7 +773,7 @@ static int send_mount_device(device_t *current_device, controller_t controller_d
 	for (int i = 0; i < TLS_CONNECTIONS_PER_DEVICE; ++port, ++i)
 	{
 		rc = send_mount_device_instance_tls(controller_details.url, controller_details.credentials,
-				current_device->device_id, current_device->netconf_port + port);
+				device_name, current_device->netconf_port + port);
 		if (rc != SR_ERR_OK)
 		{
 			is_mounted = false;
@@ -764,15 +788,17 @@ static int send_mount_device(device_t *current_device, controller_t controller_d
 static int send_unmount_device(device_t *current_device, controller_t controller_details)
 {
 	int rc = SR_ERR_OK;
+    char device_name[100];
+    sprintf(device_name, "%s-%d", getenv("CONTAINER_NAME"), current_device->device_number);
 
 	for (int port = 0; port < NETCONF_CONNECTIONS_PER_DEVICE; ++port)
 	{
 		rc = send_unmount_device_instance(controller_details.url, controller_details.credentials,
-				current_device->device_id, current_device->netconf_port + port);
+				device_name, current_device->netconf_port + port);
 		if (rc != SR_ERR_OK)
 		{
 			printf("Could not send unmount for ODL with url=\"%s\", for device=\"%s\" and port=%d\n",
-					controller_details.url, current_device->device_id, current_device->netconf_port);
+					controller_details.url, device_name, current_device->netconf_port);
 		}
 	}
 	current_device->is_mounted = false;
@@ -997,7 +1023,7 @@ int start_device(device_stack_t *theStack)
 	int netconf_base = get_netconf_port_next(theStack);
     int device_number = get_device_number_next(theStack);
 
-	char *dev_id = create_docker_container_curl(netconf_base, managerBindings, networkMode);
+	char *dev_id = create_docker_container_curl(netconf_base, managerBindings, networkMode, device_number);
     if (dev_id == NULL)
     {
         printf("ERROR: Could not create docker container!\n");
@@ -2121,6 +2147,662 @@ int send_k8s_scale(int number_of_devices)
     else
     {
         printf("cURL to url=%s failed with code=%ld\n", url_for_curl, http_response_code);
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    return SR_ERR_OK;
+}
+
+int controller_ip_changed(char *new_ip)
+{
+	char *stringConfiguration = readConfigFileInString();
+
+	if (stringConfiguration == NULL)
+	{
+		printf("Could not read configuration file!\n");
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	cJSON *jsonConfig = cJSON_Parse(stringConfiguration);
+	if (jsonConfig == NULL)
+	{
+		free(stringConfiguration);
+		const char *error_ptr = cJSON_GetErrorPtr();
+		if (error_ptr != NULL)
+		{
+			fprintf(stderr, "Could not parse JSON configuration! Error before: %s\n", error_ptr);
+		}
+		return SR_ERR_OPERATION_FAILED;
+	}
+	//we don't need the string anymore
+	free(stringConfiguration);
+	stringConfiguration = NULL;
+
+	cJSON *controllerDetails = cJSON_GetObjectItemCaseSensitive(jsonConfig, "controller-details");
+	if (!cJSON_IsObject(controllerDetails))
+	{
+		printf("Configuration JSON is not as expected: controller-details is not an object");
+		cJSON_Delete(jsonConfig);
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	cJSON *controllerIp = cJSON_GetObjectItemCaseSensitive(controllerDetails, "controller-ip");
+	if (!cJSON_IsString(controllerIp))
+	{
+		printf("Configuration JSON is not as expected: controller-ip is not a string");
+		cJSON_Delete(jsonConfig);
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	//we set the value of the fault-notification-delay-period object
+	cJSON_ReplaceItemInObject(controllerDetails, "controller-ip", cJSON_CreateString(new_ip));
+
+	//writing the new JSON to the configuration file
+	stringConfiguration = cJSON_Print(jsonConfig);
+	writeConfigFile(stringConfiguration);
+
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
+
+	cJSON_Delete(jsonConfig);
+
+	return SR_ERR_OK;
+}
+
+int controller_port_changed(int new_port)
+{
+	char *stringConfiguration = readConfigFileInString();
+
+	if (stringConfiguration == NULL)
+	{
+		printf("Could not read configuration file!\n");
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	cJSON *jsonConfig = cJSON_Parse(stringConfiguration);
+	if (jsonConfig == NULL)
+	{
+		free(stringConfiguration);
+		const char *error_ptr = cJSON_GetErrorPtr();
+		if (error_ptr != NULL)
+		{
+			fprintf(stderr, "Could not parse JSON configuration! Error before: %s\n", error_ptr);
+		}
+		return SR_ERR_OPERATION_FAILED;
+	}
+	//we don't need the string anymore
+	free(stringConfiguration);
+	stringConfiguration = NULL;
+
+	cJSON *controllerDetails = cJSON_GetObjectItemCaseSensitive(jsonConfig, "controller-details");
+	if (!cJSON_IsObject(controllerDetails))
+	{
+		printf("Configuration JSON is not as expected: controller-details is not an object");
+		cJSON_Delete(jsonConfig);
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	cJSON *controllerPort = cJSON_GetObjectItemCaseSensitive(controllerDetails, "controller-port");
+	if (!cJSON_IsNumber(controllerPort))
+	{
+		printf("Configuration JSON is not as expected: controller-port is not a number.");
+		cJSON_Delete(jsonConfig);
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	//we set the value of the fault-notification-delay-period object
+	cJSON_SetNumberValue(controllerPort, new_port);
+
+	//writing the new JSON to the configuration file
+	stringConfiguration = cJSON_Print(jsonConfig);
+	writeConfigFile(stringConfiguration);
+
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
+
+	cJSON_Delete(jsonConfig);
+
+	return SR_ERR_OK;
+}
+
+int controller_netconf_call_home_port_changed(int new_port)
+{
+	char *stringConfiguration = readConfigFileInString();
+
+	if (stringConfiguration == NULL)
+	{
+		printf("Could not read configuration file!\n");
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	cJSON *jsonConfig = cJSON_Parse(stringConfiguration);
+	if (jsonConfig == NULL)
+	{
+		free(stringConfiguration);
+		const char *error_ptr = cJSON_GetErrorPtr();
+		if (error_ptr != NULL)
+		{
+			fprintf(stderr, "Could not parse JSON configuration! Error before: %s\n", error_ptr);
+		}
+		return SR_ERR_OPERATION_FAILED;
+	}
+	//we don't need the string anymore
+	free(stringConfiguration);
+	stringConfiguration = NULL;
+
+	cJSON *controllerDetails = cJSON_GetObjectItemCaseSensitive(jsonConfig, "controller-details");
+	if (!cJSON_IsObject(controllerDetails))
+	{
+		printf("Configuration JSON is not as expected: controller-details is not an object");
+		cJSON_Delete(jsonConfig);
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	cJSON *netconfCallHomePort = cJSON_GetObjectItemCaseSensitive(controllerDetails, "netconf-call-home-port");
+	if (!cJSON_IsNumber(netconfCallHomePort))
+	{
+		printf("Configuration JSON is not as expected: netconf-call-home-port is not a number.");
+		cJSON_Delete(jsonConfig);
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	//we set the value of the fault-notification-delay-period object
+	cJSON_SetNumberValue(netconfCallHomePort, new_port);
+
+	//writing the new JSON to the configuration file
+	stringConfiguration = cJSON_Print(jsonConfig);
+	writeConfigFile(stringConfiguration);
+
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
+
+	cJSON_Delete(jsonConfig);
+
+	return SR_ERR_OK;
+}
+
+int controller_username_changed(char *new_username)
+{
+	char *stringConfiguration = readConfigFileInString();
+
+	if (stringConfiguration == NULL)
+	{
+		printf("Could not read configuration file!\n");
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	cJSON *jsonConfig = cJSON_Parse(stringConfiguration);
+	if (jsonConfig == NULL)
+	{
+		free(stringConfiguration);
+		const char *error_ptr = cJSON_GetErrorPtr();
+		if (error_ptr != NULL)
+		{
+			fprintf(stderr, "Could not parse JSON configuration! Error before: %s\n", error_ptr);
+		}
+		return SR_ERR_OPERATION_FAILED;
+	}
+	//we don't need the string anymore
+	free(stringConfiguration);
+	stringConfiguration = NULL;
+
+	cJSON *controllerDetails = cJSON_GetObjectItemCaseSensitive(jsonConfig, "controller-details");
+	if (!cJSON_IsObject(controllerDetails))
+	{
+		printf("Configuration JSON is not as expected: controller-details is not an object");
+		cJSON_Delete(jsonConfig);
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	cJSON *controllerUsername = cJSON_GetObjectItemCaseSensitive(controllerDetails, "controller-username");
+	if (!cJSON_IsString(controllerUsername))
+	{
+		printf("Configuration JSON is not as expected: controller-username is not a string");
+		cJSON_Delete(jsonConfig);
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	//we set the value of the fault-notification-delay-period object
+	cJSON_ReplaceItemInObject(controllerDetails, "controller-username", cJSON_CreateString(new_username));
+
+	//writing the new JSON to the configuration file
+	stringConfiguration = cJSON_Print(jsonConfig);
+	writeConfigFile(stringConfiguration);
+
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
+
+	cJSON_Delete(jsonConfig);
+
+	return SR_ERR_OK;
+}
+
+int controller_password_changed(char *new_password)
+{
+	char *stringConfiguration = readConfigFileInString();
+
+	if (stringConfiguration == NULL)
+	{
+		printf("Could not read configuration file!\n");
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	cJSON *jsonConfig = cJSON_Parse(stringConfiguration);
+	if (jsonConfig == NULL)
+	{
+		free(stringConfiguration);
+		const char *error_ptr = cJSON_GetErrorPtr();
+		if (error_ptr != NULL)
+		{
+			fprintf(stderr, "Could not parse JSON configuration! Error before: %s\n", error_ptr);
+		}
+		return SR_ERR_OPERATION_FAILED;
+	}
+	//we don't need the string anymore
+	free(stringConfiguration);
+	stringConfiguration = NULL;
+
+	cJSON *controllerDetails = cJSON_GetObjectItemCaseSensitive(jsonConfig, "controller-details");
+	if (!cJSON_IsObject(controllerDetails))
+	{
+		printf("Configuration JSON is not as expected: controller-details is not an object");
+		cJSON_Delete(jsonConfig);
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	cJSON *controllerPassword = cJSON_GetObjectItemCaseSensitive(controllerDetails, "controller-password");
+	if (!cJSON_IsString(controllerPassword))
+	{
+		printf("Configuration JSON is not as expected: controller-password is not a string");
+		cJSON_Delete(jsonConfig);
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	//we set the value of the fault-notification-delay-period object
+	cJSON_ReplaceItemInObject(controllerDetails, "controller-password", cJSON_CreateString(new_password));
+
+	//writing the new JSON to the configuration file
+	stringConfiguration = cJSON_Print(jsonConfig);
+	writeConfigFile(stringConfiguration);
+
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
+
+	cJSON_Delete(jsonConfig);
+
+	return SR_ERR_OK;
+}
+
+int netconf_call_home_changed(cJSON_bool new_bool)
+{
+	char *stringConfiguration = readConfigFileInString();
+
+	if (stringConfiguration == NULL)
+	{
+		printf("Could not read configuration file!\n");
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	cJSON *jsonConfig = cJSON_Parse(stringConfiguration);
+	if (jsonConfig == NULL)
+	{
+		free(stringConfiguration);
+		const char *error_ptr = cJSON_GetErrorPtr();
+		if (error_ptr != NULL)
+		{
+			fprintf(stderr, "Could not parse JSON configuration! Error before: %s\n", error_ptr);
+		}
+		return SR_ERR_OPERATION_FAILED;
+	}
+	//we don't need the string anymore
+	free(stringConfiguration);
+	stringConfiguration = NULL;
+
+	cJSON *netconfCallHome = cJSON_GetObjectItemCaseSensitive(jsonConfig, "netconf-call-home");
+	if (!cJSON_IsBool(netconfCallHome))
+	{
+		printf("Configuration JSON is not as expected: netconf-call-home is not a bool.");
+		cJSON_Delete(jsonConfig);
+		return SR_ERR_OPERATION_FAILED;
+	}
+
+	//we set the value of the ves-registration object
+	cJSON_ReplaceItemInObject(jsonConfig, "netconf-call-home", cJSON_CreateBool(new_bool));
+
+	//writing the new JSON to the configuration file
+	stringConfiguration = cJSON_Print(jsonConfig);
+	writeConfigFile(stringConfiguration);
+
+    if (stringConfiguration != NULL)
+    {
+        free(stringConfiguration);
+        stringConfiguration = NULL;
+    }
+
+	cJSON_Delete(jsonConfig);
+
+	return SR_ERR_OK;
+}
+
+static int start_device_notification(char *exec_id)
+{
+    struct MemoryStruct curl_response_mem;
+
+    curl_response_mem.memory = malloc(1);  /* will be grown as needed by the realloc above */
+    curl_response_mem.size = 0;    /* no data at this point */
+
+    CURLcode res;
+
+    curl_easy_reset(curl);
+    set_curl_common_info();
+
+    char url[100];
+    sprintf(url, "http:/v%s/exec/%s/start", getenv("DOCKER_ENGINE_VERSION"), exec_id);
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+
+    cJSON *postDataJson = cJSON_CreateObject();
+
+    if (cJSON_AddFalseToObject(postDataJson, "Detach") == NULL)
+    {
+        printf("Could not create JSON object: Detach\n");
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    if (cJSON_AddFalseToObject(postDataJson, "Tty") == NULL)
+    {
+        printf("Could not create JSON object: Tty\n");
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    char *post_data_string = NULL;
+
+    post_data_string = cJSON_PrintUnformatted(postDataJson);
+
+    printf("Post data JSON:\n%s\n", post_data_string);
+
+    if (postDataJson != NULL)
+    {
+        cJSON_Delete(postDataJson);
+    }
+
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data_string);
+
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&curl_response_mem);
+
+    res = curl_easy_perform(curl);
+
+    if (post_data_string != NULL)
+    {
+        free(post_data_string);
+    }
+
+    if (res != CURLE_OK)
+    {
+        return SR_ERR_OPERATION_FAILED;
+    }
+    else
+    {
+        cJSON *json_response = cJSON_Parse(curl_response_mem.memory);
+        const cJSON *message = NULL;
+
+        printf("%lu bytes retrieved\n", (unsigned long)curl_response_mem.size);
+
+        message = cJSON_GetObjectItemCaseSensitive(json_response, "message");
+
+        if (cJSON_IsString(message) && (message->valuestring != NULL))
+        {
+            printf("Message: \"%s\"\n", message->valuestring);
+        }
+
+        cJSON_Delete(json_response);
+    }
+
+    return SR_ERR_OK;
+}
+
+static int inspect_device_notification_execution(char *exec_id)
+{
+    int rc = SR_ERR_OK;
+
+    struct MemoryStruct curl_response_mem;
+
+    curl_response_mem.memory = malloc(1);  /* will be grown as needed by the realloc above */
+    curl_response_mem.size = 0;    /* no data at this point */
+
+    CURLcode res;
+
+    curl_easy_reset(curl);
+    set_curl_common_info();
+
+    char url[100];
+    sprintf(url, "http:/v%s/exec/%s/json", getenv("DOCKER_ENGINE_VERSION"), exec_id);
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
+
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&curl_response_mem);
+
+    res = curl_easy_perform(curl);
+
+    if (res != CURLE_OK)
+    {
+        rc = SR_ERR_OPERATION_FAILED;
+    }
+    else
+    {
+        cJSON *json_response = cJSON_Parse(curl_response_mem.memory);
+        const cJSON *exit_code = NULL;
+
+        exit_code = cJSON_GetObjectItemCaseSensitive(json_response, "ExitCode");
+
+        if (cJSON_IsNumber(exit_code))
+        {
+            rc = exit_code->valueint;
+        }
+        else
+        {
+            printf("Exit code is not a number!\n");
+            rc = SR_ERR_OPERATION_FAILED;
+        }
+        
+        cJSON_Delete(json_response);
+    }
+
+    return rc;
+}
+
+int invoke_device_notification(char *device_id, char *module_name, char *notification_string)
+{
+    int rc = SR_ERR_OK;
+
+    printf("Device-name = %s\nModule-name = %s\nNotification-object = %s\n", device_id, module_name, notification_string);
+
+    struct MemoryStruct curl_response_mem;
+
+    curl_response_mem.memory = malloc(1);  /* will be grown as needed by the realloc above */
+    curl_response_mem.size = 0;    /* no data at this point */
+
+    CURLcode res;
+
+    curl_easy_reset(curl);
+    set_curl_common_info();
+
+    char url[100];
+    sprintf(url, "http:/v%s/containers/%s/exec", getenv("DOCKER_ENGINE_VERSION"), device_id);
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+
+    cJSON *postDataJson = cJSON_CreateObject();
+
+    if (cJSON_AddFalseToObject(postDataJson, "AtttachStdin") == NULL)
+    {
+        printf("Could not create JSON object: AtttachStdin\n");
+        rc = SR_ERR_OPERATION_FAILED;
+        goto cleanup;
+    }
+
+    if (cJSON_AddTrueToObject(postDataJson, "AtttachStdout") == NULL)
+    {
+        printf("Could not create JSON object: AtttachStdout\n");
+        rc = SR_ERR_OPERATION_FAILED;
+        goto cleanup;
+    }
+
+    if (cJSON_AddTrueToObject(postDataJson, "AtttachStderr") == NULL)
+    {
+        printf("Could not create JSON object: AtttachStderr\n");
+        rc = SR_ERR_OPERATION_FAILED;
+        goto cleanup;
+    }
+
+    if (cJSON_AddTrueToObject(postDataJson, "Privileged") == NULL)
+    {
+        printf("Could not create JSON object: Privileged\n");
+        rc = SR_ERR_OPERATION_FAILED;
+        goto cleanup;
+    }
+
+    if (cJSON_AddStringToObject(postDataJson, "User", "root") == NULL)
+    {
+        printf("Could not create JSON object: User\n");
+        rc = SR_ERR_OPERATION_FAILED;
+        goto cleanup;
+    }
+
+    cJSON *cmd_array = cJSON_CreateArray();
+    if (cmd_array == NULL)
+    {
+        printf("Could not create JSON object: Cmd array\n");
+        rc = SR_ERR_OPERATION_FAILED;
+        goto cleanup;
+    }
+
+    cJSON_AddItemToObject(postDataJson, "Cmd", cmd_array);
+
+    cJSON *cmd_string_1 = cJSON_CreateString("sh");
+    cJSON_AddItemToArray(cmd_array, cmd_string_1);
+
+    cJSON *cmd_string_2 = cJSON_CreateString("-c");
+    cJSON_AddItemToArray(cmd_array, cmd_string_2);
+
+    char string_command[500];
+    sprintf(string_command, "/usr/local/bin/generic-notifications %s '%s'", module_name, notification_string);
+
+    cJSON *cmd_string_3 = cJSON_CreateString(string_command);
+    cJSON_AddItemToArray(cmd_array, cmd_string_3);
+
+    char *post_data_string = NULL;
+
+    post_data_string = cJSON_PrintUnformatted(postDataJson);
+
+    printf("Post data JSON:\n%s\n", post_data_string);
+
+    if (postDataJson != NULL)
+    {
+        cJSON_Delete(postDataJson);
+    }
+
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data_string);
+
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&curl_response_mem);
+
+    res = curl_easy_perform(curl);
+
+    if (post_data_string != NULL)
+    {
+        free(post_data_string);
+    }
+
+    if (res != CURLE_OK)
+    {
+        rc = SR_ERR_OPERATION_FAILED;
+        goto cleanup;
+    }
+    else
+    {
+        cJSON *json_response = cJSON_Parse(curl_response_mem.memory);
+        const cJSON *exec_id = NULL;
+
+        exec_id = cJSON_GetObjectItemCaseSensitive(json_response, "Id");
+
+        if (cJSON_IsString(exec_id) && (exec_id->valuestring != NULL))
+        {
+            printf("Exec id: \"%s\"\n", exec_id->valuestring);
+
+            rc = start_device_notification(exec_id->valuestring);
+            if (rc != SR_ERR_OK)
+            {
+                printf("Could not start the execution of the notification...\n");
+            }
+
+            sleep(1);
+
+            rc = inspect_device_notification_execution(exec_id->valuestring);
+        }
+
+        cJSON_Delete(json_response);
+    }
+
+cleanup:
+    if (device_id != NULL)
+    {
+        free(device_id);
+    }
+    if (module_name != NULL)
+    {
+        free(module_name);
+    }
+    if (notification_string != NULL)
+    {
+        free(notification_string);
+    }
+
+    return rc;
+}
+
+int pull_docker_image_of_simulated_device()
+{
+    struct MemoryStruct curl_response_mem;
+
+    curl_response_mem.memory = malloc(1);  /* will be grown as needed by the realloc above */
+    curl_response_mem.size = 0;    /* no data at this point */
+
+    CURLcode res;
+
+    curl_easy_reset(curl);
+    set_curl_common_info();
+
+    char url[100];
+    sprintf(url, "http:/v%s/images/create?fromImage=%s", getenv("DOCKER_ENGINE_VERSION"), getenv("MODELS_IMAGE"));
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
+
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&curl_response_mem);
+
+    res = curl_easy_perform(curl);
+
+    if (res != CURLE_OK)
+    {
         return SR_ERR_OPERATION_FAILED;
     }
 
