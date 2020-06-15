@@ -1,0 +1,16 @@
+---
+distribution_type: container
+container_release_tag: 0.6.1
+container_pull_registry: nexus3.o-ran-sc.org:10004
+container_push_registry: nexus3.o-ran-sc.org:10002
+project: sim/o1-interface
+ref: 4dbb384bfb1f5351065b2019e297d309dc8f1e51
+containers:
+    - name: ntsim-manager
+      version: 0.6.1
+    - name: ntsim-o-ran-ru
+      version: 0.6.1
+    - name: ntsim-o-ran-ru-fh
+      version: 0.6.1
+    - name: ntsim-x-ran
+      version: 0.6.1
