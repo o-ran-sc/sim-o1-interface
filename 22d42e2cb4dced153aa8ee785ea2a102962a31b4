@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "a69a9b62_eb97b668",
+        "filename": "ntsimulator/src/utils/utils.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 431,
+      "author": {
+        "id": 1000456
+      },
+      "writtenOn": "2020-06-19T16:59:53Z",
+      "side": 1,
+      "message": "Thanks for your help and next time I will provide a proper Jira Ticket to describe how to reproduce the issue. I was not running the o1simulator as a standalone program. I built the docker image using the scripts docker_build_manager.sh and docker_build_model.sh. These were present in the Amber release. Then I started the the image resulting from the second shell script like this: \n    docker run -d -p 830:830 --name somename ntsim_oran:latest\n\nIn other words I was not using ntsim_manager. At least for the Amber release I can confirm\nthat starting up ntsim_oran directly results in getenv(\"SCRIPTS_DIR\") being NULL. This may be incorrect usage of the o1simulator but others may run into the same trap as I did.",
+      "parentUuid": "7cf226ee_93435e61",
+      "revId": "22d42e2cb4dced153aa8ee785ea2a102962a31b4",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "2c6400b2_fa330a88",
         "filename": "ntsimulator/src/utils/utils.c",
         "patchSetId": 1
@@ -33,6 +51,24 @@
       "revId": "22d42e2cb4dced153aa8ee785ea2a102962a31b4",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "5ee5ee72_41326302",
+        "filename": "ntsimulator/src/utils/utils.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 478,
+      "author": {
+        "id": 1000456
+      },
+      "writtenOn": "2020-06-19T16:59:53Z",
+      "side": 1,
+      "message": "Please check out my remark on line 431.",
+      "parentUuid": "2c6400b2_fa330a88",
+      "revId": "22d42e2cb4dced153aa8ee785ea2a102962a31b4",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53",
+      "unresolved": false
     }
   ]
 }
