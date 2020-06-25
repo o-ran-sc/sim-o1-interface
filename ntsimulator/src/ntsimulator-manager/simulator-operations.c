@@ -755,7 +755,7 @@ static int send_mount_device(device_t *current_device, controller_t controller_d
 	bool is_mounted = true;
     int port = 0;
 
-    char device_name[100];
+    char device_name[200];
     sprintf(device_name, "%s-%d", getenv("CONTAINER_NAME"), current_device->device_number);
 
 	//This is where we hardcoded: 7 devices will have SSH connections and 3 devices will have TLS connections
@@ -2511,7 +2511,7 @@ static int start_device_notification(char *exec_id)
     curl_easy_reset(curl);
     set_curl_common_info();
 
-    char url[100];
+    char url[500];
     sprintf(url, "http:/v%s/exec/%s/start", getenv("DOCKER_ENGINE_VERSION"), exec_id);
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -2590,7 +2590,7 @@ static int inspect_device_notification_execution(char *exec_id)
     curl_easy_reset(curl);
     set_curl_common_info();
 
-    char url[100];
+    char url[500];
     sprintf(url, "http:/v%s/exec/%s/json", getenv("DOCKER_ENGINE_VERSION"), exec_id);
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -2645,7 +2645,7 @@ int invoke_device_notification(char *device_id, char *module_name, char *notific
     curl_easy_reset(curl);
     set_curl_common_info();
 
-    char url[100];
+    char url[300];
     sprintf(url, "http:/v%s/containers/%s/exec", getenv("DOCKER_ENGINE_VERSION"), device_id);
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -2703,7 +2703,8 @@ int invoke_device_notification(char *device_id, char *module_name, char *notific
     cJSON *cmd_string_2 = cJSON_CreateString("-c");
     cJSON_AddItemToArray(cmd_array, cmd_string_2);
 
-    char string_command[500];
+    //some notifications require a really long notification object
+    char string_command[1000000];
     sprintf(string_command, "/usr/local/bin/generic-notifications %s '%s'", module_name, notification_string);
 
     cJSON *cmd_string_3 = cJSON_CreateString(string_command);
@@ -2798,6 +2799,8 @@ int pull_docker_image_of_simulated_device()
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
 
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&curl_response_mem);
+
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 300L);
 
     res = curl_easy_perform(curl);
 
