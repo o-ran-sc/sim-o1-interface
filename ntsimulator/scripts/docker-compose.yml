@@ -25,7 +25,10 @@ services:
       VesRegistration: "false"
       VesEndpointPort: 8080
       VesEndpointIp: "172.17.0.1"
-      SshConnections: 4
+      VesEndpointAuthMethod: "basic-auth"
+      VesEndpointUsername: "sample1"
+      VesEndpointPassword: "sample1"
+      SshConnections: 1
       TlsConnections: 0
       K8S_DEPLOYMENT: "false"
       CONTAINER_NAME: "nts-o-ran-sc"
