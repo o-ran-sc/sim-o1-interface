@@ -15,6 +15,7 @@ services:
     environment:
       #NTS_IP: "2001:db8:1::1"
       NTS_IP: "10.20.11.121"
+      #EXTERNAL_NTS_IP: "8.8.8.8"
       NETCONF_BASE: 50000
       DOCKER_ENGINE_VERSION: "1.40"
       #MODELS_IMAGE: "ntsim_onf_core_model_1_2"
