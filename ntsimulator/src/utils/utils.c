@@ -210,7 +210,14 @@ void prepare_ves_message_curl(CURL *curl)
     free(ves_auth_method);
 
 	char url[300];
-	sprintf(url, "https://%s:%d/eventListener/v7", ves_ip, ves_port);
+	char ves_protocol[15] = "https";
+	if( !strcmp(getenv("VES_HTTPS"), "false")  )
+	{
+	    strcpy(ves_protocol ,"http" );
+	    printf("VES connection protocol %s enabled\n", ves_protocol);
+	}
+
+	sprintf(url, "%s://%s:%d/eventListener/v7", ves_protocol, ves_ip, ves_port);
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
