@@ -1,0 +1,26 @@
+{
+    "docker-rules": {
+        "excluded-modules": [],
+        "excluded-features": ["faults-status"]
+    },
+    
+    "populate-rules" : {
+        "excluded-modules": [
+            "sysrepo",
+            "sysrepo-monitoring",
+            "ietf-yang-library",
+            "ietf-netconf-acm",
+            "ietf-netconf-monitoring",
+            "nc-notifications",
+            "ietf-keystore",
+            "ietf-truststore",
+            "ietf-system",
+            "ietf-netconf-server",
+            "nts-network-function",
+            "nts-manager"
+        ],
+        
+        "default-list-instances": 1,
+        "custom-list-instances" : []
+    }
+}

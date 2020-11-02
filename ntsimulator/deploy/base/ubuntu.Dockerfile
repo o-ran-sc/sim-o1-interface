@@ -1,0 +1,200 @@
+#
+# Copyright 2020 highstreet technologies GmbH and others
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#################
+#### BUILDER ####
+#################
+
+FROM ubuntu:20.04 as builder
+LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@highstreet-technologies.com"
+RUN apt-get update
+RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y \
+    # basic tools
+    tzdata build-essential git cmake pkg-config supervisor \
+    # libyang dependencies
+    libpcre3-dev \
+    # libssh dependencies
+    zlib1g-dev libssl-dev
+
+# add netconf user and configure access
+RUN \
+    adduser --system netconf && \
+    echo "netconf:netconf" | chpasswd
+
+# use /opt/dev as working directory
+RUN mkdir /opt/dev
+WORKDIR /opt/dev
+
+# get required build libs from git
+RUN \
+    git config --global advice.detachedHead false && \
+    git clone --single-branch --branch v1.7.13 https://github.com/DaveGamble/cJSON.git && \
+    git clone --single-branch --branch v1.0.184 https://github.com/CESNET/libyang.git && \
+    git clone --single-branch --branch v1.4.70 https://github.com/sysrepo/sysrepo.git && \
+    git clone --single-branch --branch libssh-0.9.2 https://git.libssh.org/projects/libssh.git && \
+    git clone --single-branch --branch v1.1.26 https://github.com/CESNET/libnetconf2.git && \
+    git clone --single-branch --branch v1.1.39 https://github.com/CESNET/netopeer2.git && \
+    git clone --single-branch --branch curl-7_72_0 https://github.com/curl/curl.git
+
+# build and install cJSON
+RUN \
+    cd cJSON && \
+    mkdir build && cd build && \
+    cmake .. -DENABLE_CJSON_UTILS=On -DENABLE_CJSON_TEST=Off && \
+    make -j2 && \
+    make install && \
+    ldconfig
+
+# build and install libyang
+RUN \
+    cd libyang && \
+    mkdir build && cd build  && \
+    cmake -DCMAKE_BUILD_TYPE:String="Release" -DENABLE_BUILD_TESTS=OFF .. && \
+    make -j2  && \
+    make install && \
+    ldconfig
+
+# build and install sysrepo
+RUN \
+    cd sysrepo && \
+    mkdir build && cd build  && \
+    cmake -DCMAKE_BUILD_TYPE:String="Release" -DENABLE_TESTS=OFF -DREPOSITORY_LOC:PATH=/etc/sysrepo -DREQUEST_TIMEOUT=60 -DOPER_DATA_PROVIDE_TIMEOUT=60 .. && \
+    make -j2 && \
+    make install && \
+    ldconfig
+
+# build and install libssh-dev
+RUN \
+    cd libssh && \
+    mkdir build && cd build  && \
+    cmake -DWITH_EXAMPLES=OFF ..  && \
+    make -j2 && \
+    make install && \
+    ldconfig
+
+
+# build and install libnetconf2
+RUN \
+    cd libnetconf2 && \
+    mkdir build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE:String="Release" -DENABLE_BUILD_TESTS=OFF .. && \
+    make -j2 && \
+    make install && \
+    ldconfig
+
+# build and install netopeer2
+RUN \
+    cd netopeer2 && \
+    mkdir build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE:String="Release" -DGENERATE_HOSTKEY=OFF -DMERGE_LISTEN_CONFIG=OFF .. && \
+    make -j2 && \
+    make install
+
+# build and install cURL
+RUN \
+    cd curl && \
+    mkdir build && cd build && \
+    cmake -DBUILD_TESTING=OFF .. && \
+    make -j2 && \
+    make install && \
+    ldconfig
+
+# regxstring copy, build and install
+RUN mkdir /opt/dev/regxstring
+COPY ./regxstring /opt/dev/regxstring
+COPY ./deploy/base/build_regxstring.sh /opt/dev/regxstring/build_regxstring.sh
+RUN \
+    cd /opt/dev/regxstring && \
+    ./build_regxstring.sh && \
+    cp regxstring /usr/bin && \
+    cd ..
+
+# ntsim-ng copy and build
+RUN \
+    mkdir /opt/dev/ntsim-ng && \
+    mkdir /opt/dev/ntsim-ng/config && \
+    mkdir /opt/dev/ntsim-ng/source
+COPY ./ntsim-ng /opt/dev/ntsim-ng/source
+COPY ./deploy/base/build_ntsim-ng.sh /opt/dev/ntsim-ng/build_ntsim-ng.sh
+RUN \
+    cd /opt/dev/ntsim-ng && \
+    sed -i '/argp/d' build_ntsim-ng.sh && \
+    ./build_ntsim-ng.sh
+
+# copy SSH related scripts and keys
+COPY ./deploy/base/ca.key /home/netconf/.ssh/ca.key
+COPY ./deploy/base/ca.pem /home/netconf/.ssh/ca.pem
+COPY ./deploy/base/client.crt /home/netconf/.ssh/client.crt
+COPY ./deploy/base/generate-ssh-keys.sh /home/netconf/.ssh/generate-ssh-keys.sh
+
+#############################
+#### Lightweight Base ####
+#############################
+
+FROM ubuntu:20.04
+LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@highstreet-technologies.com"
+RUN apt-get update
+RUN apt-get install -y \
+    supervisor \
+    openssl \
+    openssh-client \
+    vsftpd \
+    openssh-server
+
+# add netconf user and configure access
+RUN \
+    adduser netconf && \
+    echo "netconf:netconf" | chpasswd && \
+    mkdir -p /home/netconf/.ssh
+
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /usr/local/lib /usr/local/lib
+COPY --from=builder /usr/local/share /usr/local/share
+
+COPY --from=builder /etc/sysrepo /etc/sysrepo
+RUN ldconfig
+
+# use /opt/dev as working directory
+RUN mkdir /opt/dev
+WORKDIR /opt/dev
+
+# copy common NTS yang models
+RUN mkdir /opt/dev/deploy
+COPY ./deploy/base/yang /opt/dev/deploy/yang
+
+# copy ntsim-ng and dependencies
+COPY --from=builder /usr/bin/regxstring /usr/bin/regxstring
+COPY --from=builder /opt/dev/ntsim-ng /opt/dev/ntsim-ng
+
+# copy SSH related scripts and keys
+COPY --from=builder /home/netconf/.ssh /home/netconf/.ssh
+
+### FTP configuration
+RUN \
+    mkdir /ftp && \
+    mkdir /var/run/vsftpd && \
+    mkdir /var/run/vsftpd/empty  && \
+    mkdir /run/sshd && \
+    echo "Match User netconf\n    ChrootDirectory /ftp\n    X11Forwarding no\n    AllowTcpForwarding no\n    ForceCommand internal-sftp" >> /etc/ssh/sshd_config
+
+COPY ./deploy/base/vsftpd.conf /etc/vsftpd.conf
+COPY ./deploy/base/vsftpd.userlist /etc/vsftpd.userlist
+COPY ./deploy/base/pm_files /ftp
+
+WORKDIR /opt/dev/workspace
+
+ENV SSH_CONNECTIONS=1
+ENV TLS_CONNECTIONS=0
+ENV IPv6_ENABLED=false

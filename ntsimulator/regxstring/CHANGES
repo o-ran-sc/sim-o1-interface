@@ -1,0 +1,8 @@
+This project was cloned from https://github.com/daidodo/regxstring
+------------------------------------------------------------------
+
+Changes made were:
+- removed unnecesary files (vs solution, makefiles, etc)
+- modified regxstring_imp.cpp to accomodate "no-rand"
+- build sepparate main() in gen_regex.cpp to do my requested job
+- rest of files are untouched

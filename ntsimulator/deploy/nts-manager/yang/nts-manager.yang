@@ -1,0 +1,202 @@
+module nts-manager {
+  yang-version 1.1;
+  namespace "urn:o-ran-sc:params:xml:ns:yang:nts:manager";
+  prefix nts-mng;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import nts-common {
+    prefix ntsc;
+    revision-date 2020-10-22;
+  }
+
+  organization
+    "O-RAN-SC";
+  contact
+    " Web: <https://wiki.o-ran-sc.org/display/SIM/SIM>
+        Editors:  
+        Alex Stancu <mailto:alexandru.stancu@highstreet-technologies.com>
+        Adrian Lita <mailto:adrian.lita@highstreet-technologies.com>
+        Martin Skorupski <mailto:martin.skorupski@highstreet-technologies.com>";
+  description
+    "This module contains YANG definitions for the Network Topology Simulator - Manager.";
+
+  revision 2020-10-06 {
+    description
+      "Initial revision for the Network Topology Simulator - Next Generation";
+    reference
+      "O-RAN-SC SIM project";
+  }
+
+  typedef percent {
+    type decimal64 {
+      fraction-digits 2;
+      range "0 .. 100";
+    }
+    description
+      "Percentage";
+  }
+
+  grouping instance-g {
+      leaf name {
+        type string;
+        description
+          "The name of the running instance. It is the same as the docker container name which exposes this network function.";
+      }
+      container networking {
+          leaf docker-ip {
+              type inet:ip-address;
+              description
+                "The IP address of the docker container implementing the network function instance.";
+          }
+          leaf-list docker-port {
+              type inet:port-number;
+              description
+                "The ports which are exposed inside the docker container implementing the network function instance.";
+          }
+          leaf host-ip {
+              type inet:ip-address;
+              description
+                "The Host machine IP address pointing to the docker container implementing the network function instance.";
+          }
+          leaf-list host-port {
+              type inet:port-number;
+              description
+                "The Host machine ports mapped to the docker container implementing the network function instance.";
+          }
+          description
+            "Groups the details about networking information.";
+      }
+      description
+        "An instance of a network function which is running. The equivalent on the host machine is a docker container.";
+  }
+  grouping network-function-g {
+      leaf function-type {
+          type identityref {
+              base ntsc:NTS_FUNCTION_TYPE_BASE;
+          }
+          description "Type of network function to be simulated.";
+      }
+      leaf started-instances {
+          type uint16;
+          mandatory true;
+          description
+            "How many instances of this type are started.";
+      }
+      leaf mounted-instances {
+          type uint16;
+          must '. <= ../started-instances' {
+              error-message
+                "The number of mounted instances cannot be greater that the number of started instances.";
+          }
+          mandatory true;
+          description
+            "How many instances of this type are mounted in the SDN Controller.";
+      }
+
+      uses ntsc:mount-point-details-g;
+
+      leaf docker-instance-name {
+          type string;
+          mandatory true;
+          description
+            "The prefix of each docker container being started.";
+      }
+
+      leaf docker-version-tag {
+          type string;
+          mandatory true;
+          description
+            "The version tag of the docker image to be started.";
+      }
+
+      leaf docker-repository {
+          type string;
+          mandatory true;
+          description
+            "The prefix containing the docker repository information, if needed.";
+      }
+      uses ntsc:faults-g;
+      uses ntsc:netconf-config-g;
+      uses ntsc:ves-config-g;
+      container instances {
+          config false;
+          list instance {
+            key "name";
+            uses ntsc:mount-point-details-g;
+            uses instance-g;            
+            description
+              "Describes a running instance.";
+          }
+          description 
+            "Groups details about instances which are running.";
+      }
+      description
+        "Contains all the details of a simulated device.";
+  }
+  grouping simulation-information-g {
+      leaf base-port {
+          type inet:port-number;
+          config false;
+          description
+            "The base Host machine port from where the simulation can allocate ports incrementally.";
+      }
+      leaf ssh-connections {
+          type uint8;
+          config false;
+          description
+            "The number of SSH Endpoints each network function instance exposes.";
+      }
+      leaf tls-connections {
+          type uint8;
+          config false;
+          description
+            "The number of TLS Endpoints each network function instance exposes.";
+      }
+      leaf cpu-usage {
+        type percent;
+        config false;
+        description
+          "Specifies the CPU load generated by the simulation.";
+      }
+      leaf mem-usage {
+        type uint32;
+        config false;
+        description
+          "Specifies the RAM in MB used by the simulation.";
+      }
+      description
+        "Groups information about the simulation status.";
+  }
+
+  container simulation {
+      container network-functions {
+          list network-function {
+            key "function-type";
+            unique "docker-instance-name";
+            uses network-function-g;
+            description
+              "List containing different simulated network function types and their details.";
+          }
+          description
+            "Container which encompasses all simulated network functions.";
+      }
+      container sdn-controller {
+          uses ntsc:controller-g;
+          description
+            "Groups details about the SDN Controller.";
+      }
+      container ves-endpoint {
+          uses ntsc:ves-endpoint-g;
+          description
+            "Groups details about the VES Collector endpoint.";
+      }
+      uses simulation-information-g;
+      description
+        "Root level container which controls the NTS.";
+  }
+
+
+} //end module

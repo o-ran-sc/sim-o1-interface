@@ -1,0 +1,147 @@
+module nts-network-function {
+  yang-version 1.1;
+  namespace "urn:o-ran-sc:params:xml:ns:yang:nts:network:function";
+  prefix ntsnf;
+
+  import nts-common {
+    prefix ntsc;
+    revision-date 2020-10-22;
+  }
+
+  organization
+    "O-RAN-SC";
+  contact
+    " Web: <https://wiki.o-ran-sc.org/display/SIM/SIM>
+        Editors:  
+        Alex Stancu <mailto:alexandru.stancu@highstreet-technologies.com>
+        Adrian Lita <mailto:adrian.lita@highstreet-technologies.com>
+        Martin Skorupski <mailto:martin.skorupski@highstreet-technologies.com>";
+  description
+    "This module contains YANG definitions for the Network Topology Simulator - Network Functions";
+
+  revision 2020-10-28 {
+    description
+      "Add RPC for clearing the fault counters.";
+    reference
+      "O-RAN-SC SIM project";
+  }
+
+  revision 2020-10-13 {
+    description
+      "Add RPC for datastore populating and feature control.";
+    reference
+      "O-RAN-SC SIM project";
+  }
+
+  revision 2020-09-07 {
+    description
+      "Initial revision for the Network Topology Simulator - Next Generation";
+    reference
+      "O-RAN-SC SIM project";
+  }
+
+  container simulation {
+      container network-function {
+            uses ntsc:mount-point-details-g;
+            uses ntsc:faults-g;
+            uses ntsc:netconf-config-g;
+            uses ntsc:ves-config-g;
+          description
+            "Container which encompasses the details of the network function.";
+      }
+      container sdn-controller {
+          uses ntsc:controller-g;
+          description
+            "Groups details about the SDN Controller.";
+      }
+      container ves-endpoint {
+          uses ntsc:ves-endpoint-g;
+          description
+            "Groups details about the VES Collector endpoint.";
+      }
+      description
+        "Root level container which controls the Network Function.";
+  }
+
+  rpc datastore-random-populate {
+    description
+      "Operation to populate the datastore with random data for all the containing YANG models.";
+    
+    output {
+      uses ntsc:rpc-status-g;
+    }
+  }
+
+  rpc feature-control {
+    description
+      "Operation to control the features in a Network Function.";
+    input {
+      leaf features {
+          type ntsc:feature-type;
+          mandatory true;
+          description
+            "A bit-wise list with features to be activated.";
+      }
+    }
+    output {
+      uses ntsc:rpc-status-g;
+    }
+  }
+
+  rpc invoke-notification {
+    description
+      "Operation to control the features in a Network Function.";
+    input {
+      leaf notification-format {
+          type enumeration {
+            enum xml {
+            description
+              "The notification string is formatted as XML.";
+            }
+            enum json {
+            description
+              "The notification string is formatted as JSON.";
+            }
+          }
+          mandatory true;
+          description
+            "The format of the notification string.";
+      }
+      leaf notification-object {
+          type string;
+          mandatory true;
+          description
+            "A JSON string containing the notification object to be sent by the device.";
+      }
+    }
+    output {
+      uses ntsc:rpc-status-g;
+    }
+  }
+
+  rpc invoke-ves-pm-file-ready {
+    description
+      "Operation to generate a VES  notification from a Network Function.";
+    input {
+      leaf file-location {
+          type string;
+          mandatory true;
+          description
+            "A string containing the location of the file on the server.";
+      }
+    }
+    output {
+      uses ntsc:rpc-status-g;
+    }
+  }
+
+  rpc clear-fault-counters {
+    description
+      "Operation to clear the fault counters.";
+
+    output {
+      uses ntsc:rpc-status-g;
+    }
+  }
+
+} //end module
