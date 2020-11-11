@@ -20,7 +20,7 @@
             "nts-manager"
         ],
         
-        "default-list-instances": 1,
+        "default-list-instances": 2,
         "custom-list-instances" : []
     }
 }
