@@ -260,6 +260,18 @@ bool context_module_install(const char *name, const char *path) {
     }
     free(data_path);
 
+    data_path = str_replace(path, ".yang", ".json");
+    if(file_exists(data_path)) {
+        rc = sr_install_module_data(session_connection, name, 0, data_path, LYD_JSON);
+        if(rc != SR_ERR_OK) {
+            log_message(1, " json error    ");
+            sr_remove_module(session_connection, name);
+            context_apply_changes();
+            return false;
+        }
+    }
+    free(data_path);
+
     //apply changes
     if(!context_apply_changes()) {
         sr_remove_module(session_connection, name);
