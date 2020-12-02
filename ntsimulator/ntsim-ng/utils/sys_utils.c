@@ -46,6 +46,8 @@ static char b64_encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
                                     'w', 'x', 'y', 'z', '0', '1', '2', '3',
                                     '4', '5', '6', '7', '8', '9', '+', '/'};
 
+static char b64_decoding_table[256] = {0};
+
 static int b64_mod_table[] = {0, 2, 1};
 
 bool dir_exists(const char *path) {
@@ -138,7 +140,7 @@ long int get_microseconds_since_epoch(void) {
     long int useconds;
 
     gettimeofday(&tv, 0);
-    useconds = t*1000 + tv.tv_usec; //add the microseconds to the seconds
+    useconds = t*1000000 + tv.tv_usec; //add the microseconds to the seconds
 
     return useconds;
 }
@@ -266,7 +268,7 @@ bool check_port_open(const char *host, uint16_t port) {
     return false;
 }
 
-char *b64_encode(const unsigned char *data, size_t input_length) {
+char *b64_encode(const uint8_t *data, size_t input_length) {
     assert(data);
     assert(input_length);
 
@@ -297,6 +299,60 @@ char *b64_encode(const unsigned char *data, size_t input_length) {
     encoded_data[output_length] = 0;
 
     return encoded_data;
+}
+
+uint8_t *b64_decode(const char *data, size_t input_length, size_t *output_length) {
+    assert(data);
+    assert(input_length);
+    assert(output_length);
+
+    int i, j;
+
+    //one time compute decoding table
+    if(b64_decoding_table['A'] == 0) {
+        for(i = 0; i < 64; i++) {
+            b64_decoding_table[(unsigned char)b64_encoding_table[i]] = i;
+        }
+    }
+
+    if(input_length % 4 != 0) {
+        return 0;
+    }
+
+    *output_length = input_length / 4 * 3;
+    if(data[input_length - 1] == '=') {
+        (*output_length )--;
+    }
+    if(data[input_length - 2] == '=') {
+        (*output_length )--;
+    }
+
+    uint8_t *decoded_data = (uint8_t*)malloc(*output_length + 1);
+    if(decoded_data == 0) {
+        return 0;
+    }
+
+    for(i = 0, j = 0; i < input_length;) {
+        uint32_t sextet_a = data[i] == '=' ? 0 & i++ : b64_decoding_table[(int)data[i++]];
+        uint32_t sextet_b = data[i] == '=' ? 0 & i++ : b64_decoding_table[(int)data[i++]];
+        uint32_t sextet_c = data[i] == '=' ? 0 & i++ : b64_decoding_table[(int)data[i++]];
+        uint32_t sextet_d = data[i] == '=' ? 0 & i++ : b64_decoding_table[(int)data[i++]];
+        uint32_t triple = ( sextet_a << 3 * 6 ) + ( sextet_b << 2 * 6 ) + ( sextet_c << 1 * 6 ) + ( sextet_d << 0 * 6 );
+
+        if(j < *output_length) {
+            decoded_data[j++] = (triple >> 2 * 8) & 0xFF;
+        }
+
+        if(j < *output_length) {
+            decoded_data[j++] = (triple >> 1 * 8) & 0xFF;
+        }
+
+        if(j < *output_length) {
+            decoded_data[j++] = (triple >> 0 * 8) & 0xFF;
+        }
+    }
+
+    return decoded_data;
 }
 
 char *str_replace(const char *orig, const char *rep, const char *with) {

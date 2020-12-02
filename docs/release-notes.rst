@@ -21,6 +21,12 @@ Version history
 | **Date**           | **Ver.**           | **Author**         | **Comment**        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
+| 2020-12-02         | 1.0.3              |  Alex Stancu       | Cherry release     |
+|                    |                    |                    |                    |
++--------------------+--------------------+--------------------+--------------------+
+| 2020-11-11         | 1.0.0              |  Alex Stancu       | Cherry release     |
+|                    |                    |                    |                    |
++--------------------+--------------------+--------------------+--------------------+
 | 2020-06-08         | 0.6.1              |  Alex Stancu       | Bronze release     |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
@@ -37,7 +43,25 @@ The O1 interface simulator is a framework that provides simulated devices with a
 
 Release Data
 ------------
-N/A
+version 1.0.3
+
+[fixed] fixed issues where ODL could not parse the correct versions for yang files
+
+
+version 1.0.2
+
+[fixed] bug that occured when trying to start a wrong instance (bad docker-repository or docker-tag)
+[fixed] when populating the fault-delay-list, if the sum of all the faults was 0, the network funciton kept on generating faults and crashed
+
+
+version 1.0.1
+
+[feature-add] added web-cut-through feature
+[fixed] mount-point-addressing-method was mistakenly changing after starting
+
+
+version 1.0.0
+Initial release.
 
 Feature Additions
 ^^^^^^^^^^^^^^^^^
@@ -62,8 +86,6 @@ The following docker containers are the resulting artefacts of the sim-o1-projec
 * **o-ran-sc/ntsim-manager** - this image contains the NTS Manager, which handles the simulation environment;
 
 * **o-ran-sc/ntsim-o-ran-ru-fh** - this image contains a simulated device which exposes a management interface via NETCONF/YANG, implementing the O1 FH interface specifications;
-
-* **o-ran-sc/ntsim-o-ran-sc-o-ran-ru** - this image contains a simulated device which exposes a management interface via NETCONF/YANG, implementing the O-RAN-SC O-RU Management interface defined by the OAM project;
 
 * **o-ran-sc/ntsim-x-ran** - this image contains a simulated device which exposes a management interface via NETCONF/YANG, implementing the X-RAN Management interface.
 

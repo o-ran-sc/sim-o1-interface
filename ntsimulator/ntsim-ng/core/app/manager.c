@@ -84,8 +84,8 @@ int manager_run(void) {
         manager_context[i].mounted_instances = 0;
         manager_context[i].mount_point_addressing_method = strdup("docker-mapping");
         manager_context[i].docker_instance_name = strdup(manager_context[i].function_type->name);
-        manager_context[i].docker_version_tag = strdup("");
-        manager_context[i].docker_repository = strdup("");
+        manager_context[i].docker_version_tag = strdup("latest");
+        manager_context[i].docker_repository = strdup("local");
     }
     free(found);
 
@@ -230,10 +230,12 @@ static int manager_populate_sysrepo_network_function_list(void) {
     char int_to_str[30];
 
     //setup sdn-controller defaults
-    rc = sr_set_item_str(session_running, NTS_SDN_CONTROLLER_CONFIG_XPATH"/controller-ip", (const char*)framework_environment.sdn_controller_ip, 0, 0);
-    if(rc != SR_ERR_OK) {
-        log_error("sr_set_item_str failed");
-        return NTS_ERR_FAILED;
+    if(strlen(framework_environment.sdn_controller_ip)) {
+        rc = sr_set_item_str(session_running, NTS_SDN_CONTROLLER_CONFIG_XPATH"/controller-ip", (const char*)framework_environment.sdn_controller_ip, 0, 0);
+        if(rc != SR_ERR_OK) {
+            log_error("sr_set_item_str failed");
+            return NTS_ERR_FAILED;
+        }
     }
 
     sprintf(int_to_str, "%d", framework_environment.sdn_controller_port);
@@ -250,29 +252,37 @@ static int manager_populate_sysrepo_network_function_list(void) {
         return NTS_ERR_FAILED;
     }
 
-    rc = sr_set_item_str(session_running, NTS_SDN_CONTROLLER_CONFIG_XPATH"/controller-username", (const char*)framework_environment.sdn_controller_username, 0, 0);
-    if(rc != SR_ERR_OK) {
-        log_error("sr_set_item_str failed");
-        return NTS_ERR_FAILED;
+    if(strlen(framework_environment.sdn_controller_username)) {
+        rc = sr_set_item_str(session_running, NTS_SDN_CONTROLLER_CONFIG_XPATH"/controller-username", (const char*)framework_environment.sdn_controller_username, 0, 0);
+        if(rc != SR_ERR_OK) {
+            log_error("sr_set_item_str failed");
+            return NTS_ERR_FAILED;
+        }
     }
 
-    rc = sr_set_item_str(session_running, NTS_SDN_CONTROLLER_CONFIG_XPATH"/controller-password", (const char*)framework_environment.sdn_controller_password, 0, 0);
-    if(rc != SR_ERR_OK) {
-        log_error("sr_set_item_str failed");
-        return NTS_ERR_FAILED;
+    if(strlen(framework_environment.sdn_controller_password)) {
+        rc = sr_set_item_str(session_running, NTS_SDN_CONTROLLER_CONFIG_XPATH"/controller-password", (const char*)framework_environment.sdn_controller_password, 0, 0);
+        if(rc != SR_ERR_OK) {
+            log_error("sr_set_item_str failed");
+            return NTS_ERR_FAILED;
+        }
     }
 
     //setup ves-endpoint details
-    rc = sr_set_item_str(session_running, NTS_VES_ENDPOINT_CONFIG_XPATH"/ves-endpoint-protocol", (const char*)framework_environment.ves_endpoint_protocol, 0, 0);
-    if(rc != SR_ERR_OK) {
-        log_error("sr_set_item_str failed");
-        return NTS_ERR_FAILED;
+    if(strlen(framework_environment.ves_endpoint_protocol)) {
+        rc = sr_set_item_str(session_running, NTS_VES_ENDPOINT_CONFIG_XPATH"/ves-endpoint-protocol", (const char*)framework_environment.ves_endpoint_protocol, 0, 0);
+        if(rc != SR_ERR_OK) {
+            log_error("sr_set_item_str failed");
+            return NTS_ERR_FAILED;
+        }
     }
 
-    rc = sr_set_item_str(session_running, NTS_VES_ENDPOINT_CONFIG_XPATH"/ves-endpoint-ip", (const char*)framework_environment.ves_endpoint_ip, 0, 0);
-    if(rc != SR_ERR_OK) {
-        log_error("sr_set_item_str failed");
-        return NTS_ERR_FAILED;
+    if(strlen(framework_environment.ves_endpoint_ip)) {
+        rc = sr_set_item_str(session_running, NTS_VES_ENDPOINT_CONFIG_XPATH"/ves-endpoint-ip", (const char*)framework_environment.ves_endpoint_ip, 0, 0);
+        if(rc != SR_ERR_OK) {
+            log_error("sr_set_item_str failed");
+            return NTS_ERR_FAILED;
+        }
     }
 
     sprintf(int_to_str, "%d", framework_environment.ves_endpoint_port);
@@ -282,34 +292,42 @@ static int manager_populate_sysrepo_network_function_list(void) {
         return NTS_ERR_FAILED;
     }
 
-    rc = sr_set_item_str(session_running, NTS_VES_ENDPOINT_CONFIG_XPATH"/ves-endpoint-auth-method", (const char*)framework_environment.ves_endpoint_auth_method, 0, 0);
-    if(rc != SR_ERR_OK) {
-        log_error("sr_set_item_str failed");
-        return NTS_ERR_FAILED;
+    if(strlen(framework_environment.ves_endpoint_auth_method)) {
+        rc = sr_set_item_str(session_running, NTS_VES_ENDPOINT_CONFIG_XPATH"/ves-endpoint-auth-method", (const char*)framework_environment.ves_endpoint_auth_method, 0, 0);
+        if(rc != SR_ERR_OK) {
+            log_error("sr_set_item_str failed");
+            return NTS_ERR_FAILED;
+        }
     }
 
-    rc = sr_set_item_str(session_running, NTS_VES_ENDPOINT_CONFIG_XPATH"/ves-endpoint-username", (const char*)framework_environment.ves_endpoint_username, 0, 0);
-    if(rc != SR_ERR_OK) {
-        log_error("sr_set_item_str failed");
-        return NTS_ERR_FAILED;
+    if(strlen(framework_environment.ves_endpoint_username)) {
+        rc = sr_set_item_str(session_running, NTS_VES_ENDPOINT_CONFIG_XPATH"/ves-endpoint-username", (const char*)framework_environment.ves_endpoint_username, 0, 0);
+        if(rc != SR_ERR_OK) {
+            log_error("sr_set_item_str failed");
+            return NTS_ERR_FAILED;
+        }
     }
 
-    rc = sr_set_item_str(session_running, NTS_VES_ENDPOINT_CONFIG_XPATH"/ves-endpoint-password", (const char*)framework_environment.ves_endpoint_password, 0, 0);
-    if(rc != SR_ERR_OK) {
-        log_error("sr_set_item_str failed");
-        return NTS_ERR_FAILED;
+    if(strlen(framework_environment.ves_endpoint_password)) {
+        rc = sr_set_item_str(session_running, NTS_VES_ENDPOINT_CONFIG_XPATH"/ves-endpoint-password", (const char*)framework_environment.ves_endpoint_password, 0, 0);
+        if(rc != SR_ERR_OK) {
+            log_error("sr_set_item_str failed");
+            return NTS_ERR_FAILED;
+        }
     }
 
-    rc = sr_set_item_str(session_running, NTS_VES_ENDPOINT_CONFIG_XPATH"/ves-endpoint-certificate", (const char*)framework_environment.ves_endpoint_certificate, 0, 0);
-    if(rc != SR_ERR_OK) {
-        log_error("sr_set_item_str failed");
-        return NTS_ERR_FAILED;
+    if(strlen(framework_environment.ves_endpoint_certificate)) {
+        rc = sr_set_item_str(session_running, NTS_VES_ENDPOINT_CONFIG_XPATH"/ves-endpoint-certificate", (const char*)framework_environment.ves_endpoint_certificate, 0, 0);
+        if(rc != SR_ERR_OK) {
+            log_error("sr_set_item_str failed");
+            return NTS_ERR_FAILED;
+        }
     }
 
     //apply all changes
     rc = sr_apply_changes(session_running, 0, 0);
     if(rc != SR_ERR_OK) {
-        log_error("sr_apply_changes failed");
+        log_error("sr_apply_changes failed: %s", sr_strerror(rc));
         return NTS_ERR_FAILED;
     }
 
@@ -368,11 +386,13 @@ static int manager_process_change(int context_index, manager_network_function_ty
     assert(context_index < manager_installed_function_types_count);
     assert(new_context);
 
+    int ret_code = NTS_ERR_OK;
+
     manager_network_function_type *current_context = &manager_context[context_index];
     int rc = 0;
 
     current_context->data_changed |= new_context->data_changed;
-    
+
     //process changes, and update data in current_context to resemble new_context
     if(new_context->docker_instance_name != 0) {
         free(current_context->docker_instance_name);
@@ -402,7 +422,9 @@ static int manager_process_change(int context_index, manager_network_function_ty
                 rc = manager_stop_instance(current_context);
                 if(rc != NTS_ERR_OK) {
                     log_error("manager_stop_instance failed");
-                    return NTS_ERR_FAILED;
+                    current_context->started_instances++;
+                    ret_code = NTS_ERR_FAILED;
+                    break;
                 }
             }
         }
@@ -413,7 +435,9 @@ static int manager_process_change(int context_index, manager_network_function_ty
                 rc = manager_start_instance(current_context);
                 if(rc != NTS_ERR_OK) {
                     log_error("manager_start_instance failed");
-                    return NTS_ERR_FAILED;
+                    current_context->started_instances--;
+                    ret_code = NTS_ERR_FAILED;
+                    break;
                 }
             }
         }
@@ -427,7 +451,9 @@ static int manager_process_change(int context_index, manager_network_function_ty
                 rc = manager_unmount_instance(current_context);
                 if(rc != NTS_ERR_OK) {
                     log_error("manager_unmount_instance failed");
-                    return NTS_ERR_FAILED;
+                    current_context->mounted_instances++;
+                    ret_code = NTS_ERR_FAILED;
+                    break;
                 }
             }
         }
@@ -438,13 +464,15 @@ static int manager_process_change(int context_index, manager_network_function_ty
                 rc = manager_mount_instance(current_context);
                 if(rc != NTS_ERR_OK) {
                     log_error("manager_mount_instance failed");
-                    return NTS_ERR_FAILED;
+                    current_context->mounted_instances--;
+                    ret_code = NTS_ERR_FAILED;
+                    break;
                 }
             }
         }
     }
 
-    return NTS_ERR_OK;
+    return ret_code;
 }
 
 static int manager_change_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, sr_event_t event, uint32_t request_id, void *private_data) {
@@ -596,6 +624,7 @@ static int manager_instances_get_items_cb(sr_session_ctx_t *session, const char 
 
     *parent = lyd_new_path(NULL, sr_get_context(sr_session_get_connection(session)), NTS_FUNCTION_LIST_SCHEMA_XPATH, 0, 0, 0);
     if(*parent == 0) {
+        log_error("lyd_new_path failed");
         return SR_ERR_OPERATION_FAILED;
     }
 
@@ -610,12 +639,14 @@ static int manager_instances_get_items_cb(sr_session_ctx_t *session, const char 
 
             asprintf(&full_path, "%s/mount-point-addressing-method", instance_path);
             if(lyd_new_path(*parent, NULL, full_path, manager_context[i].instance[j].mount_point_addressing_method, 0, 0) == 0) {
+                log_error("lyd_new_path failed");
                 return SR_ERR_OPERATION_FAILED;
             }
             free(full_path);
 
             asprintf(&full_path, "%s/networking/docker-ip", instance_path);
             if(lyd_new_path(*parent, NULL, full_path, manager_context[i].instance[j].docker_ip, 0, 0) == 0) {
+                log_error("lyd_new_path failed");
                 return SR_ERR_OPERATION_FAILED;
             }
             free(full_path);
@@ -623,12 +654,14 @@ static int manager_instances_get_items_cb(sr_session_ctx_t *session, const char 
             asprintf(&full_path, "%s/networking/docker-port", instance_path);
             sprintf(value, "%d", manager_context[i].instance[j].docker_port);
             if(lyd_new_path(*parent, NULL, full_path, value, 0, 0) == 0) {
+                log_error("lyd_new_path failed");
                 return SR_ERR_OPERATION_FAILED;
             }
             free(full_path);
 
             asprintf(&full_path, "%s/networking/host-ip", instance_path);
             if(lyd_new_path(*parent, NULL, full_path, manager_context[i].instance[j].host_ip, 0, 0) == 0) {
+                log_error("lyd_new_path failed");
                 return SR_ERR_OPERATION_FAILED;
             }
             free(full_path);
@@ -636,6 +669,7 @@ static int manager_instances_get_items_cb(sr_session_ctx_t *session, const char 
             asprintf(&full_path, "%s/networking/host-port", instance_path);
             sprintf(value, "%d", manager_context[i].instance[j].host_port);
             if(lyd_new_path(*parent, NULL, full_path, value, 0, 0) == 0) {
+                log_error("lyd_new_path failed");
                 return SR_ERR_OPERATION_FAILED;
             }
             free(full_path);
@@ -649,7 +683,6 @@ static int manager_instances_get_items_cb(sr_session_ctx_t *session, const char 
 }
 
 static int manager_stats_get_items_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data) {
-    
     char value[128];
 
     *parent = lyd_new_path(NULL, sr_get_context(sr_session_get_connection(session)), NTS_SIMULATION_SCHEMA_XPATH, 0, 0, 0);
@@ -666,6 +699,22 @@ static int manager_stats_get_items_cb(sr_session_ctx_t *session, const char *mod
 
     sprintf(value, "%.0f", usage.mem);
     if(lyd_new_path(*parent, NULL, NTS_SIMULATION_SCHEMA_XPATH"/mem-usage", value, 0, 0) == 0) {
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    //setup sdn-controller defaults
+    sprintf(value, "%d", framework_environment.host_base_port);
+    if(lyd_new_path(*parent, NULL, NTS_SIMULATION_SCHEMA_XPATH"/base-port", value, 0, 0) == 0) {
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    sprintf(value, "%d", framework_environment.ssh_connections);
+    if(lyd_new_path(*parent, NULL, NTS_SIMULATION_SCHEMA_XPATH"/ssh-connections", value, 0, 0) == 0) {
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    sprintf(value, "%d", framework_environment.tls_connections);
+    if(lyd_new_path(*parent, NULL, NTS_SIMULATION_SCHEMA_XPATH"/tls-connections", value, 0, 0) == 0) {
         return SR_ERR_OPERATION_FAILED;
     }
 

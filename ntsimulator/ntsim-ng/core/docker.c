@@ -260,8 +260,8 @@ static void list_yangs(const char *path, struct installable_module **modules, in
 
 int docker_device_init(void) {
     char *response = 0;
-    char *url = 0;
-    asprintf(&url, "http://v%s/containers/%s/json", framework_environment.docker_engine_version, framework_environment.hostname);
+    char url[512];
+    sprintf(url, "http://v%s/containers/%s/json", framework_environment.docker_engine_version, framework_environment.hostname);
 
     int rc = http_socket_request(url, DOCKER_SOCK_FNAME, "GET", 0, 0, &response);
     if(rc != NTS_ERR_OK) {
@@ -280,12 +280,14 @@ int docker_device_init(void) {
     cJSON *hostConfig = cJSON_GetObjectItemCaseSensitive(json_response, "HostConfig");
     if(hostConfig == 0) {
         log_error("could not get HostConfig object");
+        cJSON_Delete(json_response);
         return NTS_ERR_FAILED;
     }
 
     cJSON *networkMode = cJSON_GetObjectItemCaseSensitive(hostConfig, "NetworkMode");
     if(networkMode == 0) {
         log_error("could not get NetworkMode object");
+        cJSON_Delete(json_response);
         return NTS_ERR_FAILED;
     }
 
@@ -299,6 +301,7 @@ int docker_device_init(void) {
     docker_environment_var = (environment_var_t *)malloc(sizeof(environment_var_t) * docker_environment_var_count);
     if(docker_environment_var == 0) {
         log_error("malloc failed");
+        cJSON_Delete(networkMode);
         return NTS_ERR_FAILED;
     }
     
@@ -322,21 +325,21 @@ int docker_device_start(const manager_network_function_type *function_type, mana
     assert(instance);
     assert(docker_network_info);
 
-    char *image = 0;
+    char image[512];
     if(function_type->docker_version_tag && (function_type->docker_version_tag[0] != 0)) {
-        if(function_type->docker_repository && (function_type->docker_repository[0] != 0)) {
-            asprintf(&image, "%s/%s:%s", function_type->docker_repository, function_type->docker_image_name, function_type->docker_version_tag);    
+        if(function_type->docker_repository && (function_type->docker_repository[0] != 0) && (strcmp(function_type->docker_repository, "local") != 0)) {
+            sprintf(image, "%s/%s:%s", function_type->docker_repository, function_type->docker_image_name, function_type->docker_version_tag);    
         }
         else {
-            asprintf(&image, "%s:%s", function_type->docker_image_name, function_type->docker_version_tag);
+            sprintf(image, "%s:%s", function_type->docker_image_name, function_type->docker_version_tag);
         }
     }
     else {
-        if(function_type->docker_repository && (function_type->docker_repository[0] != 0)) {
-            asprintf(&image, "%s/%s:latest", function_type->docker_repository, function_type->docker_image_name);    
+        if(function_type->docker_repository && (function_type->docker_repository[0] != 0) && (strcmp(function_type->docker_repository, "local") != 0)) {
+            sprintf(image, "%s/%s:latest", function_type->docker_repository, function_type->docker_image_name);    
         }
         else {
-            asprintf(&image, "%s:latest", function_type->docker_image_name);
+            sprintf(image, "%s:latest", function_type->docker_image_name);
         }
     }
 
@@ -345,17 +348,18 @@ int docker_device_start(const manager_network_function_type *function_type, mana
         log_error("docker_container_create failed");
         return NTS_ERR_FAILED;
     }
-    free(image);
 
     rc = docker_container_start(instance);
     if(rc != NTS_ERR_OK) {
         log_error("docker_container_start failed");
+        docker_device_stop(instance);
         return NTS_ERR_FAILED;
     }
 
     rc = docker_container_inspect(instance);
     if(rc != NTS_ERR_OK) {
         log_error("docker_container_inspect failed");
+        docker_device_stop(instance);
         return NTS_ERR_FAILED;
     }
 
@@ -367,11 +371,10 @@ int docker_device_start(const manager_network_function_type *function_type, mana
 int docker_device_stop(manager_network_function_instance_t *instance) {
     assert(instance);
 
-    char *url = 0;
-    asprintf(&url, "http://v%s/containers/%s?force=true", framework_environment.docker_engine_version, instance->docker_id);
+    char url[512];
+    sprintf(url, "http://v%s/containers/%s?force=true", framework_environment.docker_engine_version, instance->docker_id);
 
     int rc = http_socket_request(url, DOCKER_SOCK_FNAME, "DELETE", "", 0, 0);
-    free(url);
     if(rc != NTS_ERR_OK) {
         log_error("http_socket_request failed");
         return NTS_ERR_FAILED;
@@ -502,6 +505,7 @@ static char *docker_parse_json_message(const char *json_string) {
     message = cJSON_GetObjectItem(json_response, "message");
     if(message == 0) {
         log_error("json parsing failed");
+        cJSON_Delete(json_response);
         return 0;
     }
 
@@ -522,27 +526,39 @@ static int docker_container_create(const char *image, manager_network_function_i
 
     if(cJSON_AddStringToObject(postDataJson, "Hostname", instance->name) == 0) {
         log_error("could not create JSON object: Hostname");
+        cJSON_Delete(postDataJson);
         return NTS_ERR_FAILED;
     }    
 
     cJSON *hostConfig = cJSON_CreateObject();
     if(hostConfig == 0) {
         log_error("could not create JSON object: HostConfig");
+        cJSON_Delete(postDataJson);
         return NTS_ERR_FAILED;
     }
-    cJSON_AddItemToObject(postDataJson, "HostConfig", hostConfig);
+    if(cJSON_AddItemToObject(postDataJson, "HostConfig", hostConfig) == 0) {
+        log_error("cJSON_AddItemToObject failed");
+        cJSON_Delete(postDataJson);
+        return NTS_ERR_FAILED;
+    }
 
     cJSON *portBindings = cJSON_CreateObject();
     if(portBindings == 0) {
         printf("could not create JSON object: PortBindings");
+        cJSON_Delete(postDataJson);
         return NTS_ERR_FAILED;
     }
-    cJSON_AddItemToObject(hostConfig, "PortBindings", portBindings);
+    if(cJSON_AddItemToObject(hostConfig, "PortBindings", portBindings) == 0) {
+        log_error("cJSON_AddItemToObject failed");
+        cJSON_Delete(postDataJson);
+        return NTS_ERR_FAILED;
+    }
     
     for(int i = 0; i < (framework_environment.ssh_connections + framework_environment.tls_connections + framework_environment.ftp_connections + framework_environment.sftp_connections); ++i) {
         cJSON *port = cJSON_CreateArray();
         if(port == 0) {
             log_error("could not create JSON object: port");
+            cJSON_Delete(postDataJson);
             return NTS_ERR_FAILED;
         }
 
@@ -556,11 +572,16 @@ static int docker_container_create(const char *image, manager_network_function_i
         else if(i < (framework_environment.ssh_connections + framework_environment.tls_connections + framework_environment.ftp_connections + framework_environment.sftp_connections)) {
             sprintf(dockerContainerPort, "%d/tcp", STANDARD_SFTP_PORT);
         }
-        cJSON_AddItemToObject(portBindings, dockerContainerPort, port);
+        if(cJSON_AddItemToObject(portBindings, dockerContainerPort, port) == 0) {
+            log_error("cJSON_AddItemToObject failed");
+            cJSON_Delete(postDataJson);
+            return NTS_ERR_FAILED;
+        }
 
         cJSON *hostPort = cJSON_CreateObject();
         if(hostPort == 0) {
             log_error("could not create JSON object: HostPort");
+            cJSON_Delete(postDataJson);
             return NTS_ERR_FAILED;
         }
 
@@ -568,15 +589,21 @@ static int docker_container_create(const char *image, manager_network_function_i
         sprintf(dockerHostPort, "%d", instance->host_port + i);
         if(cJSON_AddStringToObject(hostPort, "HostPort", dockerHostPort) == 0) {
             log_error("could not create JSON object: HostPortString");
+            cJSON_Delete(postDataJson);
             return NTS_ERR_FAILED;
         }
 
         if(cJSON_AddStringToObject(hostPort, "HostIp", "0.0.0.0") == 0) {   //instance->host_ip
             log_error("could not create JSON object: HostIpString");
+            cJSON_Delete(postDataJson);
             return NTS_ERR_FAILED;
         }
 
-        cJSON_AddItemToArray(port, hostPort);
+        if(cJSON_AddItemToArray(port, hostPort) == 0) {
+            log_error("cJSON_AddItemToArray failed");
+            cJSON_Delete(postDataJson);
+            return NTS_ERR_FAILED;
+        }
     }
 
     
@@ -584,24 +611,26 @@ static int docker_container_create(const char *image, manager_network_function_i
     asprintf(&docker_environment_var[4].value, "%d", instance->host_port);
 
     cJSON *env_variables_array = cJSON_CreateArray();
-    if (env_variables_array == 0) {
+    if(env_variables_array == 0) {
         log_error("Could not create JSON object: Env array");
         return NTS_ERR_FAILED;
     }
     cJSON_AddItemToObject(postDataJson, "Env", env_variables_array);
 
     for(int i = 0; i < docker_environment_var_count; i++) {
-        char *environment_var = 0;
-        asprintf(&environment_var, "%s=%s", docker_environment_var[i].name, docker_environment_var[i].value);
+        if(docker_environment_var[i].value) {
+            char *environment_var = 0;
+            asprintf(&environment_var, "%s=%s", docker_environment_var[i].name, docker_environment_var[i].value);
 
-        cJSON *env_var_obj = cJSON_CreateString(environment_var);
-        if(env_var_obj == 0) {
-            log_error("could not create JSON object");
-            return NTS_ERR_FAILED;
+            cJSON *env_var_obj = cJSON_CreateString(environment_var);
+            if(env_var_obj == 0) {
+                log_error("could not create JSON object");
+                return NTS_ERR_FAILED;
+            }
+            cJSON_AddItemToArray(env_variables_array, env_var_obj);
+
+            free(environment_var);
         }
-        cJSON_AddItemToArray(env_variables_array, env_var_obj);
-
-        free(environment_var);
     }
 
     free(docker_environment_var[4].value);
@@ -615,17 +644,17 @@ static int docker_container_create(const char *image, manager_network_function_i
     post_data_string = cJSON_PrintUnformatted(postDataJson);
     cJSON_Delete(postDataJson);
 
-    char *url = 0;
-    asprintf(&url, "http:/v%s/containers/create?name=%s", framework_environment.docker_engine_version, instance->name);
+    char url[512];
+    sprintf(url, "http:/v%s/containers/create?name=%s", framework_environment.docker_engine_version, instance->name);
 
     char *response = 0;
     int response_code = 0;
     int rc = http_socket_request(url, DOCKER_SOCK_FNAME, "POST", post_data_string, &response_code, &response);
+    free(post_data_string);
     if(rc != NTS_ERR_OK) {
         log_error("http_socket_request failed");
         return NTS_ERR_FAILED;
     }
-    free(url);
 
     if(response_code != 201) {
         char *message = docker_parse_json_message(response);
@@ -661,13 +690,12 @@ static int docker_container_create(const char *image, manager_network_function_i
 static int docker_container_start(manager_network_function_instance_t *instance) {
     assert(instance);
 
-    char *url = 0;
-    asprintf(&url, "http://v%s/containers/%s/start", framework_environment.docker_engine_version, instance->docker_id);
+    char url[512];
+    sprintf(url, "http://v%s/containers/%s/start", framework_environment.docker_engine_version, instance->docker_id);
 
     char *response = 0;
     int response_code = 0;
     int rc = http_socket_request(url, DOCKER_SOCK_FNAME, "POST", "", &response_code, &response);
-    free(url);
     if(rc != NTS_ERR_OK) {
         log_error("http_socket_request failed");
         return NTS_ERR_FAILED;
@@ -694,12 +722,11 @@ static int docker_container_start(manager_network_function_instance_t *instance)
 static int docker_container_inspect(manager_network_function_instance_t *instance) {
     assert(instance);
 
-    char *url = 0;
-    asprintf(&url, "http://v%s/containers/%s/json", framework_environment.docker_engine_version, instance->docker_id);
+    char url[512];
+    sprintf(url, "http://v%s/containers/%s/json", framework_environment.docker_engine_version, instance->docker_id);
 
     char *response = 0;    
     int rc = http_socket_request(url, DOCKER_SOCK_FNAME, "GET", "", 0, &response);
-    free(url);
     if(rc != NTS_ERR_OK) {
         log_error("http_socket_request failed");
         return NTS_ERR_FAILED;
@@ -716,29 +743,26 @@ static int docker_container_inspect(manager_network_function_instance_t *instanc
     cJSON *main_node = cJSON_GetObjectItem(json_response, "NetworkSettings");
     if(main_node == 0) {
         log_error("json parsing failed");
+        cJSON_Delete(json_response);
         return NTS_ERR_FAILED;
     }
 
     cJSON *node = cJSON_GetObjectItem(main_node, "Networks");
     if(node == 0) {
         log_error("json parsing failed");
+        cJSON_Delete(json_response);
         return NTS_ERR_FAILED;
     }
         
     node = node->child;   //get info from the first in array
     if(node == 0) {
         log_error("json parsing failed");
+        cJSON_Delete(json_response);
         return NTS_ERR_FAILED;
     }
 
-    char *ipv6_env_var = getenv("IPv6_ENABLED");
-    if(ipv6_env_var == 0) {
-        log_error("could not get the IPv6 Enabled env variable");
-        return NTS_ERR_FAILED;
-    }
-
-    cJSON *element = cJSON_GetObjectItem(node, "IPAddress");
-    if(strcmp(ipv6_env_var, "true") == 0) {
+    cJSON *element;
+    if(framework_environment.ip_v6_enabled) {
         element = cJSON_GetObjectItem(node, "GlobalIPv6Address");
     }
     else {
@@ -747,8 +771,10 @@ static int docker_container_inspect(manager_network_function_instance_t *instanc
 
     if(element == 0) {
         log_error("json parsing failed");
+        cJSON_Delete(json_response);
         return NTS_ERR_FAILED;
     }
+
     instance->docker_ip = strdup(element->valuestring);
 
     cJSON_Delete(json_response);

@@ -39,6 +39,10 @@
 #include "features/ves_file_ready/ves_file_ready.h"
 #include "features/manual_notification/manual_notification.h"
 #include "features/netconf_call_home/netconf_call_home.h"
+#include "features/web_cut_through/web_cut_through.h"
+
+#define NTS_NETWORK_FUNCTION_MODULE         "nts-network-function"
+#define NTS_NETWORK_FUNCTION_SCHEMA_XPATH   "/nts-network-function:simulation/network-function"
 
 #define POPULATE_RPC_SCHEMA_XPATH           "/nts-network-function:datastore-random-populate"
 #define FEATURE_CONTROL_SCHEMA_XPATH        "/nts-network-function:feature-control"
@@ -54,6 +58,8 @@ static int network_function_faults_clear_cb(sr_session_ctx_t *session, const cha
 static int network_function_faults_change_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, sr_event_t event, uint32_t request_id, void *private_data);
 static int network_function_faults_count_get_items_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data);
 
+static int network_function_change_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, sr_event_t event, uint32_t request_id, void *private_data);
+
 static int faults_update_config(sr_session_ctx_t *session);                 //not protected by lock
 static void *faults_thread_routine(void *arg);
 
@@ -62,6 +68,10 @@ static char *nf_function_control_string = 0;
 
 static pthread_t faults_thread;
 static pthread_mutex_t faults_lock;
+
+static pthread_mutex_t mount_point_addressing_method_lock;
+static char *mount_point_addressing_method_default = 0;
+static char *mount_point_addressing_method_val = 0;
 
 int network_function_run(void) {
     assert_session();
@@ -88,13 +98,13 @@ int network_function_run(void) {
     }
 
     //faults
-    rc = sr_module_change_subscribe(session_running, "nts-network-function", FAULTS_LIST_SCHEMA_XPATH, network_function_faults_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    rc = sr_module_change_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, FAULTS_LIST_SCHEMA_XPATH, network_function_faults_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("could not subscribe to faults");
         return 0;
     }
 
-    rc = sr_oper_get_items_subscribe(session_running, "nts-network-function", FAULTS_COUNT_LIST_SCHEMA_XPATH, network_function_faults_count_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    rc = sr_oper_get_items_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, FAULTS_COUNT_LIST_SCHEMA_XPATH, network_function_faults_count_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("could not subscribe to oper faults: %s", sr_strerror(rc));
         return 0;
@@ -103,6 +113,13 @@ int network_function_run(void) {
     rc = sr_rpc_subscribe(session_running, FAULTS_CLEAR_SCHEMA_XPATH, network_function_faults_clear_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("error from sr_rpc_subscribe: %s", sr_strerror(rc));
+        return NTS_ERR_FAILED;
+    }
+
+    //subscribe to any changes on the main
+    rc = sr_module_change_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, NTS_NETWORK_FUNCTION_SCHEMA_XPATH, network_function_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    if(rc != SR_ERR_OK) {
+        log_error("could not subscribe to simulation changes");
         return NTS_ERR_FAILED;
     }
 
@@ -122,7 +139,27 @@ int network_function_run(void) {
         return NTS_ERR_FAILED;
     }
 
+    if(pthread_mutex_init(&mount_point_addressing_method_lock, NULL) != 0) { 
+        log_error("mutex init has failed"); 
+        return NTS_ERR_FAILED; 
+    }
+
     while(!framework_sigint) {
+        pthread_mutex_lock(&mount_point_addressing_method_lock);
+        if(mount_point_addressing_method_val) {
+            rc = sr_set_item_str(session_running, NTS_NETWORK_FUNCTION_SCHEMA_XPATH"/mount-point-addressing-method", mount_point_addressing_method_val, 0, 0);
+            if(rc != SR_ERR_OK) {
+                log_error("sr_set_item_str failed");
+            }
+
+            rc = sr_apply_changes(session_running, 0, 0);
+            if(rc != SR_ERR_OK) {
+                log_error("sr_apply_changes failed");
+            }
+
+            mount_point_addressing_method_val = 0;
+        }
+        pthread_mutex_unlock(&mount_point_addressing_method_lock);
 
         pthread_mutex_lock(&nf_function_control_lock);
         if(nf_function_control_string) {
@@ -163,6 +200,14 @@ int network_function_run(void) {
                 rc = netconf_call_home_feature_start(session_running);
                 if(rc != 0) {
                     log_error("netconf_call_home_feature_start() failed");
+                }
+            }
+
+            if(strstr(nf_function_control_string, "web-cut-through") != 0) {
+                // start feature for NETCONF Call Home
+                rc = web_cut_through_feature_start(session_running);
+                if(rc != 0) {
+                    log_error("web_cut_through_feature_start() failed");
                 }
             }
 
@@ -449,4 +494,46 @@ static void *faults_thread_routine(void *arg) {
     sr_session_stop(current_session_operational);
 
     return 0;
+}
+
+static int network_function_change_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, sr_event_t event, uint32_t request_id, void *private_data) {
+    sr_change_iter_t *it = 0;
+    int rc = SR_ERR_OK;
+    sr_change_oper_t oper;
+    sr_val_t *old_value = 0;
+    sr_val_t *new_value = 0;
+
+    static bool mount_point_addressing_method_set = false;
+
+    if(event == SR_EV_DONE) {
+        rc = sr_get_changes_iter(session, NTS_NETWORK_FUNCTION_SCHEMA_XPATH"//.", &it);
+        if(rc != SR_ERR_OK) {
+            log_error("sr_get_changes_iter failed");
+            return SR_ERR_VALIDATION_FAILED;
+        }
+
+        while((rc = sr_get_change_next(session, it, &oper, &old_value, &new_value)) == SR_ERR_OK) {
+            if(new_value->xpath && (strcmp(new_value->xpath, NTS_NETWORK_FUNCTION_SCHEMA_XPATH"/mount-point-addressing-method") == 0)) {
+                if(mount_point_addressing_method_set == false) {
+                    mount_point_addressing_method_set = true;
+                    mount_point_addressing_method_default = strdup(new_value->data.string_val);
+                }
+                else {
+                    //prevent changing mount_point_addressing_method
+                    if(strcmp(new_value->data.string_val, mount_point_addressing_method_default) != 0) {
+                        pthread_mutex_lock(&mount_point_addressing_method_lock);
+                        mount_point_addressing_method_val = mount_point_addressing_method_default;
+                        pthread_mutex_unlock(&mount_point_addressing_method_lock);
+                    }
+                }
+            }
+
+            sr_free_val(old_value);
+            sr_free_val(new_value);
+        }
+
+        sr_free_change_iter(it);
+    }
+
+    return SR_ERR_OK;
 }
