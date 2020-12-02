@@ -5,7 +5,6 @@ module nts-x-ran-pac {
 
   import nts-common {
       prefix ntsc;
-      revision-date 2020-10-22;
   }
 
   organization
@@ -18,6 +17,13 @@ module nts-x-ran-pac {
         Martin Skorupski <mailto:martin.skorupski@highstreet-technologies.com>";
   description
     "This module contains YANG definitions for the Network Topology Simulator - X-RAN extensions.";
+
+  revision 2020-11-30 {
+    description
+      "Cleared revision for nts-common import.";
+    reference
+      "X-RAN implementation";
+  }
 
   revision 2020-10-26 {
     description

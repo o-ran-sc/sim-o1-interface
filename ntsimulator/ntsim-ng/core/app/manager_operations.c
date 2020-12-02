@@ -49,6 +49,7 @@ int manager_start_instance(manager_network_function_type *function_type) {
     function_type->instance = (manager_network_function_instance_t *)realloc(function_type->instance, sizeof(manager_network_function_instance_t) * function_type->started_instances);
     if(function_type->instance == 0) {
         log_error("realloc failed");
+        function_type->started_instances--;
         return NTS_ERR_FAILED;
     }
 
@@ -59,7 +60,6 @@ int manager_start_instance(manager_network_function_type *function_type) {
     asprintf(&instance->name, "%s-%d", function_type->docker_instance_name, function_type->started_instances - 1);
 
     instance->mount_point_addressing_method = strdup(function_type->mount_point_addressing_method);
-
     instance->docker_port = STANDARD_NETCONF_PORT;
     instance->host_ip = strdup(framework_environment.host_ip);
     instance->host_port = 0;
@@ -75,12 +75,19 @@ int manager_start_instance(manager_network_function_type *function_type) {
 
     if(instance->host_port == 0) {
         log_error("no ports available for operation");
+        free(instance->name);
+        free(instance->mount_point_addressing_method);
+        free(instance->host_ip);
         return NTS_ERR_FAILED;
     }
 
     int rc = docker_device_start(function_type, instance);
     if(rc != NTS_ERR_OK) {
         log_error("docker_device_start failed");
+        free(instance->name);
+        free(instance->mount_point_addressing_method);
+        free(instance->host_ip);
+        manager_port[instance->host_port] = 0;
         return NTS_ERR_FAILED;
     }
 
@@ -107,31 +114,34 @@ int manager_config_instance(manager_network_function_type *function_type, manage
     rc = lyd_utils_dup(session_running, "/nts-manager:simulation/ves-endpoint", "/nts-network-function:simulation/ves-endpoint", &local_tree);
     if(rc != NTS_ERR_OK) {
         log_error("lyd_utils_dup failed");
+        lyd_free_withsiblings(local_tree);
         return NTS_ERR_FAILED;
     }
 
     char *xpath_s = 0;
     asprintf(&xpath_s, "/nts-manager:simulation/network-functions/network-function[function-type='%s']", function_type->function_type_string);
     rc = lyd_utils_dup(session_running, xpath_s, "/nts-network-function:simulation/network-function", &local_tree);
+    free(xpath_s);
     if(rc != NTS_ERR_OK) {
         log_error("lyd_utils_dup failed");
+        lyd_free_withsiblings(local_tree);
         return NTS_ERR_FAILED;
-    }
-    free(xpath_s);
+    }    
 
     nc_client_t *nc_client = nc_client_ssh_connect(instance->docker_ip, instance->docker_port, "netconf", "netconf");
     if(nc_client == 0) {
         log_error("nc_client_ssh_connect");
+        lyd_free_withsiblings(local_tree);
         return NTS_ERR_FAILED;
     }
 
     rc += nc_client_edit_batch(nc_client, local_tree, 1000);
+    lyd_free_withsiblings(local_tree);
     if(rc != NTS_ERR_OK) {
         log_error("nc_client_edit_batch failed %d\n", rc);
+        nc_client_disconnect(nc_client);
         return NTS_ERR_FAILED;
     }
-    lyd_free_withsiblings(local_tree);
-
     
     if(instance->is_configured == false) {
         //run datastore-random-populate rpc
@@ -140,12 +150,15 @@ int manager_config_instance(manager_network_function_type *function_type, manage
         rpc_node = lyd_new_path(0, session_context, "/nts-network-function:datastore-random-populate", 0, 0, 0);
         if(rpc_node == 0) {
             log_error("failed to create rpc node");
+            nc_client_disconnect(nc_client);
             return NTS_ERR_FAILED;
         }
 
         rpcout = nc_client_send_rpc(nc_client, rpc_node, 5000);
         if(rpcout == 0) {
             log_error("datastore-random-populate rpc failed");
+            nc_client_disconnect(nc_client);
+            lyd_free_withsiblings(rpc_node);
             return NTS_ERR_FAILED;
         }
         else {
@@ -154,15 +167,18 @@ int manager_config_instance(manager_network_function_type *function_type, manage
         lyd_free_withsiblings(rpc_node);
 
         //run feature-control rpc
-        rpc_node = lyd_new_path(0, session_context, "/nts-network-function:feature-control/features", "ves-file-ready ves-heartbeat ves-pnf-registration manual-notification-generation netconf-call-home", 0, 0);
+        rpc_node = lyd_new_path(0, session_context, "/nts-network-function:feature-control/features", "ves-file-ready ves-heartbeat ves-pnf-registration manual-notification-generation netconf-call-home web-cut-through", 0, 0);
         if(rpc_node == 0) {
             log_error("failed to create rpc node");
+            nc_client_disconnect(nc_client);
             return NTS_ERR_FAILED;
         }
 
         rpcout = nc_client_send_rpc(nc_client, rpc_node, 1000);
         if(rpcout == 0) {
             log_error("feature-control rpc failed");
+            nc_client_disconnect(nc_client);
+            lyd_free_withsiblings(rpc_node);
             return NTS_ERR_FAILED;
         }
         else {
@@ -185,6 +201,7 @@ int manager_stop_instance(manager_network_function_type *function_type) {
 
     if(instance->is_mounted) {
         if(manager_unmount_instance(function_type) != NTS_ERR_OK) {
+            log_error("failed to unmount instance");
             return NTS_ERR_FAILED;
         }
     }
@@ -291,6 +308,10 @@ int manager_mount_instance(manager_network_function_type *function_type) {
         int rc = http_request(url, controller->username, controller->password, "PUT", json, 0, 0);
         if(rc != NTS_ERR_OK) {
             log_error("http_request failed");
+            free(url);
+            free(node_id);
+            free(json);
+            controller_details_free(controller);
             return NTS_ERR_FAILED;
         }
 
@@ -340,6 +361,9 @@ int manager_unmount_instance(manager_network_function_type *function_type) {
         int rc = http_request(url, controller->username, controller->password, "DELETE", "", 0, 0);
         if(rc != NTS_ERR_OK) {
             log_error("http_request failed");
+            free(url);
+            free(node_id);
+            controller_details_free(controller);
             return NTS_ERR_FAILED;
         }
 

@@ -49,7 +49,16 @@ int faults_fault_list_add(uint16_t delay) {
 }
 
 bool faults_fault_list_not_empty(void) {
-    return (faults_fault_list_len != 0);
+    bool not_empty = (faults_fault_list_len != 0);
+    if(not_empty == true) {
+        int delay_sum = 0;
+        for(int i = 0; i < faults_fault_list_len; i++) {
+            delay_sum += faults_fault_list[i];
+        }
+
+        not_empty = (delay_sum != 0);
+    }
+    return not_empty;
 }
 
 uint16_t faults_fault_list_get_next(void) {

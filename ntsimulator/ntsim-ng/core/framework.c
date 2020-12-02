@@ -36,7 +36,7 @@ framework_arguments_t framework_arguments;
 framework_config_t framework_config;
 framework_environment_t framework_environment;
 
-const char *argp_program_version = "ntsim-ng v0.0.1a";
+const char *argp_program_version = "ntsim-ng v1.0.0";
 const char *argp_program_bug_address = "<alexandru.stancu@highstreet-technologies.com> / <adrian.lita@highstreet-technologies.com>";
 static char doc[] = "ntsim - new generation";
 
@@ -480,7 +480,6 @@ void framework_free(void) {
     log_close();
     if(framework_arguments.container_init) {
         rename("log/log.txt", "log/install_log.txt");
-        rename("log/error.txt", "log/install_error.txt");
     }
 }
 

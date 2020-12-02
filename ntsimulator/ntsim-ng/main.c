@@ -43,6 +43,7 @@
 #include "features/ves_file_ready/ves_file_ready.h"
 #include "features/manual_notification/manual_notification.h"
 #include "features/netconf_call_home/netconf_call_home.h"
+#include "features/web_cut_through/web_cut_through.h"
 
 int main(int argc, char **argv) {
     int return_code = EXIT_SUCCESS;
@@ -178,6 +179,14 @@ int main(int argc, char **argv) {
                 rc = netconf_call_home_feature_start(session_running);
                 if(rc != 0) {
                     log_error("netconf_call_home_feature_start() failed");
+                    return_code = EXIT_FAILURE;
+                    goto non_container_init_cleanup;
+                }
+
+                // start feature for web cut through
+                rc = web_cut_through_feature_start(session_running);
+                if(rc != 0) {
+                    log_error("web_cut_through_feature_start() failed");
                     return_code = EXIT_FAILURE;
                     goto non_container_init_cleanup;
                 }

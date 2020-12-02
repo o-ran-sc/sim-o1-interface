@@ -17,7 +17,7 @@
 #### DEVICE ####
 ################
 
-FROM nexus3.o-ran-sc.org:10004/o-ran-sc/nts-ng-base:latest
+FROM o-ran-sc/nts-ng-base:latest
 LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@highstreet-technologies.com"
 
 # ntsim-ng configuration and deployment

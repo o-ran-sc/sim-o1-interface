@@ -9,7 +9,6 @@ module nts-manager {
 
   import nts-common {
     prefix ntsc;
-    revision-date 2020-10-22;
   }
 
   organization
@@ -22,6 +21,13 @@ module nts-manager {
         Martin Skorupski <mailto:martin.skorupski@highstreet-technologies.com>";
   description
     "This module contains YANG definitions for the Network Topology Simulator - Manager.";
+
+  revision 2020-11-30 {
+    description
+      "Cleared revision for nts-common import.";
+    reference
+      "O-RAN-SC SIM project";
+  }
 
   revision 2020-10-06 {
     description

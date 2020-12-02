@@ -42,7 +42,8 @@ long int get_microseconds_since_epoch(void);
 bool get_local_ips(const char *ifname, char **ipv4, char **ipv6);
 bool check_port_open(const char *host, uint16_t port);
 
-char *b64_encode(const unsigned char *data, size_t input_length);
+char *b64_encode(const uint8_t *data, size_t input_length);
+uint8_t *b64_decode(const char *data, size_t input_length, size_t *output_length);
 char *str_replace(const char *orig, const char *rep, const char *with);
 
 char *read_key(const char *filename);

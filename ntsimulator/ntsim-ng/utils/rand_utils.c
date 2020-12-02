@@ -472,27 +472,44 @@ char *rand_regex(const char *regexp) {
     char *cmd = 0;
     static int run_time = 0;
 
-    if(framework_arguments.no_rand) {
-        run_time++;
-        asprintf(&cmd, "regxstring %d '%s'", run_time, regexp);
-    }
-    else {
-        asprintf(&cmd, "regxstring '%s'", regexp);
-    }
-
-    FILE* pipe = popen(cmd, "r");
-    free(cmd);
-
-    if (!pipe) {
-        log_error("popen() failed");
+    char *regexp64 = b64_encode((const unsigned char*)regexp, strlen(regexp));
+    if(regexp64 == 0) {
+        log_error("b64_encode failed");
         return 0;
     }
 
-    fgets(buffer, sizeof(buffer), pipe);
-    pclose(pipe);
-    
+    if(framework_arguments.no_rand) {
+        run_time++;
+        asprintf(&cmd, "regxstring %d '%s'", run_time, regexp64);
+    }
+    else {
+        asprintf(&cmd, "regxstring '%s'", regexp64);
+    }
+    free(regexp64);
+
+    if(cmd == 0) {
+        log_error("asprintf failed");
+        return 0;
+    }
+
+    char last_char = ' ';
+    while(last_char == ' ') {
+        FILE* pipe = popen(cmd, "r");
+        if (!pipe) {
+            log_error("popen() failed");
+            free(cmd);
+            return 0;
+        }
+
+        fgets(buffer, sizeof(buffer), pipe);
+        pclose(pipe);
+
+        buffer[strlen(buffer) - 1] = 0;   //remove trailing \n
+        last_char = buffer[strlen(buffer) - 1];
+    }
+        
     char *ret = strdup(buffer);
-    ret[strlen(ret) - 1] = 0;   //remove trailing \n
+    free(cmd);
 
     return ret;
 }

@@ -18,6 +18,13 @@ module nts-common {
   description
     "This module contains common yang definitions YANG definitions for the Network Topology Simulator.";
 
+  revision 2020-11-20 {
+    description
+      "Add feature-type for the Web cut through feature.";
+    reference
+      "O-RAN-SC SIM project";
+  }
+
   revision 2020-10-22 {
     description
       "Add feature-type for the NETCONF Call Home feature.";
@@ -93,6 +100,11 @@ module nts-common {
             position 4;
             description
             "Controls the NETCONF Call Home feature.";
+        }
+        bit web-cut-through {
+            position 5;
+            description
+            "Controls the Web Cut Through feature.";
         }
     }
     description
