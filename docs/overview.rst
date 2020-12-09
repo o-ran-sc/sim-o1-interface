@@ -389,11 +389,14 @@ docker-compose up
 Before starting, the user should set the environment variables defined in the docker-compose file according to his needs:
 * **NETCONF_NTS_HOST_IP**: an IP address from the host, which should be used by systems outside the local machine to address the simulators;
 * **NETCONF_NTS_HOST_BASE_PORT**: the port from where the allocation for the simulated network functions should start;
-* **IPv6Enabled**: should be set to `true` if IPv6 is enabled in the docker daemon and the user wants to use IPv6 to address the simulated  network functions.
-
-When using the highstreet docker repository for the images, in each simulated network-function the **docker-repository** leaf must be set accordingly  (to the value: *10.20.6.10:30000/hightec*), because all the docker images that are being pulled from the docker repo have this prefix.
+* **IPv6_ENABLED**: should be set to `true` if IPv6 is enabled in the docker daemon and the user wants to use IPv6 to address the simulated  network functions.
 
 ## Release notes
+
+### version 1.0.3
+
+[fixed] fixed issues where ODL could not parse the correct versions for yang files
+
 ### version 1.0.2
 - [fixed] bug that occured when trying to start a wrong instance (bad docker-repository or docker-tag)
 - [fixed] when populating the fault-delay-list, if the sum of all the faults was 0, the network funciton kept on generating faults and crashed
