@@ -1,0 +1,39 @@
+version: '2.4'
+services:
+  ntsim-ng:
+    image: "${DOCKER_REPO}nts-ng-manager:${BUILD_VERSION}"
+    container_name: nts-ng-manager
+    ports:
+     - "::${NTS_MANAGER_PORT}:830"
+    volumes:
+     - "/var/run/docker.sock:/var/run/docker.sock"
+     - "/usr/bin/docker:/usr/bin/docker"
+    environment:
+      IPv6_ENABLED: "false"
+      DOCKER_ENGINE_VERSION: "1.40"
+
+      NETCONF_NTS_HOST_IP: "10.20.11.121"
+      NETCONF_NTS_HOST_BASE_PORT: 50000
+      SSH_CONNECTIONS: 1
+      TLS_CONNECTIONS: 0
+
+      SDN_CONTROLLER_IP: "10.20.11.131"
+      SDN_CONTROLLER_PORT: 8181
+      SDN_CONTROLLER_CALLHOME_PORT: 6666
+      SDN_CONTROLLER_USERNAME: "admin"
+      SDN_CONTROLLER_PASSWORD: "admin"
+      
+      VES_ENDPOINT_PROTOCOL: "https"
+      VES_ENDPOINT_IP: "127.0.0.1"
+      VES_ENDPOINT_PORT: 1234
+      VES_ENDPOINT_AUTH_METHOD: "no-auth"
+      VES_ENDPOINT_USERNAME: "admin"
+      VES_ENDPOINT_PASSWORD: "admin"
+    networks:
+      app_net:
+  
+networks:
+  app_net:
+    driver: bridge
+    ipam:
+      driver: default
