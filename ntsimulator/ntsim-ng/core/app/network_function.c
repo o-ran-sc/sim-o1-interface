@@ -26,6 +26,7 @@
 
 #include <sysrepo.h>
 #include <sysrepo/values.h>
+#include <libnetconf2/netconf.h>
 
 #include "core/framework.h"
 #include "core/context.h"
@@ -41,16 +42,25 @@
 #include "features/netconf_call_home/netconf_call_home.h"
 #include "features/web_cut_through/web_cut_through.h"
 
-#define NTS_NETWORK_FUNCTION_MODULE         "nts-network-function"
-#define NTS_NETWORK_FUNCTION_SCHEMA_XPATH   "/nts-network-function:simulation/network-function"
+#define IETF_NETCONF_MONITORING_MODULE                          "ietf-netconf-monitoring"
+#define IETF_NETCONF_MONITORING_STATE_SCHEMAS_SCHEMA_XPATH      "/ietf-netconf-monitoring:netconf-state/schemas"
 
-#define POPULATE_RPC_SCHEMA_XPATH           "/nts-network-function:datastore-random-populate"
-#define FEATURE_CONTROL_SCHEMA_XPATH        "/nts-network-function:feature-control"
-#define FAULTS_CLEAR_SCHEMA_XPATH           "/nts-network-function:clear-fault-counters"
-#define FAULTS_LIST_SCHEMA_XPATH            "/nts-network-function:simulation/network-function/fault-generation"
-#define FAULTS_COUNT_LIST_SCHEMA_XPATH      "/nts-network-function:simulation/network-function/fault-generation/fault-count"
-#define FAULTS_NC_ENABLED_SCHEMA_XPATH      "/nts-network-function:simulation/network-function/netconf/faults-enabled"
-#define FAULTS_VES_ENABLED_SCHEMA_XPATH     "/nts-network-function:simulation/network-function/ves/faults-enabled"
+#define NC_NOTIFICATIONS_MODULE                                 "nc-notifications"
+#define NC_NOTIFICATIONS_STREAMS_SCHEMA_XPATH                   "/nc-notifications:netconf/streams"
+
+#define NTS_NETWORK_FUNCTION_MODULE                             "nts-network-function"
+#define NTS_NETWORK_FUNCTION_SCHEMA_XPATH                       "/nts-network-function:simulation/network-function"
+
+#define POPULATE_RPC_SCHEMA_XPATH                               "/nts-network-function:datastore-random-populate"
+#define FEATURE_CONTROL_SCHEMA_XPATH                            "/nts-network-function:feature-control"
+#define FAULTS_CLEAR_SCHEMA_XPATH                               "/nts-network-function:clear-fault-counters"
+#define FAULTS_LIST_SCHEMA_XPATH                                "/nts-network-function:simulation/network-function/fault-generation"
+#define FAULTS_COUNT_LIST_SCHEMA_XPATH                          "/nts-network-function:simulation/network-function/fault-generation/fault-count"
+#define FAULTS_NC_ENABLED_SCHEMA_XPATH                          "/nts-network-function:simulation/network-function/netconf/faults-enabled"
+#define FAULTS_VES_ENABLED_SCHEMA_XPATH                         "/nts-network-function:simulation/network-function/ves/faults-enabled"
+
+static int netconf_monitoring_state_schemas_cb(sr_session_ctx_t *session, const char *module_name, const char *path, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data);
+static int notifications_streams_cb(sr_session_ctx_t *session, const char *module_name, const char *path, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data);
 
 static int network_function_populate_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data);
 static int network_function_feature_control_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data);
@@ -69,7 +79,9 @@ static char *nf_function_control_string = 0;
 static pthread_t faults_thread;
 static pthread_mutex_t faults_lock;
 
-static pthread_mutex_t mount_point_addressing_method_lock;
+static pthread_mutex_t network_function_change_lock;
+static char *function_type_default = 0;
+static char *function_type_val = 0;
 static char *mount_point_addressing_method_default = 0;
 static char *mount_point_addressing_method_val = 0;
 
@@ -83,8 +95,22 @@ int network_function_run(void) {
         return NTS_ERR_FAILED; 
     }
 
+    //ietf-netconf-monitoring schemas populate with modules and submodules (overwrite default Netopeer2 behaviour)
+    int rc = sr_oper_get_items_subscribe(session_running, IETF_NETCONF_MONITORING_MODULE, IETF_NETCONF_MONITORING_STATE_SCHEMAS_SCHEMA_XPATH, netconf_monitoring_state_schemas_cb, 0, SR_SUBSCR_DEFAULT, &session_subscription);
+    if(rc != SR_ERR_OK) {
+        log_error("error from sr_oper_get_items_subscribe: %s", sr_strerror(rc));
+        return 0;
+    }
+
+    //nc-notifications overwrite
+    rc = sr_oper_get_items_subscribe(session_running, NC_NOTIFICATIONS_MODULE, NC_NOTIFICATIONS_STREAMS_SCHEMA_XPATH, notifications_streams_cb, 0, SR_SUBSCR_DEFAULT, &session_subscription);
+    if(rc != SR_ERR_OK) {
+        log_error("error from sr_oper_get_items_subscribe: %s", sr_strerror(rc));
+        return 0;
+    }
+
     //populate
-    int rc = sr_rpc_subscribe(session_running, POPULATE_RPC_SCHEMA_XPATH, network_function_populate_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    rc = sr_rpc_subscribe(session_running, POPULATE_RPC_SCHEMA_XPATH, network_function_populate_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("error from sr_rpc_subscribe: %s", sr_strerror(rc));
         return NTS_ERR_FAILED;
@@ -139,13 +165,27 @@ int network_function_run(void) {
         return NTS_ERR_FAILED;
     }
 
-    if(pthread_mutex_init(&mount_point_addressing_method_lock, NULL) != 0) { 
+    if(pthread_mutex_init(&network_function_change_lock, NULL) != 0) { 
         log_error("mutex init has failed"); 
         return NTS_ERR_FAILED; 
     }
 
     while(!framework_sigint) {
-        pthread_mutex_lock(&mount_point_addressing_method_lock);
+        pthread_mutex_lock(&network_function_change_lock);
+        if(function_type_val) {
+            rc = sr_set_item_str(session_running, NTS_NETWORK_FUNCTION_SCHEMA_XPATH"/function-type", function_type_val, 0, 0);
+            if(rc != SR_ERR_OK) {
+                log_error("sr_set_item_str failed");
+            }
+
+            rc = sr_apply_changes(session_running, 0, 0);
+            if(rc != SR_ERR_OK) {
+                log_error("sr_apply_changes failed");
+            }
+
+            function_type_val = 0;
+        }
+
         if(mount_point_addressing_method_val) {
             rc = sr_set_item_str(session_running, NTS_NETWORK_FUNCTION_SCHEMA_XPATH"/mount-point-addressing-method", mount_point_addressing_method_val, 0, 0);
             if(rc != SR_ERR_OK) {
@@ -159,7 +199,7 @@ int network_function_run(void) {
 
             mount_point_addressing_method_val = 0;
         }
-        pthread_mutex_unlock(&mount_point_addressing_method_lock);
+        pthread_mutex_unlock(&network_function_change_lock);
 
         pthread_mutex_lock(&nf_function_control_lock);
         if(nf_function_control_string) {
@@ -222,6 +262,98 @@ int network_function_run(void) {
     faults_free();
 
     return NTS_ERR_OK;
+}
+
+static int netconf_monitoring_state_schemas_cb(sr_session_ctx_t *session, const char *module_name, const char *path, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data) {
+    struct lyd_node *root = 0;
+    root = lyd_new_path(*parent, session_context, IETF_NETCONF_MONITORING_STATE_SCHEMAS_SCHEMA_XPATH, 0, 0, 0);
+
+    struct lyd_node *list = 0;
+    const struct lys_module *mod = 0;
+    const struct lys_submodule *submod = 0;
+    uint32_t i = 0;
+
+    // get all modules from context
+    while ((mod = ly_ctx_get_module_iter(session_context, &i))) {
+        list = lyd_new(root, NULL, "schema");
+        lyd_new_leaf(list, NULL, "identifier", mod->name);
+        lyd_new_leaf(list, NULL, "version", (mod->rev ? mod->rev[0].date : NULL));
+        lyd_new_leaf(list, NULL, "format", "yang");
+        lyd_new_leaf(list, NULL, "namespace", lys_main_module(mod)->ns);
+        lyd_new_leaf(list, NULL, "location", "NETCONF");
+
+        // iterate all the submodules included by a module
+        for (int j = 0; j < mod->inc_size; j++) {
+            submod = mod->inc[j].submodule;
+
+            list = lyd_new(root, NULL, "schema");
+            lyd_new_leaf(list, NULL, "identifier", submod->name);
+            lyd_new_leaf(list, NULL, "version", (submod->rev ? submod->rev[0].date : NULL));
+            lyd_new_leaf(list, NULL, "format", "yang");
+            lyd_new_leaf(list, NULL, "namespace", lys_main_module(mod)->ns);
+            lyd_new_leaf(list, NULL, "location", "NETCONF");
+        }
+    }
+
+    return SR_ERR_OK;
+}
+
+static int notifications_streams_cb(sr_session_ctx_t *session, const char *module_name, const char *path, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data) {
+    struct lyd_node *root = lyd_new_path(0, session_context, NC_NOTIFICATIONS_STREAMS_SCHEMA_XPATH, 0, 0, 0);
+
+    /* generic stream */
+    struct lyd_node *stream = lyd_new_path(root, 0, "/nc-notifications:netconf/streams/stream[name='NETCONF']", NULL, 0, 0);
+    lyd_new_leaf(stream, stream->schema->module, "description", "Default NETCONF stream containing notifications from all the modules. Replays only notifications for modules that support replay.");
+    lyd_new_leaf(stream, stream->schema->module, "replaySupport", "true");
+    
+    /* all other streams */
+    struct lyd_node *sr_data;
+    struct lyd_node *sr_mod;
+     /* go through all the sysrepo modules */
+    int rc = sr_get_module_info(session_connection, &sr_data);
+    if(rc != SR_ERR_OK) {
+        log_error("sr_get_module_info failed");
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    LY_TREE_FOR(sr_data->child, sr_mod) {
+        const char *mod_name = ((struct lyd_node_leaf_list *)sr_mod->child)->value_str;
+        const struct lys_module *mod = ly_ctx_get_module(session_context, mod_name, 0, 1);
+        int has_notifications = 0;
+        struct lys_node *data = mod->data;
+        while(data) {
+            if(data->nodetype == LYS_NOTIF) {
+                has_notifications = 1;
+            }
+            data = data->next;
+        }
+
+        if(has_notifications) {
+            /* generate information about the stream/module */
+            stream = lyd_new(root->child, NULL, "stream");
+            lyd_new_leaf(stream, NULL, "name", mod_name);
+            lyd_new_leaf(stream, NULL, "description", "Stream with all notifications of a module.");
+
+            struct lyd_node *rep_sup = 0;
+            struct ly_set *set = lyd_find_path(sr_mod, "replay-support");
+            if(set && (set->number == 1)) {
+                rep_sup = set->set.d[0];
+            }
+            ly_set_free(set);
+            
+            lyd_new_leaf(stream, NULL, "replaySupport", rep_sup ? "true" : "false");
+            if(rep_sup) {
+                char buf[26];
+                nc_time2datetime(((struct lyd_node_leaf_list *)rep_sup)->value.uint64, NULL, buf);
+                lyd_new_leaf(stream, NULL, "replayLogCreationTime", buf);
+            }
+        }
+    }
+
+    lyd_free_withsiblings(sr_data);
+    *parent = root;
+
+    return SR_ERR_OK;
 }
 
 static int network_function_populate_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data) {
@@ -503,6 +635,7 @@ static int network_function_change_cb(sr_session_ctx_t *session, const char *mod
     sr_val_t *old_value = 0;
     sr_val_t *new_value = 0;
 
+    static bool function_type_set = false;
     static bool mount_point_addressing_method_set = false;
 
     if(event == SR_EV_DONE) {
@@ -513,6 +646,22 @@ static int network_function_change_cb(sr_session_ctx_t *session, const char *mod
         }
 
         while((rc = sr_get_change_next(session, it, &oper, &old_value, &new_value)) == SR_ERR_OK) {
+            
+            if(new_value->xpath && (strcmp(new_value->xpath, NTS_NETWORK_FUNCTION_SCHEMA_XPATH"/function-type") == 0)) {
+                if(function_type_set == false) {
+                    function_type_set = true;
+                    function_type_default = strdup(new_value->data.string_val);
+                }
+                else {
+                    //prevent changing function_type
+                    if(strcmp(new_value->data.string_val, function_type_default) != 0) {
+                        pthread_mutex_lock(&network_function_change_lock);
+                        function_type_val = function_type_default;
+                        pthread_mutex_unlock(&network_function_change_lock);
+                    }
+                }
+            }
+
             if(new_value->xpath && (strcmp(new_value->xpath, NTS_NETWORK_FUNCTION_SCHEMA_XPATH"/mount-point-addressing-method") == 0)) {
                 if(mount_point_addressing_method_set == false) {
                     mount_point_addressing_method_set = true;
@@ -521,9 +670,9 @@ static int network_function_change_cb(sr_session_ctx_t *session, const char *mod
                 else {
                     //prevent changing mount_point_addressing_method
                     if(strcmp(new_value->data.string_val, mount_point_addressing_method_default) != 0) {
-                        pthread_mutex_lock(&mount_point_addressing_method_lock);
+                        pthread_mutex_lock(&network_function_change_lock);
                         mount_point_addressing_method_val = mount_point_addressing_method_default;
-                        pthread_mutex_unlock(&mount_point_addressing_method_lock);
+                        pthread_mutex_unlock(&network_function_change_lock);
                     }
                 }
             }

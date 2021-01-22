@@ -36,7 +36,7 @@ framework_arguments_t framework_arguments;
 framework_config_t framework_config;
 framework_environment_t framework_environment;
 
-const char *argp_program_version = "ntsim-ng v1.0.0";
+const char *argp_program_version = "ntsim-ng v1.0.6";
 const char *argp_program_bug_address = "<alexandru.stancu@highstreet-technologies.com> / <adrian.lita@highstreet-technologies.com>";
 static char doc[] = "ntsim - new generation";
 
