@@ -78,6 +78,7 @@ int manager_start_instance(manager_network_function_type *function_type) {
         free(instance->name);
         free(instance->mount_point_addressing_method);
         free(instance->host_ip);
+        function_type->started_instances--;
         return NTS_ERR_FAILED;
     }
 
@@ -88,6 +89,7 @@ int manager_start_instance(manager_network_function_type *function_type) {
         free(instance->mount_point_addressing_method);
         free(instance->host_ip);
         manager_port[instance->host_port] = 0;
+        function_type->started_instances--;
         return NTS_ERR_FAILED;
     }
 
@@ -202,7 +204,6 @@ int manager_stop_instance(manager_network_function_type *function_type) {
     if(instance->is_mounted) {
         if(manager_unmount_instance(function_type) != NTS_ERR_OK) {
             log_error("failed to unmount instance");
-            return NTS_ERR_FAILED;
         }
     }
 
@@ -330,6 +331,7 @@ int manager_mount_instance(manager_network_function_type *function_type) {
 
 int manager_unmount_instance(manager_network_function_type *function_type) {
     assert(function_type);
+    int ret = NTS_ERR_OK;
 
     manager_network_function_instance_t *instance = &function_type->instance[function_type->mounted_instances - 1];
 
@@ -361,10 +363,7 @@ int manager_unmount_instance(manager_network_function_type *function_type) {
         int rc = http_request(url, controller->username, controller->password, "DELETE", "", 0, 0);
         if(rc != NTS_ERR_OK) {
             log_error("http_request failed");
-            free(url);
-            free(node_id);
-            controller_details_free(controller);
-            return NTS_ERR_FAILED;
+            ret = NTS_ERR_FAILED;
         }
 
         free(url);
@@ -376,5 +375,5 @@ int manager_unmount_instance(manager_network_function_type *function_type) {
     function_type->mounted_instances--;
     function_type->instance[function_type->mounted_instances].is_mounted = false;
 
-    return NTS_ERR_OK;
+    return ret;
 }

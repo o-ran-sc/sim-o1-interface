@@ -37,6 +37,8 @@
 #define NTS_SDN_CONTROLLER_CONFIG_XPATH             "/nts-manager:simulation/sdn-controller"
 #define NTS_VES_ENDPOINT_CONFIG_XPATH               "/nts-manager:simulation/ves-endpoint"
 
+#define NTS_NETWORK_FUNCTION_FTYPE_SCHEMA_XPATH     "/nts-network-function:simulation/network-function/function-type"
+
 static manager_network_function_type *manager_context = 0;
 static int manager_installed_function_types_count = 0;
 
@@ -324,6 +326,13 @@ static int manager_populate_sysrepo_network_function_list(void) {
         }
     }
 
+    rc = sr_set_item_str(session_running, NTS_NETWORK_FUNCTION_FTYPE_SCHEMA_XPATH, "NTS_FUNCTION_TYPE_MANAGER", 0, 0);
+    if(rc != SR_ERR_OK) {
+        log_error("sr_set_item_str failed");
+        return NTS_ERR_FAILED;
+    }
+
+
     //apply all changes
     rc = sr_apply_changes(session_running, 0, 0);
     if(rc != SR_ERR_OK) {
@@ -386,8 +395,6 @@ static int manager_process_change(int context_index, manager_network_function_ty
     assert(context_index < manager_installed_function_types_count);
     assert(new_context);
 
-    int ret_code = NTS_ERR_OK;
-
     manager_network_function_type *current_context = &manager_context[context_index];
     int rc = 0;
 
@@ -422,8 +429,7 @@ static int manager_process_change(int context_index, manager_network_function_ty
                 rc = manager_stop_instance(current_context);
                 if(rc != NTS_ERR_OK) {
                     log_error("manager_stop_instance failed");
-                    current_context->started_instances++;
-                    ret_code = NTS_ERR_FAILED;
+                    return NTS_ERR_FAILED;
                     break;
                 }
             }
@@ -435,8 +441,7 @@ static int manager_process_change(int context_index, manager_network_function_ty
                 rc = manager_start_instance(current_context);
                 if(rc != NTS_ERR_OK) {
                     log_error("manager_start_instance failed");
-                    current_context->started_instances--;
-                    ret_code = NTS_ERR_FAILED;
+                    return NTS_ERR_FAILED;
                     break;
                 }
             }
@@ -451,8 +456,6 @@ static int manager_process_change(int context_index, manager_network_function_ty
                 rc = manager_unmount_instance(current_context);
                 if(rc != NTS_ERR_OK) {
                     log_error("manager_unmount_instance failed");
-                    current_context->mounted_instances++;
-                    ret_code = NTS_ERR_FAILED;
                     break;
                 }
             }
@@ -464,15 +467,13 @@ static int manager_process_change(int context_index, manager_network_function_ty
                 rc = manager_mount_instance(current_context);
                 if(rc != NTS_ERR_OK) {
                     log_error("manager_mount_instance failed");
-                    current_context->mounted_instances--;
-                    ret_code = NTS_ERR_FAILED;
                     break;
                 }
             }
         }
     }
 
-    return ret_code;
+    return NTS_ERR_OK;
 }
 
 static int manager_change_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, sr_event_t event, uint32_t request_id, void *private_data) {
