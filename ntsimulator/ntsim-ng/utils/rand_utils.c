@@ -69,7 +69,7 @@ void rand_init(void) {
 
     FILE* urandom = fopen("/dev/urandom", "r");
     if(urandom == 0) {
-        log_error("failed to open /dev/urandom");
+        log_error("failed to open /dev/urandom\n");
     }
     else {
         fread(&seed, sizeof(int), 1, urandom);
@@ -79,9 +79,9 @@ void rand_init(void) {
     srand(seed);
     srandom(seed);
 
-    log_message(2, "rand_init() was called and seed was initialized to %u\n", seed);
+    log_add_verbose(2, "rand_init() was called and seed was initialized to %u\n", seed);
     if(RAND_MAX < 65536) {
-        log_error("RAND_MAX is too low: %d", RAND_MAX);
+        log_error("RAND_MAX is too low: %d\n", RAND_MAX);
     }
 }
 
@@ -89,10 +89,10 @@ void rand_init_fixed(unsigned int seed) {
     srand(seed);
     srandom(seed);
 
-    log_message(2, "rand_init_fixed() was called and seed was initialized to %u\n", seed);
+    log_add_verbose(2, "rand_init_fixed() was called and seed was initialized to %u\n", seed);
 
     if(RAND_MAX < 65536) {
-        log_error("RAND_MAX is too low: %d", RAND_MAX);
+        log_error("RAND_MAX is too low: %d\n", RAND_MAX);
     }
 }
 
@@ -106,7 +106,7 @@ char *rand_get_populate_value(const struct lys_type *type) {
         
         asprintf(&full_type, "%s:%s", type->der->module->name, type->der->name);
         if(full_type == 0) {
-            log_error("bad malloc");
+            log_error("bad malloc\n");
             return 0;
         }
 
@@ -166,7 +166,7 @@ char *rand_get_populate_value(const struct lys_type *type) {
             }
             struct lys_ident *ident = rand_identity(type->info.ident.ref[0]);
             if(ident == 0) {
-                log_error("rand_identity failed");
+                log_error("rand_identity failed\n");
                 return 0;
             }
 
@@ -213,7 +213,7 @@ char *rand_get_populate_value(const struct lys_type *type) {
             if(expression) {
                 char *ret = rand_regex(expression);
                 if(ret == 0) {
-                    log_error("rand_regex failed");
+                    log_error("rand_regex failed\n");
                     free(expression);
                     return 0;
                 }
@@ -221,7 +221,7 @@ char *rand_get_populate_value(const struct lys_type *type) {
                 while(strlen(ret) < min_length) {
                     char *add = rand_regex(expression);
                     if(add == 0) {
-                        log_error("rand_regex failed");
+                        log_error("rand_regex failed\n");
                         free(expression);
                         free(ret);
                         return 0;
@@ -236,7 +236,7 @@ char *rand_get_populate_value(const struct lys_type *type) {
                 free(expression);
 
                 if(ret == 0) {
-                    log_error("rand_regex failed");
+                    log_error("rand_regex failed\n");
                     return 0;
                 }
 
@@ -344,7 +344,7 @@ char *rand_get_populate_value(const struct lys_type *type) {
         case LY_TYPE_BITS:
             ret = (char*)malloc(1);
             if(ret == 0) {
-                log_error("malloc failed");
+                log_error("malloc failed\n");
                 return 0;
             }
             ret[0] = 0;
@@ -355,7 +355,7 @@ char *rand_get_populate_value(const struct lys_type *type) {
                     bool first = (ret == 0);
                     ret = (char*)realloc(ret, sizeof(char) * (strlen(ret) + 1 + strlen(val) + 1));
                     if(ret == 0) {
-                        log_error("malloc failed");
+                        log_error("malloc failed\n");
                         return 0;
                     }
 
@@ -391,7 +391,7 @@ char *rand_get_populate_value(const struct lys_type *type) {
 
             uint8_t *data = (uint8_t *)malloc(sizeof(uint8_t) * length);
             if(!data) {
-                log_error("bad malloc");
+                log_error("bad malloc\n");
                 return 0;
             }
 
@@ -408,7 +408,7 @@ char *rand_get_populate_value(const struct lys_type *type) {
         case LY_TYPE_UNION:
         case LY_TYPE_INST:
             asprintf(&ret, "{late_resolve_%s}", type->der->name);
-            log_error("needed: %s", ret);
+            log_error("needed: %s\n", ret);
             assert(0);
             return ret;
             break;
@@ -416,7 +416,7 @@ char *rand_get_populate_value(const struct lys_type *type) {
         case LY_TYPE_UNKNOWN:
         default:
             asprintf(&ret, "{unimplemented_%s}", type->der->name);
-            log_error("can't generate random for: %s", type->der->name);
+            log_error("can't generate random for: %s\n", type->der->name);
             assert(0);
             return ret;
             break;
@@ -474,7 +474,7 @@ char *rand_regex(const char *regexp) {
 
     char *regexp64 = b64_encode((const unsigned char*)regexp, strlen(regexp));
     if(regexp64 == 0) {
-        log_error("b64_encode failed");
+        log_error("b64_encode failed\n");
         return 0;
     }
 
@@ -488,7 +488,7 @@ char *rand_regex(const char *regexp) {
     free(regexp64);
 
     if(cmd == 0) {
-        log_error("asprintf failed");
+        log_error("asprintf failed\n");
         return 0;
     }
 
@@ -496,7 +496,7 @@ char *rand_regex(const char *regexp) {
     while(last_char == ' ') {
         FILE* pipe = popen(cmd, "r");
         if (!pipe) {
-            log_error("popen() failed");
+            log_error("popen() failed\n");
             free(cmd);
             return 0;
         }
@@ -534,8 +534,8 @@ static char *rand_string(int min_length, int max_length) {
         length = min_length;
     }
     else {
-        if((framework_config.debug_max_string_size) && (framework_config.debug_max_string_size < max_length)) {
-            max_length = framework_config.debug_max_string_size;
+        if((framework_config.datastore_generate.debug_max_string_size) && (framework_config.datastore_generate.debug_max_string_size < max_length)) {
+            max_length = framework_config.datastore_generate.debug_max_string_size;
         }
 
         length = min_length + rand_uint16() % (max_length - min_length);
@@ -543,7 +543,7 @@ static char *rand_string(int min_length, int max_length) {
 
     char *ret = (char *)malloc(length + 1);
     if(!ret) {
-        log_error("bad malloc");
+        log_error("bad malloc\n");
         return 0;
     }
 
@@ -664,7 +664,7 @@ static rand_range_t rand_range(const char *range, const LY_DATA_TYPE type) {
         //remove spaces
         char *rrange = (char*)malloc(sizeof(char) * (strlen(range) + 1));
         if (!rrange) {
-            log_error("bad malloc");
+            log_error("bad malloc\n");
             return ret;
         }
 
@@ -886,7 +886,7 @@ static char *rand_date_and_time(void) {
 
     char *ret = (char *)malloc(21);
     if(!ret) {
-        log_error("bad malloc");
+        log_error("bad malloc\n");
         return 0;
     }
     strftime(ret, 21, "%Y-%m-%dT%H:%M:%SZ", &lt);

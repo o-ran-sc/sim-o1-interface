@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdint.h>
 
-int schema_get_xpaths(char ***root_xpath);  //returns number of xpaths, 0 if none, -1 if error
+int datastore_schema_get_xpaths(char ***root_xpath);  //returns number of xpaths, 0 if none, -1 if error
 
-int schema_print_root_paths(void);
-int schema_print_xpath(const char *xpath);
+int datastore_schema_print_root_paths(void);
+int datastore_schema_print_xpath(const char *xpath);

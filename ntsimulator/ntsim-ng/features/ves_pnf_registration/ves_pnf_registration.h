@@ -19,4 +19,5 @@
 
 #include <sysrepo.h>
 
+int ves_pnf_registration_feature_get_status(void);
 int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session);

@@ -34,16 +34,18 @@ void faults_fault_list_clear(void) {
     free(faults_fault_list);
     faults_fault_list = 0;
     faults_fault_list_iterator = 0;
+    log_add_verbose(2, "[faults] fault list cleared\n");
 }
 
 int faults_fault_list_add(uint16_t delay) {
     faults_fault_list_len++;
     faults_fault_list = (uint16_t *)realloc(faults_fault_list, sizeof(uint16_t) * (faults_fault_list_len));
     if(faults_fault_list == 0) {
-        log_error("realloc failed");
+        log_error("realloc failed\n");
         return NTS_ERR_FAILED;
     }
     faults_fault_list[faults_fault_list_len - 1] = delay;
+    log_add_verbose(2, "[faults] added %d\n", delay);
 
     return NTS_ERR_OK;
 }

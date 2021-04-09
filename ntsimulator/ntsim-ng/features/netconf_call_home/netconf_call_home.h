@@ -19,4 +19,5 @@
 
 #include <sysrepo.h>
 
+int netconf_call_home_feature_get_status(void);
 int netconf_call_home_feature_start(sr_session_ctx_t *current_session);

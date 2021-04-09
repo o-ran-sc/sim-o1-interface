@@ -68,7 +68,7 @@ void file_touch(const char *fname, const char *content) {
 
     FILE *f = fopen(fname, "w");
     if(f == 0) {
-        log_error("fopen failed");
+        log_error("fopen failed\n");
         return;
     }
 
@@ -260,8 +260,8 @@ bool check_port_open(const char *host, uint16_t port) {
     }
 
     freeaddrinfo(res);
-    if(returnStatus == 0) {
-        close(simpleSocket);
+    close(simpleSocket);
+    if(returnStatus == 0) {    
         return true;
     }
     
@@ -423,7 +423,7 @@ char *read_key(const char *filename) {
 
     fp = fopen(filename, "r");
     if(fp == 0) {
-        log_error("could not open file %s", filename);
+        log_error("could not open file %s\n", filename);
         return 0;
     }
 
@@ -439,7 +439,7 @@ char *read_key(const char *filename) {
             if(key_string) {
                 key_string = (char *)realloc(key_string, strlen(key_string) + read + 1);
                 if(key_string == 0) {
-                    log_error("bad allocation");
+                    log_error("bad allocation\n");
                     free(line);
                     return 0;
                 }
@@ -449,7 +449,7 @@ char *read_key(const char *filename) {
             else {
                 key_string = strdup(line);
                 if(key_string == 0) {
-                    log_error("bad allocation");
+                    log_error("bad allocation\n");
                     free(line);
                     return 0;
                 }

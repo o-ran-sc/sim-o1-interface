@@ -26,189 +26,162 @@
 #include "utils/nc_client.h"
 
 #include "core/framework.h"
-#include "core/docker.h"
+#include "core/container.h"
 #include "core/session.h"
 #include "core/context.h"
 #include "core/test.h"
 #include "core/nc_config.h"
 
+#include "core/app/supervisor.h"
 #include "core/app/manager.h"
 #include "core/app/network_function.h"
 #include "core/datastore/schema.h"
+#include "core/datastore/generate.h"
 #include "core/datastore/populate.h"
-#include "core/faults/faults.h"
-
-#include "features/ves_pnf_registration/ves_pnf_registration.h"
-#include "features/ves_heartbeat/ves_heartbeat.h"
-#include "features/ves_file_ready/ves_file_ready.h"
-#include "features/manual_notification/manual_notification.h"
-#include "features/netconf_call_home/netconf_call_home.h"
-#include "features/web_cut_through/web_cut_through.h"
 
 int main(int argc, char **argv) {
     int return_code = EXIT_SUCCESS;
 
-    framework_init(argc, argv);
-
-    if(framework_arguments.container_init) {
-        if(!docker_container_init()) {
-            log_error("docker_container_init() failed");
-            return_code = EXIT_FAILURE;   
-        }
-
+    if(framework_init(argc, argv) != NTS_ERR_OK) {
+        log_error(LOG_COLOR_BOLD_RED"framework_init() error\n");
         framework_free();
-        return return_code;
+        return EXIT_FAILURE;
     }
-    else { //not in container-init mode
-        sr_log_stderr(SR_LL_NONE);
 
-        int rc;
-        rc = session_init();
-        if(rc != 0) {
-            log_error("session_init() failed");
-            return_code = EXIT_FAILURE;
-            goto non_container_init_cleanup;
-        }
+    //common init
+    switch(framework_arguments.nts_mode) {
+        case NTS_MODE_MANAGER:
+        case NTS_MODE_NETWORK_FUNCTION:
+        case NTS_MODE_GENERATE_DATA:
+        case NTS_MODE_TEST:
+        case NTS_MODE_DEFAULT:
+            sr_log_stderr(SR_LL_INF);   //checkAL WRN
+        
+            if(session_init() != NTS_ERR_OK) {
+                log_error("session_init() failed\n");
+                return_code = EXIT_FAILURE;
+                goto main_clean_session;
+            }
 
-        rc = context_init(session_context);
-        if(rc != 0) {
-            log_error("context_init() failed");
-            return_code = EXIT_FAILURE;
-            goto non_container_init_cleanup;
-        }
+            if(context_init(session_context) != 0) {
+                log_error("context_init() failed\n");
+                return_code = EXIT_FAILURE;
+                goto main_clean_context;
+            }
 
-        nc_client_init();
+            nc_client_init();
+            break;
 
-        if(framework_arguments.nc_server_init) {
+        default:
+            break;
+    }
+
+    //netconf server configure
+    switch(framework_arguments.nts_mode) {
+        case NTS_MODE_MANAGER:
+        case NTS_MODE_NETWORK_FUNCTION:
             //configure local netconf server
-            rc = netconf_configure();
-            if(rc != 0) {
-                log_error("netconf_configure() failed");
+            if(netconf_configure() != NTS_ERR_OK) {
+                log_error("netconf_configure() failed\n")
                 return_code = EXIT_FAILURE;
-                goto non_container_init_cleanup;
+                goto main_clean;
             }
-        }
+            break;
 
-        if(framework_arguments.manager) {
-            //run in manager mode
+        default:
+            break;
+    }
+
+    switch(framework_arguments.nts_mode) {
+        case NTS_MODE_CONTAINER_INIT:
+            if(!container_self_init()) {
+                log_error("container_self_init() failed\n");
+                return_code = EXIT_FAILURE;
+            }
+
+            goto main_clean_framework;
+            break;
+
+        case NTS_MODE_SUPERVISOR:
+            //run in supervisor mode
+            if(supervisor_run() != NTS_ERR_OK) {
+                log_error("supervisor_run() failed\n");
+                return_code = EXIT_FAILURE;
+            }
+
+            goto main_clean_framework;
+            break;
+
+        case NTS_MODE_MANAGER:
             if(manager_run() != NTS_ERR_OK) {
+                log_error("manager_run() failed\n");
                 return_code = EXIT_FAILURE;
-                goto non_container_init_cleanup;
-            }
-        }
-        else if(framework_arguments.network_function) {
-            //run in network function mode
-            if(network_function_run() != NTS_ERR_OK) {
-                return_code = EXIT_FAILURE;
-                goto non_container_init_cleanup;
-            }
-        }
-        else {
-            if(framework_arguments.test_mode) {
-                if(test_mode_run() != NTS_ERR_OK) {
-                    return_code = EXIT_FAILURE;
-                    goto non_container_init_cleanup;
-                }
-            }
-            else if(framework_arguments.exhaustive_test) {
-                //exhaustive test
-                if(exhaustive_test_run() != NTS_ERR_OK) {
-                    return_code = EXIT_FAILURE;
-                    goto non_container_init_cleanup;
-                }
             }
 
+            goto main_clean;
+            break;
+
+        case NTS_MODE_NETWORK_FUNCTION:
+            if(network_function_run() != NTS_ERR_OK) {
+                log_error("network_function_run() failed\n");
+                return_code = EXIT_FAILURE;
+            }
+
+            goto main_clean;
+            break;
+
+        case NTS_MODE_GENERATE_DATA:
+            if(datastore_generate_data(DATASTORE_RUNNING_PATH, DATASTORE_OPERATIONAL_PATH) != NTS_ERR_OK) {
+                log_error("datastore_generate_data() failed\n");
+                return_code = EXIT_FAILURE;
+            }
+
+            goto main_clean;
+            break;
+
+        case NTS_MODE_TEST:
+            if(exhaustive_test_run() != NTS_ERR_OK) {
+                log_error("exhaustive_test_run() failed\n");
+                return_code = EXIT_FAILURE;
+            }
+        
+            goto main_clean;
+            break;
+
+        case NTS_MODE_DEFAULT:
             if(framework_arguments.print_root_paths) {
-                //print all root paths with their attributes
-                if(schema_print_root_paths() != NTS_ERR_OK) {
+                if(datastore_schema_print_root_paths() != NTS_ERR_OK) {
+                    log_error("datastore_schema_print_root_paths() failed\n");
                     return_code = EXIT_FAILURE;
-                    goto non_container_init_cleanup;
+                    goto main_clean;
                 }
             }
             
             if(framework_arguments.print_structure_xpath != 0) {
                 //print the associated structure
-                if(schema_print_xpath(framework_arguments.print_structure_xpath) != NTS_ERR_OK) {
+                if(datastore_schema_print_xpath(framework_arguments.print_structure_xpath) != NTS_ERR_OK) {
+                    log_error("datastore_schema_print_xpath() failed\n");
                     return_code = EXIT_FAILURE;
-                    goto non_container_init_cleanup;
-                }
-            }
-            
-            if(framework_arguments.populate_all) {
-                // populate all
-                if(schema_populate() != NTS_ERR_OK) {
-                    return_code = EXIT_FAILURE;
-                    goto non_container_init_cleanup;
+                    goto main_clean;
                 }
             }
 
-            if(framework_arguments.enable_features) {
-                // check if PNF registration is enabled and send PNF registration message if so
-                rc = ves_pnf_registration_feature_start(session_running);
-                if(rc != 0) {
-                    log_error("ves_pnf_registration_feature_start() failed");
-                    return_code = EXIT_FAILURE;
-                    goto non_container_init_cleanup;
-                }
+            goto main_clean;
+            break;
 
-                // start feature for handling the heartbeat VES message
-                rc = ves_heartbeat_feature_start(session_running);
-                if(rc != 0) {
-                    log_error("ves_heartbeat_feature_start() failed");
-                    return_code = EXIT_FAILURE;
-                    goto non_container_init_cleanup;
-                }
-
-                // start feature for handling the fileReady VES message
-                rc = ves_file_ready_feature_start(session_running);
-                if(rc != 0) {
-                    log_error("ves_file_ready_feature_start() failed");
-                    return_code = EXIT_FAILURE;
-                    goto non_container_init_cleanup;
-                }
-
-                // start feature for manual notification
-                rc = manual_notification_feature_start(session_running);
-                if(rc != 0) {
-                    log_error("manual_notification_feature_start() failed");
-                    return_code = EXIT_FAILURE;
-                    goto non_container_init_cleanup;
-                }
-
-                // start feature for NETCONF Call Home
-                rc = netconf_call_home_feature_start(session_running);
-                if(rc != 0) {
-                    log_error("netconf_call_home_feature_start() failed");
-                    return_code = EXIT_FAILURE;
-                    goto non_container_init_cleanup;
-                }
-
-                // start feature for web cut through
-                rc = web_cut_through_feature_start(session_running);
-                if(rc != 0) {
-                    log_error("web_cut_through_feature_start() failed");
-                    return_code = EXIT_FAILURE;
-                    goto non_container_init_cleanup;
-                }
-            }
-
-            if(framework_arguments.loop) {
-                while(!framework_sigint) {
-                    sleep(1);
-                }
-            }
-        }
-
-        non_container_init_cleanup:
-        log_message(1, LOG_COLOR_BOLD_RED"\nstopping now...\n"LOG_COLOR_RESET);
-
-        nc_client_destroy();
-        context_free();
-        session_free();
-        framework_free();
-
-        return return_code;
+        default:
+            assert(0);
+            break;
     }
 
-    return EXIT_FAILURE;
+main_clean:
+    log_add_verbose(1, LOG_COLOR_BOLD_RED"\nstopping now...\n"LOG_COLOR_RESET);
+    nc_client_destroy();
+main_clean_context:
+    context_free();
+main_clean_session:
+    session_free();
+main_clean_framework:
+    framework_free();
+    return return_code;
 }

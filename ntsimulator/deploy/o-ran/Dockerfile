@@ -22,22 +22,18 @@ LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@hig
 
 # ntsim-ng configuration and deployment
 COPY ./yang /opt/dev/deploy/yang
+COPY ./data /opt/dev/deploy/data
 COPY ./config.json /opt/dev/ntsim-ng/config/config.json
 
 # ntsim-ng init docker
-RUN /opt/dev/ntsim-ng/ntsim-ng --docker-init -w /opt/dev/ntsim-ng
-
-# supervisor configuration
-COPY ./supervisord.conf /etc/supervisord.conf
-
-# finishing container build
-ARG BUILD_DATE
-LABEL build-date=$BUILD_DATE
+RUN /opt/dev/ntsim-ng/ntsim-ng --container-init -w /opt/dev/ntsim-ng
 
 # add exposed ports
 EXPOSE 830-929
 EXPOSE 21-22
 
+ENV NTS_FUNCTION_TYPE=NTS_FUNCTION_TYPE_O_RAN_FH
+
 # run
 WORKDIR /opt/dev/workspace
-CMD ["sh", "-c", "/usr/bin/supervisord -c /etc/supervisord.conf"]
+CMD ["/opt/dev/ntsim-ng/ntsim-ng", "-w/opt/dev/ntsim-ng", "--supervisor"]

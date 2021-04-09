@@ -37,24 +37,54 @@ static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *pa
 static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *file_location);
 static cJSON* ves_create_file_ready_fields(const char* file_location);
 static void ves_file_ready_vsftp_daemon_init(void);
+static void ves_file_ready_vsftp_daemon_deinit(void);
+
+static sr_subscription_ctx_t *ves_file_ready_subscription = 0;
+
+int ves_file_ready_feature_get_status(void) {
+    return (ves_file_ready_subscription != 0);
+}
 
 int ves_file_ready_feature_start(sr_session_ctx_t *current_session) {
     assert(current_session);
     assert_session();
 
-    int rc = sr_rpc_subscribe(current_session, FILE_READY_RPC_SCHEMA_XPATH, ves_file_ready_invoke_pm_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
-    if(rc != SR_ERR_OK) {
-        log_error("error from sr_rpc_subscribe: %s\n", sr_strerror(rc));
-        return NTS_ERR_FAILED;
+    if(ves_file_ready_subscription == 0) {
+        int rc = sr_rpc_subscribe(current_session, FILE_READY_RPC_SCHEMA_XPATH, ves_file_ready_invoke_pm_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &ves_file_ready_subscription);
+        if(rc != SR_ERR_OK) {
+            log_error("error from sr_rpc_subscribe: %s\n", sr_strerror(rc));
+            return NTS_ERR_FAILED;
+        }
+
+        ves_file_ready_vsftp_daemon_init();
     }
 
-    ves_file_ready_vsftp_daemon_init();
+    return NTS_ERR_OK;
+}
+
+int ves_file_ready_feature_stop(void) {
+    assert_session();
+
+    if(ves_file_ready_subscription) {
+        int rc = sr_unsubscribe(ves_file_ready_subscription);
+        if(rc != SR_ERR_OK) {
+            log_error("error from sr_rpc_subscribe: %s\n", sr_strerror(rc));
+            return NTS_ERR_FAILED;
+        }
+
+        ves_file_ready_vsftp_daemon_deinit();
+        ves_file_ready_subscription = 0;
+    }
 
     return NTS_ERR_OK;
 }
 
 static void ves_file_ready_vsftp_daemon_init(void) {
     system("/usr/sbin/vsftpd &");
+}
+
+static void ves_file_ready_vsftp_daemon_deinit(void) {
+    system("killall -9 vsftpd");
 }
 
 static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data) {
@@ -91,46 +121,46 @@ static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *fi
 
     cJSON *post_data_json = cJSON_CreateObject();
     if(post_data_json == 0) {
-        log_error("could not create cJSON object");
+        log_error("could not create cJSON object\n");
         return NTS_ERR_FAILED;
     }
 
     cJSON *event = cJSON_CreateObject();
     if(event == 0) {
-        log_error("could not create cJSON object");
+        log_error("could not create cJSON object\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
     
     if(cJSON_AddItemToObject(post_data_json, "event", event) == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
 
-    char *hostname_string = framework_environment.hostname;
+    char *hostname_string = framework_environment.settings.hostname;
     cJSON *common_event_header = ves_create_common_event_header("notification", "Notification-gnb_Nokia-FileReady", hostname_string, "Normal", sequence_number++);
     if(common_event_header == 0) {
-        log_error("could not create cJSON object");
+        log_error("could not create cJSON object\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
     
     if(cJSON_AddItemToObject(event, "commonEventHeader", common_event_header) == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
 
     cJSON *file_ready_fields = ves_create_file_ready_fields(file_location);
     if(file_ready_fields == 0) {
-        log_error("could not create cJSON object");
+        log_error("could not create cJSON object\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
     
     if(cJSON_AddItemToObject(event, "notificationFields", file_ready_fields) == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
@@ -138,14 +168,14 @@ static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *fi
     char *post_data = cJSON_PrintUnformatted(post_data_json);
     cJSON_Delete(post_data_json);
     if(post_data == 0) {
-        log_error("cJSON_PrintUnformatted failed");
+        log_error("cJSON_PrintUnformatted failed\n");
         return NTS_ERR_FAILED;
     }
 
 
     ves_details_t *ves_details = ves_endpoint_details_get(session);
     if(!ves_details) {
-        log_error("ves_endpoint_details_get failed");
+        log_error("ves_endpoint_details_get failed\n");
         free(post_data);
         return NTS_ERR_FAILED;
     }
@@ -155,7 +185,7 @@ static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *fi
     free(post_data);
     
     if(rc != NTS_ERR_OK) {
-        log_error("http_request failed");
+        log_error("http_request failed\n");
         return NTS_ERR_FAILED;
     }
 
@@ -167,44 +197,44 @@ static cJSON* ves_create_file_ready_fields(const char* file_location) {
 
     cJSON *file_ready_fields = cJSON_CreateObject();
     if(file_ready_fields == 0) {
-        log_error("could not create JSON object");
+        log_error("could not create JSON object\n");
         return 0;
     }
 
     if(cJSON_AddStringToObject(file_ready_fields, "changeIdentifier", "PM_MEAS_FILES") == 0) {
-        log_error("cJSON_AddStringToObject failed");
+        log_error("cJSON_AddStringToObject failed\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(file_ready_fields, "changeType", "FileReady") == 0) {
-        log_error("cJSON_AddStringToObject failed");
+        log_error("cJSON_AddStringToObject failed\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(file_ready_fields, "notificationFieldsVersion", "2.0") == 0) {
-        log_error("cJSON_AddStringToObject failed");
+        log_error("cJSON_AddStringToObject failed\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }
 
     cJSON *array_of_named_hash_map = cJSON_CreateArray();
     if(array_of_named_hash_map == 0) {
-        log_error("could not create JSON object");
+        log_error("could not create JSON object\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }
     
     if(cJSON_AddItemToObject(file_ready_fields, "arrayOfNamedHashMap", array_of_named_hash_map) == 0) {
-        log_error("cJSON_AddStringToObject failed");
+        log_error("cJSON_AddStringToObject failed\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }
 
     cJSON *additional_fields_entry = cJSON_CreateObject();
     if(additional_fields_entry == 0) {
-        log_error("could not create JSON object");
+        log_error("could not create JSON object\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }
@@ -213,14 +243,14 @@ static cJSON* ves_create_file_ready_fields(const char* file_location) {
 
     if(filename == 0) {
         if(cJSON_AddStringToObject(additional_fields_entry, "name", "dummy_file.tar.gz") == 0) {
-            log_error("cJSON_AddStringToObject failed");
+            log_error("cJSON_AddStringToObject failed\n");
             cJSON_Delete(file_ready_fields);
             return 0;
         }
     }
     else {
         if(cJSON_AddStringToObject(additional_fields_entry, "name", filename + 1) == 0) {
-            log_error("cJSON_AddStringToObject failed");
+            log_error("cJSON_AddStringToObject failed\n");
             cJSON_Delete(file_ready_fields);
             return 0;
         }
@@ -228,43 +258,43 @@ static cJSON* ves_create_file_ready_fields(const char* file_location) {
 
     cJSON *hash_map = cJSON_CreateObject();
     if(hash_map == 0) {
-        log_error("could not create JSON object");
+        log_error("could not create JSON object\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }
     
     if(cJSON_AddItemToObject(additional_fields_entry, "hashMap", hash_map) == 0) {
-        log_error("cJSON_AddStringToObject failed");
+        log_error("cJSON_AddStringToObject failed\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(hash_map, "location", file_location) == 0) {
-        log_error("cJSON_AddStringToObject failed");
+        log_error("cJSON_AddStringToObject failed\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(hash_map, "compression", "gzip") == 0) {
-        log_error("cJSON_AddStringToObject failed");
+        log_error("cJSON_AddStringToObject failed\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(hash_map, "fileFormatType", "org.3GPP.32.435#measCollec") == 0) {
-        log_error("cJSON_AddStringToObject failed");
+        log_error("cJSON_AddStringToObject failed\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(hash_map, "fileFormatVersion", "V5") == 0) {
-        log_error("cJSON_AddStringToObject failed");
+        log_error("cJSON_AddStringToObject failed\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }
 
     if(cJSON_AddItemToArray(array_of_named_hash_map, additional_fields_entry) == 0) {
-        log_error("cJSON_AddStringToObject failed");
+        log_error("cJSON_AddStringToObject failed\n");
         cJSON_Delete(file_ready_fields);
         return 0;
     }

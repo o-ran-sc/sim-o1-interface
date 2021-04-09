@@ -33,8 +33,14 @@
 
 static int ves_pnf_sequence_number = 0;
 
-static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const char *nf_ip_address, int nf_port, bool is_tls);
-static cJSON* ves_create_pnf_registration_fields(const char *nf_ip_address, int nf_port, bool is_tls);
+static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const char *nf_ip_v4_address, const char *nf_ip_v6_address, int nf_port, bool is_tls);
+static cJSON* ves_create_pnf_registration_fields(const char *nf_ip_v4_address, const char *nf_ip_v6_address, int nf_port, bool is_tls);
+
+static int ves_pnf_registration_status = 0;
+
+int ves_pnf_registration_feature_get_status(void) {
+    return ves_pnf_registration_status;
+}
 
 int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session) {
     assert(current_session);
@@ -50,105 +56,128 @@ int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session) {
         sr_free_val(value);
     }
     else if(rc != SR_ERR_NOT_FOUND) {
-        log_error("sr_get_item failed");
+        log_error("sr_get_item failed\n");
         return NTS_ERR_FAILED;
+    }
+    else {
+        // if value is not set yet, feature enable means we want to start pnf-registration
+        pnf_registration_enabled = true;
     }
 
     if(pnf_registration_enabled == false) {
-        log_message(2, "PNF registration is disabled\n");
+        log_add_verbose(2, "PNF registration is disabled\n");
         return NTS_ERR_OK;
     }
 
-    bool host_addressing_enabled = (nts_mount_point_addressing_method_get(current_session) == HOST_MAPPING);
+    char nf_ip_v4_address[128];
+    char nf_ip_v6_address[128];
+    int nf_ssh_port;
+    int nf_tls_port;
 
-    char nf_ip_address[128];
-    int nf_port;
-
-    if(host_addressing_enabled) {
-        strcpy(nf_ip_address, framework_environment.host_ip);
-        nf_port = framework_environment.host_base_port;
+    nts_mount_point_addressing_method_t mp = nts_mount_point_addressing_method_get(current_session);
+    if(mp == UNKNOWN_MAPPING) {
+        log_error("mount-point-addressing-method failed\n");
+        return NTS_ERR_FAILED;
+    }
+    else if(mp == DOCKER_MAPPING) {
+        if (framework_environment.settings.ip_v4 != 0) {
+            strcpy(nf_ip_v4_address, framework_environment.settings.ip_v4);
+        }
+        if (framework_environment.settings.ip_v6) {
+            strcpy(nf_ip_v6_address, framework_environment.settings.ip_v6);
+        }
+        nf_ssh_port = STANDARD_NETCONF_PORT;
+        nf_tls_port = nf_ssh_port + framework_environment.settings.ssh_connections;
     }
     else {
-        if(framework_environment.ip_v6_enabled) {
-            strcpy(nf_ip_address, framework_environment.ip_v6);
+        if (framework_environment.settings.ip_v6_enabled) {
+            strcpy(nf_ip_v6_address, framework_environment.host.ip);
         }
         else {
-            strcpy(nf_ip_address, framework_environment.ip_v4);
-        } 
-        
-        nf_port = STANDARD_NETCONF_PORT;
+            strcpy(nf_ip_v4_address, framework_environment.host.ip);
+        }
+        nf_ssh_port = framework_environment.host.ssh_base_port;
+        nf_tls_port = framework_environment.host.tls_base_port;
     }
 
-    int port = 0;
-    for(int i = 0; i < framework_environment.ssh_connections; ++port, ++i) {
-        rc = ves_pnf_registration_send(current_session, nf_ip_address, nf_port + port, false);
+    for(int i = 0; i < framework_environment.settings.ssh_connections; i++) {
+        rc = ves_pnf_registration_send(current_session, nf_ip_v4_address, nf_ip_v6_address, nf_ssh_port + i, false);
         if(rc != NTS_ERR_OK) {
-            log_error("could not send pnfRegistration message for IP=%s and port=%d and protocol SSH", nf_ip_address, nf_port + port);
+            log_error("could not send pnfRegistration message for IPv4=%s and IPv6=%s and port=%d and protocol SSH\n", nf_ip_v4_address, nf_ip_v6_address, nf_ssh_port + i);
             continue;
         }
     }
 
-    for(int i = 0; i < framework_environment.tls_connections; ++port, ++i) {
-        rc = ves_pnf_registration_send(current_session, nf_ip_address, nf_port + port, true);
+    for(int i = 0; i < framework_environment.settings.tls_connections; i++) {
+        rc = ves_pnf_registration_send(current_session, nf_ip_v4_address, nf_ip_v6_address, nf_tls_port + i, true);
         if(rc != NTS_ERR_OK) {
-            log_error("could not send pnfRegistration message for IP=%s and port=%d and protocol TLS", nf_ip_address, nf_port + port);
+            log_error("could not send pnfRegistration message for IPv4=%s and IPv6=%s and port=%d and protocol TLS\n", nf_ip_v4_address, nf_ip_v6_address, nf_tls_port + i);
             continue;
         }
     }
+
+    log_add_verbose(2, "PNF registration enabled\n");
+    ves_pnf_registration_status = 1;
 
     return NTS_ERR_OK;
 }
 
 
-static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const char *nf_ip_address, int nf_port, bool is_tls) {
+static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const char *nf_ip_v4_address, const char *nf_ip_v6_address, int nf_port, bool is_tls) {
     assert(current_session);
-    assert(nf_ip_address);
 
     cJSON *post_data_json = cJSON_CreateObject();
     if(post_data_json == 0) {
-        log_error("could not create cJSON object");
+        log_error("could not create cJSON object\n");
         return NTS_ERR_FAILED;
     }
 
     cJSON *event = cJSON_CreateObject();
     if(event == 0) {
-        log_error("could not create cJSON object");
+        log_error("could not create cJSON object\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
     
     if(cJSON_AddItemToObject(post_data_json, "event", event) == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
 
-    char *hostname_string = framework_environment.hostname;
+    char *hostname_string = framework_environment.settings.hostname;
     char source_name[100];
-	sprintf(source_name, "%s_%d", hostname_string, nf_port);
+
+    if (framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections == 1) {
+        // we don't want to append the port to the mountpoint name if we only expose one port
+        sprintf(source_name, "%s", hostname_string);
+    }
+    else {
+	    sprintf(source_name, "%s_%d", hostname_string, nf_port);
+    }
 
     cJSON *common_event_header = ves_create_common_event_header("pnfRegistration", "EventType5G", source_name, "Normal", ves_pnf_sequence_number++);
     if(common_event_header == 0) {
-        log_error("could not create cJSON object");
+        log_error("could not create cJSON object\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
     
     if(cJSON_AddItemToObject(event, "commonEventHeader", common_event_header) == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
 
-	cJSON *pnf_registration_fields = ves_create_pnf_registration_fields(nf_ip_address, nf_port, is_tls);
+	cJSON *pnf_registration_fields = ves_create_pnf_registration_fields(nf_ip_v4_address, nf_ip_v6_address, nf_port, is_tls);
     if(pnf_registration_fields == 0) {
-        log_error("could not create cJSON object");
+        log_error("could not create cJSON object\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
     
     if(cJSON_AddItemToObject(event, "pnfRegistrationFields", pnf_registration_fields) == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
@@ -156,14 +185,14 @@ static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const ch
     char *post_data = cJSON_PrintUnformatted(post_data_json);
     cJSON_Delete(post_data_json);
     if(post_data == 0) {
-        log_error("cJSON_PrintUnformatted failed");
+        log_error("cJSON_PrintUnformatted failed\n");
         return NTS_ERR_FAILED;
     }
 
 
     ves_details_t *ves_details = ves_endpoint_details_get(current_session);
     if(!ves_details) {
-        log_error("ves_endpoint_details_get failed");
+        log_error("ves_endpoint_details_get failed\n");
         free(post_data);
         return NTS_ERR_FAILED;
     }
@@ -173,45 +202,44 @@ static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const ch
     free(post_data);
     
     if(rc != NTS_ERR_OK) {
-        log_error("http_request failed");
+        log_error("http_request failed\n");
         return NTS_ERR_FAILED;
     }
 
     return NTS_ERR_OK;
 }
 
-static cJSON* ves_create_pnf_registration_fields(const char *nf_ip_address, int nf_port, bool is_tls) {
-    assert(nf_ip_address);
+static cJSON* ves_create_pnf_registration_fields(const char *nf_ip_v4_address, const char *nf_ip_v6_address, int nf_port, bool is_tls) {
 
     //checkAL aici n-ar trebui niste valori "adevarate" ?
 
     cJSON *pnf_registration_fields = cJSON_CreateObject();
     if(pnf_registration_fields == 0) {
-        log_error("could not create JSON object");
+        log_error("could not create JSON object\n");
         return 0;
     }
 
     if(cJSON_AddStringToObject(pnf_registration_fields, "pnfRegistrationFieldsVersion", "2.0") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(pnf_registration_fields, "lastServiceDate", "2019-08-16") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     char *mac_addr = rand_mac_address();
     if(mac_addr == 0) {
-        log_error("rand_mac_address failed")
+        log_error("rand_mac_address failed\n")
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(pnf_registration_fields, "macAddress", mac_addr) == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         free(mac_addr);
         return 0;
@@ -219,65 +247,69 @@ static cJSON* ves_create_pnf_registration_fields(const char *nf_ip_address, int 
     free(mac_addr);
 
     if(cJSON_AddStringToObject(pnf_registration_fields, "manufactureDate", "2019-08-16") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(pnf_registration_fields, "modelNumber", "Simulated Device Melacon") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
-    if(cJSON_AddStringToObject(pnf_registration_fields, "oamV4IpAddress", nf_ip_address) == 0) {
-        log_error("cJSON_AddItemToObject failed");
-        cJSON_Delete(pnf_registration_fields);
-        return 0;
+    if (nf_ip_v4_address != 0 && strlen(nf_ip_v4_address) > 0) {
+        if(cJSON_AddStringToObject(pnf_registration_fields, "oamV4IpAddress", nf_ip_v4_address) == 0) {
+            log_error("cJSON_AddItemToObject failed\n");
+            cJSON_Delete(pnf_registration_fields);
+            return 0;
+        }
     }
 
-    if(cJSON_AddStringToObject(pnf_registration_fields, "oamV6IpAddress", "0:0:0:0:0:ffff:a0a:011") == 0) {
-        log_error("cJSON_AddItemToObject failed");
-        cJSON_Delete(pnf_registration_fields);
-        return 0;
+    if (nf_ip_v6_address != 0 && strlen(nf_ip_v6_address) > 0) {
+        if(cJSON_AddStringToObject(pnf_registration_fields, "oamV6IpAddress", nf_ip_v6_address) == 0) {
+            log_error("cJSON_AddItemToObject failed\n");
+            cJSON_Delete(pnf_registration_fields);
+            return 0;
+        }
     }
 
     char serial_number[512];
-    sprintf(serial_number, "%s-%s-%d-Simulated Device Melacon", framework_environment.hostname, nf_ip_address, nf_port);
+    sprintf(serial_number, "%s-%s-%d-Simulated Device Melacon", framework_environment.settings.hostname, nf_ip_v4_address, nf_port);
 
     if(cJSON_AddStringToObject(pnf_registration_fields, "serialNumber", serial_number) == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(pnf_registration_fields, "softwareVersion", "2.3.5") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(pnf_registration_fields, "unitFamily", "Simulated Device") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(pnf_registration_fields, "unitType", "O-RAN-sim") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(pnf_registration_fields, "vendorName", "Melacon") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     cJSON *additional_fields = cJSON_CreateObject();
     if(additional_fields == 0) {
-        log_error("could not create JSON object");
+        log_error("could not create JSON object\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
@@ -287,7 +319,7 @@ static cJSON* ves_create_pnf_registration_fields(const char *nf_ip_address, int 
     sprintf(port_string, "%d", nf_port);
 
     if(cJSON_AddStringToObject(additional_fields, "oamPort", port_string) == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
@@ -295,19 +327,19 @@ static cJSON* ves_create_pnf_registration_fields(const char *nf_ip_address, int 
     if(is_tls) {
         //TLS specific configuration
         if(cJSON_AddStringToObject(additional_fields, "protocol", "TLS") == 0) {
-            log_error("cJSON_AddItemToObject failed");
+            log_error("cJSON_AddItemToObject failed\n");
             cJSON_Delete(pnf_registration_fields);
             return 0;
         }
 
         if(cJSON_AddStringToObject(additional_fields, "username", "netconf") == 0) {
-            log_error("cJSON_AddItemToObject failed");
+            log_error("cJSON_AddItemToObject failed\n");
             cJSON_Delete(pnf_registration_fields);
             return 0;
         }
 
         if(cJSON_AddStringToObject(additional_fields, "keyId", KS_KEY_NAME) == 0) {
-            log_error("cJSON_AddItemToObject failed");
+            log_error("cJSON_AddItemToObject failed\n");
             cJSON_Delete(pnf_registration_fields);
             return 0;
         }
@@ -315,62 +347,63 @@ static cJSON* ves_create_pnf_registration_fields(const char *nf_ip_address, int 
     else {
         //SSH specific configuration
         if(cJSON_AddStringToObject(additional_fields, "protocol", "SSH") == 0) {
-            log_error("cJSON_AddItemToObject failed");
+            log_error("cJSON_AddItemToObject failed\n");
             cJSON_Delete(pnf_registration_fields);
             return 0;
         }
 
         if(cJSON_AddStringToObject(additional_fields, "username", "netconf") == 0) {
-            log_error("cJSON_AddItemToObject failed");
+            log_error("cJSON_AddItemToObject failed\n");
             cJSON_Delete(pnf_registration_fields);
             return 0;
         }
 
-        if(cJSON_AddStringToObject(additional_fields, "password", "netconf") == 0) {
-            log_error("cJSON_AddItemToObject failed");
+        // hardcoded password here
+        if(cJSON_AddStringToObject(additional_fields, "password", "netconf!") == 0) {
+            log_error("cJSON_AddItemToObject failed\n");
             cJSON_Delete(pnf_registration_fields);
             return 0;
         }
     }
 
     if(cJSON_AddStringToObject(additional_fields, "reconnectOnChangedSchema", "false") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(additional_fields, "sleep-factor", "1.5") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(additional_fields, "tcpOnly", "false") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(additional_fields, "connectionTimeout", "20000") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(additional_fields, "maxConnectionAttempts", "100") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(additional_fields, "betweenAttemptsTimeout", "2000") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(additional_fields, "keepaliveDelay", "120") == 0) {
-        log_error("cJSON_AddItemToObject failed");
+        log_error("cJSON_AddItemToObject failed\n");
         cJSON_Delete(pnf_registration_fields);
         return 0;
     }

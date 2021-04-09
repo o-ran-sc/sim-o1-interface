@@ -25,26 +25,14 @@ COPY ./yang /opt/dev/deploy/yang
 COPY ./config.json /opt/dev/ntsim-ng/config/config.json
 
 # ntsim-ng init docker
-RUN /opt/dev/ntsim-ng/ntsim-ng --docker-init -w /opt/dev/ntsim-ng
-
-# supervisor configuration
-COPY ./supervisord.conf /etc/supervisord.conf
-
-# finishing container build
-ARG BUILD_DATE
-LABEL build-date=$BUILD_DATE
+RUN /opt/dev/ntsim-ng/ntsim-ng --container-init -w /opt/dev/ntsim-ng
 
 # add exposed ports
 EXPOSE 830-929
 EXPOSE 21-22
 
-# host IP address to bind to
-ENV NETCONF_NTS_HOST_IP=127.0.0.1
-# starting port for host allocation
-ENV NETCONF_NTS_HOST_BASE_PORT=50000
-
-ENV DOCKER_ENGINE_VERSION=1.40
+ENV NTS_FUNCTION_TYPE=NTS_FUNCTION_TYPE_MANAGER
 
 # run
 WORKDIR /opt/dev/workspace
-CMD ["sh", "-c", "/usr/bin/supervisord -c /etc/supervisord.conf"]
+CMD ["/opt/dev/ntsim-ng/ntsim-ng", "-w/opt/dev/ntsim-ng", "--supervisor"]

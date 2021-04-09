@@ -18,18 +18,24 @@
 # ***************************************************************************/
 
 files=(
+    "core/container.c"
     "core/context.c"
     "core/docker.c"
     "core/framework.c"
     "core/test.c"
     "core/session.c"
     "core/nc_config.c"
+    "core/app/supervisor.c"
+    "core/app/app_common.c"
     "core/app/manager.c"
+    "core/app/manager_context.c"
     "core/app/manager_operations.c"
+    "core/app/manager_actions.c"
+    "core/app/manager_sysrepo.c"
     "core/app/network_function.c"
     "core/datastore/schema.c"
+    "core/datastore/generate.c"
     "core/datastore/populate.c"
-    "core/datastore/populate_rec.c"
     "core/faults/faults.c"
     "core/faults/faults_counters.c"
     "core/faults/faults_processing.c"
@@ -77,6 +83,9 @@ done
 output="ntsim-ng"
 
 build="gcc -Wall -pedantic -Isource $sources $libraries -o$output"
+if [[ -n "${BUILD_WITH_DEBUG}" ]]; then
+    build="gcc -g -Wall -pedantic -Isource $sources $libraries -o$output"
+fi
 
 echo "Building with command: $build"
 $build

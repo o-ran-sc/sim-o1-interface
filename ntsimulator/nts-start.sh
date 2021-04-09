@@ -1,0 +1,1 @@
+docker-compose up -d --scale ntsim-ng=0 --scale ntsim-ng-o-ru=1 --scale ntsim-ng-o-du=1

@@ -1,10 +1,34 @@
 {
-    "docker-rules": {
+    "container-rules": {
         "excluded-modules": [],
         "excluded-features": []
     },
+
+    "supervisor-rules": {
+        "netopeer": {
+            "path": "/usr/local/bin/netopeer2-server",
+            "args": ["-d", "-v2"],
+            "autorestart": true,
+            "stdout": "log/netopeer-stdout.log",
+            "stderr": "log/netopeer-stderr.log"
+        },
     
-    "populate-rules" : {
+        "sshd": {
+            "path": "/usr/sbin/sshd",
+            "args": ["-D"],
+            "autorestart": true,
+            "stdout": "log/sshd-stdout.log",
+            "stderr": "log/sshd-stderr.log"
+        },
+    
+        "ntsim-network-function": {
+            "path": "/opt/dev/ntsim-ng/ntsim-ng",
+            "args": ["-w/opt/dev/ntsim-ng", "-f"],
+            "nomanual": true
+        }
+    },
+
+    "datastore-random-generation-rules" : {
         "excluded-modules": [
             "sysrepo",
             "sysrepo-monitoring",
@@ -16,11 +40,28 @@
             "ietf-truststore",
             "ietf-system",
             "ietf-netconf-server",
+            "ietf-alarms",
+            "ietf-network-instance",
+            "ietf-restconf",
+            "ietf-yang-schema-mount",
+            "ietf-subscribed-notifications",
+            "o-ran-uplane-conf",
+            "o-ran-performance-management",
+            "o-ran-transceiver",
+            "o-ran-mplane-int",
+            "o-ran-processing-element",
             "nts-network-function"
         ],
         
-        "default-list-instances": 2,
+        "default-list-instances": 8,
         "custom-list-instances" : []
+    },
+
+    "datastore-populate-rules": {
+        "random-generation-enabled": true,
+
+        "pre-generated-operational-data": [],
+        "pre-generated-running-data": []
     },
 
     "fault-rules" : {
@@ -28,29 +69,81 @@
         "choosing-method" : "linear",
         "faults" : [
             {
-                "condition" : "cod1",
-                "object"    : "obj1",
+                "condition" : "CPRI Port Down",
+                "object"    : "Slot-0-Port-A",
                 "severity"  : "MAJOR",
                 "date-time" : "$$time$$",
-                "specific-problem" : "sp1",
+                "specific-problem" : "CPRI Port Down",
 
-                "fault-severity" : "WARNING",
+                "fault-severity" : "MAJOR",
                 "affected-object" : "%%object%%",
                 "cleared" : "false",
-                "text" : "ana n-are mere"
+                "text" : "CPRI Port Down"
             },
 
             {
-                "condition" : "cod2",
-                "object"    : "obj1",
+                "condition" : "CPRI Port Down",
+                "object"    : "Slot-0-Port-A",
                 "severity"  : "NORMAL",
                 "date-time" : "$$time$$",
-                "specific-problem" : "sp2",
+                "specific-problem" : "CPRI Port Down",
 
-                "fault-severity" : "WARNING",
+                "fault-severity" : "MAJOR",
                 "affected-object" : "%%object%%",
                 "cleared" : "true",
-                "text" : "ana are mere"
+                "text" : "CPRI Port Down"
+            },
+
+            {
+                "condition" : "CPRI Port Down",
+                "object"    : "Slot-0-Port-C",
+                "severity"  : "MAJOR",
+                "date-time" : "$$time$$",
+                "specific-problem" : "CPRI Port Down",
+
+                "fault-severity" : "MAJOR",
+                "affected-object" : "%%object%%",
+                "cleared" : "false",
+                "text" : "CPRI Port Down"
+            },
+
+            {
+                "condition" : "CPRI Port Down",
+                "object"    : "Slot-0-Port-C",
+                "severity"  : "NORMAL",
+                "date-time" : "$$time$$",
+                "specific-problem" : "CPRI Port Down",
+
+                "fault-severity" : "MAJOR",
+                "affected-object" : "%%object%%",
+                "cleared" : "true",
+                "text" : "CPRI Port Down"
+            },
+
+            {
+                "condition" : "CPRI Port Down",
+                "object"    : "Slot-2-Port-B",
+                "severity"  : "MAJOR",
+                "date-time" : "$$time$$",
+                "specific-problem" : "CPRI Port Down",
+
+                "fault-severity" : "MAJOR",
+                "affected-object" : "%%object%%",
+                "cleared" : "false",
+                "text" : "CPRI Port Down"
+            },
+
+            {
+                "condition" : "CPRI Port Down",
+                "object"    : "Slot-2-Port-B",
+                "severity"  : "NORMAL",
+                "date-time" : "$$time$$",
+                "specific-problem" : "CPRI Port Down",
+
+                "fault-severity" : "MAJOR",
+                "affected-object" : "%%object%%",
+                "cleared" : "true",
+                "text" : "CPRI Port Down"
             }
         ]
     }

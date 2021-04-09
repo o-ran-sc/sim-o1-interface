@@ -11,34 +11,43 @@ module nts-common {
     "O-RAN-SC";
   contact
     " Web: <https://wiki.o-ran-sc.org/display/SIM/SIM>
-        Editors:  
+        Editors:
         Alex Stancu <mailto:alexandru.stancu@highstreet-technologies.com>
         Adrian Lita <mailto:adrian.lita@highstreet-technologies.com>
         Martin Skorupski <mailto:martin.skorupski@highstreet-technologies.com>";
   description
     "This module contains common yang definitions YANG definitions for the Network Topology Simulator.";
 
+  revision 2021-03-26 {
+    description
+      "Added controller-protocol.";
+    reference
+      "O-RAN-SC SIM project";
+  }
+  revision 2021-02-15 {
+    description
+      "Added presence to configuration containers.";
+    reference
+      "O-RAN-SC SIM project";
+  }
   revision 2020-11-20 {
     description
       "Add feature-type for the Web cut through feature.";
     reference
       "O-RAN-SC SIM project";
   }
-
   revision 2020-10-22 {
     description
       "Add feature-type for the NETCONF Call Home feature.";
     reference
       "O-RAN-SC SIM project";
   }
-
   revision 2020-10-13 {
     description
       "Add feature-type typedef containing the features that can be activated in the Network Function.";
     reference
       "O-RAN-SC SIM project";
   }
-
   revision 2020-09-07 {
     description
       "Initial revision for the Network Topology Simulator - Next Generation common types.";
@@ -47,8 +56,13 @@ module nts-common {
   }
 
   feature faults-status {
-      description
-        "This means that the server supports reporting back the number of faults that were generated";
+    description
+      "This means that the server supports reporting back the number of faults that were generated";
+  }
+
+  identity NTS_FUNCTION_TYPE_BASE {
+    description
+      "The reference of each identity represents the name of the associated docker image.";
   }
 
   typedef authentication-method-type {
@@ -76,279 +90,291 @@ module nts-common {
 
   typedef feature-type {
     type bits {
-        bit ves-file-ready {
-            position 0;
-            description
-            "Controls the ves-file-ready feature.";
-        }
-        bit ves-heartbeat {
-            position 1;
-            description
-            "Controls the ves-heartbeat feature.";
-        }
-        bit ves-pnf-registration {
-            position 2;
-            description
-            "Controls the ves-pnf-registration feature.";
-        }
-        bit manual-notification-generation {
-            position 3;
-            description
-            "Controls the manual notification generation feature.";
-        }
-        bit netconf-call-home {
-            position 4;
-            description
-            "Controls the NETCONF Call Home feature.";
-        }
-        bit web-cut-through {
-            position 5;
-            description
-            "Controls the Web Cut Through feature.";
-        }
+      bit ves-file-ready {
+        position 0;
+        description
+          "Controls the ves-file-ready feature.";
+      }
+      bit ves-heartbeat {
+        position 1;
+        description
+          "Controls the ves-heartbeat feature.";
+      }
+      bit ves-pnf-registration {
+        position 2;
+        description
+          "Controls the ves-pnf-registration feature.";
+      }
+      bit manual-notification-generation {
+        position 3;
+        description
+          "Controls the manual notification generation feature.";
+      }
+      bit netconf-call-home {
+        position 4;
+        description
+          "Controls the NETCONF Call Home feature.";
+      }
+      bit web-cut-through {
+        position 5;
+        description
+          "Controls the Web Cut Through feature.";
+      }
     }
     description
-    "Describes the features that can be enabled/disabled in the Network Function.";
-  }
-
-  identity NTS_FUNCTION_TYPE_BASE {
-    description
-      "The reference of each identity represents the name of the associated docker image.";
+      "Describes the features that can be enabled/disabled in the Network Function.";
   }
 
   grouping mount-point-details-g {
-      leaf mount-point-addressing-method {
-        type enumeration {
-            enum host-mapping {
-                description
-                "Uses IP and port mapped to the host machine to address the nework function.";
-            }
-            enum docker-mapping {
-                description
-                "Uses Docker IP and port to address the nework function.";
-            }
+    description
+      "Groups details about mount point";
+    leaf mount-point-addressing-method {
+      type enumeration {
+        enum host-mapping {
+          description
+            "Uses IP and port mapped to the host machine to address the nework function.";
         }
-        default docker-mapping;
-        description
-          "Specifies how to address the simulated network function: via the host machine or via docker.";
-    }
+        enum docker-mapping {
+          description
+            "Uses Docker IP and port to address the nework function.";
+        }
+      }
+      default "docker-mapping";
       description
-        "Groups details about mount point";
+        "Specifies how to address the simulated network function: via the host machine or via docker.";
+    }
   }
 
   grouping fault-delay-period-g {
-      list fault-delay-list {
-          key index;
-          ordered-by user;
-          leaf index {
-              type uint16;
-              description
-                "The index of the list.";
-          }
-          leaf delay-period {
-              type uint16;
-              units s;
-              description
-                "The amount of seconds before the next event.";
-          }
-          description
-            "The list defining the pattern for generating events.";
-      }
+    description
+      "For reusing the same fault-delay-period.";
+    list fault-delay-list {
+      key "index";
+      ordered-by user;
       description
-        "For reusing the same fault-delay-period.";
+        "The list defining the pattern for generating events.";
+      leaf index {
+        type uint16;
+        description
+          "The index of the list.";
+      }
+      leaf delay-period {
+        type uint16;
+        units "s";
+        description
+          "The amount of seconds before the next event.";
+      }
+    }
   }
 
   grouping fault-count-g {
-      container fault-count {
-          if-feature faults-status;
-          config false;
-          leaf normal {
-              type uint32;
-              description
-                "Number of normal (non-alarmed) events.";
-          }
-          leaf warning {
-              type uint32;
-              description
-                "Number of warning events.";
-          }
-          leaf minor {
-              type uint32;
-              description
-                "Number of minor events.";
-          }
-          leaf major {
-              type uint32;
-              description
-                "Number of major events.";
-          }
-          leaf critical {
-              type uint32;
-              description
-                "Number of critical events.";
-          }
-          description
-            "Container which groups the number of fault events, by severity.";
-      }
+    description
+      "Grouping for counting the fault events, grouped by severity.";
+    container fault-count {
+      if-feature "faults-status";
+      config false;
       description
-        "Grouping for counting the fault events, grouped by severity.";
+        "Container which groups the number of fault events, by severity.";
+      leaf normal {
+        type uint32;
+        description
+          "Number of normal (non-alarmed) events.";
+      }
+      leaf warning {
+        type uint32;
+        description
+          "Number of warning events.";
+      }
+      leaf minor {
+        type uint32;
+        description
+          "Number of minor events.";
+      }
+      leaf major {
+        type uint32;
+        description
+          "Number of major events.";
+      }
+      leaf critical {
+        type uint32;
+        description
+          "Number of critical events.";
+      }
+    }
   }
 
   grouping faults-g {
-    container fault-generation {
-      uses fault-delay-period-g;
-      uses fault-count-g;
-      description
-        "Groups the fault generation configuration and status.";
-    }
     description
       "Grouping for fault generation";
+    container fault-generation {
+      presence "Enables fault generation configuration.";
+      description
+        "Groups the fault generation configuration and status.";
+      uses fault-delay-period-g;
+      uses fault-count-g;
+    }
   }
 
   grouping faults-enabled-g {
-    leaf faults-enabled {
-        type boolean;
-        description
-          "For enabling the fault generation.";
-    }  
     description
       "Groups the enabling of faults.";
+    leaf faults-enabled {
+      type boolean;
+      description
+        "For enabling the fault generation.";
+    }
   }
 
   grouping netconf-config-g {
-    container netconf {
-        uses faults-enabled-g;
-        leaf call-home {
-            type boolean;
-            description
-            "For enabling the NETCONF Call Home feature. If set to 'true', each simulated device, when booting up, will try to Call Home to the SDN Controller.";
-        }
-        description
-        "Container for describing the NETCONF details.";
-    }
     description
       "Groups the configuration and status of NETCONF Fault notifications.";
+    container netconf {
+      presence "Enables NETCONF configuration.";
+      description
+        "Container for describing the NETCONF details.";
+      uses faults-enabled-g;
+      leaf call-home {
+        type boolean;
+        description
+          "For enabling the NETCONF Call Home feature. If set to 'true', each simulated device, when booting up, will try to Call Home to the SDN Controller.";
+      }
+    }
   }
 
   grouping ves-config-g {
-      container ves {
-          uses faults-enabled-g;
-          leaf pnf-registration {
-              type boolean;
-              description
-                "For enabling the PNF Registration messages. If set to 'true', each simulated device, when booting up, will send a PNF Registration message to the VES Collector.";
-          }
-          leaf heartbeat-period {
-              type uint16;
-              description
-                "The number of seconds between VES heartbeat messages.";
-          }                    
-          description
-            "Container for describing the VES details.";
-      }
     description
       "Groups the configuration and status of VES Fault notifications.";
+    container ves {
+      presence "Enables VES configuration.";
+      description
+        "Container for describing the VES details.";
+      uses faults-enabled-g;
+      leaf pnf-registration {
+        type boolean;
+        description
+          "For enabling the PNF Registration messages. If set to 'true', each simulated device, when booting up, will send a PNF Registration message to the VES Collector.";
+      }
+      leaf heartbeat-period {
+        type uint16;
+        description
+          "The number of seconds between VES heartbeat messages.";
+      }
+    }
   }
 
   grouping controller-g {
-      leaf controller-ip {
-          type inet:ip-address;
+    description
+      "Groups information about the SDN Controller.";
+    leaf controller-protocol {
+      type enumeration {
+        enum http {
           description
-            "The IP address of the SDN Controller.";
-      }
-      leaf controller-port {
-          type inet:port-number;
+            "HTTP protocol will be used to connect to the VES Collector.";
+        }
+        enum https {
           description
-            "The port exposed by the SDN Controller.";
+            "HTTPS protocol will be used to connect to the VES Collector.";
+        }
       }
-      leaf controller-netconf-call-home-port {
-          type inet:port-number;
-          description
-            "The port exposed by the SDN Controller for NETCONF Call Home.";
-      }
-      leaf controller-username {
-          type string;
-          description
-            "The username for accessing the SDN Controller.";
-      }
-      leaf controller-password {
-          type string;
-          description
-            "The password for accessing the SDN Controller.";
-      }
+      default "https";
       description
-        "Groups information about the SDN Controller.";
+        "The protocol used for communication with the SDN Controller.";
+    }
+    leaf controller-ip {
+      type inet:ip-address;
+      description
+        "The IP address of the SDN Controller.";
+    }
+    leaf controller-port {
+      type inet:port-number;
+      description
+        "The port exposed by the SDN Controller.";
+    }
+    leaf controller-netconf-call-home-port {
+      type inet:port-number;
+      description
+        "The port exposed by the SDN Controller for NETCONF Call Home.";
+    }
+    leaf controller-username {
+      type string;
+      description
+        "The username for accessing the SDN Controller.";
+    }
+    leaf controller-password {
+      type string;
+      description
+        "The password for accessing the SDN Controller.";
+    }
   }
 
   grouping ves-endpoint-g {
-      leaf ves-endpoint-protocol {
-          type enumeration {
-              enum http {
-                  description
-                    "HTTP protocol will be used to connect to the VES Collector.";
-              }
-              enum https {
-                  description
-                    "HTTPS protocol will be used to connect to the VES Collector.";
-              }
-          }
-          default https;
+    description
+      "Groups information about the VES Collector.";
+    leaf ves-endpoint-protocol {
+      type enumeration {
+        enum http {
           description
-            "The protocol (HTTP / HTTPS) to be used to address the VES Collector.";
-      }
-      leaf ves-endpoint-ip {
-          type inet:ip-address;
+            "HTTP protocol will be used to connect to the VES Collector.";
+        }
+        enum https {
           description
-            "The IP address of the VES Collector.";
+            "HTTPS protocol will be used to connect to the VES Collector.";
+        }
       }
-      leaf ves-endpoint-port {
-          type inet:port-number;
-          description
-            "The port exposed by the VES Collector.";
-      }
-      leaf ves-endpoint-auth-method {
-        type authentication-method-type;
-        default "no-auth";
-        description
-          "The type of the authentication to be used with the VES Collector.";
-      }
-      leaf ves-endpoint-username {
-          type string;
-          description
-            "The username for accessing the VES Collector.";
-      }
-      leaf ves-endpoint-password {
-          type string;
-          description
-            "The password for accessing the VES Collector.";
-      }
-      leaf ves-endpoint-certificate {
-        type string;
-        description
-          "The Certificate to be used to authenticate to the VES Collector.";
-      }
+      default "https";
       description
-        "Groups information about the VES Collector.";
+        "The protocol (HTTP / HTTPS) to be used to address the VES Collector.";
+    }
+    leaf ves-endpoint-ip {
+      type inet:ip-address;
+      description
+        "The IP address of the VES Collector.";
+    }
+    leaf ves-endpoint-port {
+      type inet:port-number;
+      description
+        "The port exposed by the VES Collector.";
+    }
+    leaf ves-endpoint-auth-method {
+      type authentication-method-type;
+      default "no-auth";
+      description
+        "The type of the authentication to be used with the VES Collector.";
+    }
+    leaf ves-endpoint-username {
+      type string;
+      description
+        "The username for accessing the VES Collector.";
+    }
+    leaf ves-endpoint-password {
+      type string;
+      description
+        "The password for accessing the VES Collector.";
+    }
+    leaf ves-endpoint-certificate {
+      type string;
+      description
+        "The Certificate to be used to authenticate to the VES Collector.";
+    }
   }
 
   grouping rpc-status-g {
-      leaf status {
-          type enumeration {
-            enum SUCCESS {
-            description
-                "The RPC was successfully invoked.";
-            }
-            enum ERROR {
-            description
-                "An error was encountered when invoking the RPC.";
-            }
-          }
-        mandatory true;
-        description
-          "The status of the RPC.";
+    description
+      "RPC output grouping.";
+    leaf status {
+      type enumeration {
+        enum SUCCESS {
+          description
+            "The RPC was successfully invoked.";
+        }
+        enum ERROR {
+          description
+            "An error was encountered when invoking the RPC.";
+        }
       }
+      mandatory true;
       description
-        "RPC output grouping.";
+        "The status of the RPC.";
+    }
   }
-
-} //end module
+}

@@ -17,18 +17,16 @@
 #### DEVICE ####
 ################
 
-FROM nexus3.o-ran-sc.org:10004/o-ran-sc/nts-ng-base:latest
+FROM o-ran-sc/nts-ng-base:latest
 LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@highstreet-technologies.com"
 
 # ntsim-ng configuration and deployment
 COPY ./yang /opt/dev/deploy/yang
+COPY ./data /opt/dev/deploy/data
 COPY ./config.json /opt/dev/ntsim-ng/config/config.json
 
 # ntsim-ng init docker
-RUN /opt/dev/ntsim-ng/ntsim-ng --docker-init -w /opt/dev/ntsim-ng
-
-# supervisor configuration
-COPY ./supervisord.conf /etc/supervisord.conf
+RUN /opt/dev/ntsim-ng/ntsim-ng --container-init -w /opt/dev/ntsim-ng
 
 # finishing container build
 ARG BUILD_DATE
@@ -38,6 +36,8 @@ LABEL build-date=$BUILD_DATE
 EXPOSE 830-929
 EXPOSE 21-22
 
+ENV NTS_FUNCTION_TYPE=NTS_FUNCTION_TYPE_O_RAN_O_RU_FH
+
 # run
 WORKDIR /opt/dev/workspace
-CMD ["sh", "-c", "/usr/bin/supervisord -c /etc/supervisord.conf"]
+CMD ["/opt/dev/ntsim-ng/ntsim-ng", "-w/opt/dev/ntsim-ng", "--supervisor"]

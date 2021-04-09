@@ -35,18 +35,43 @@
 #define MANUAL_NOTIFICATION_RPC_SCHEMA_XPATH         "/nts-network-function:invoke-notification"
 
 static int manual_notification_pm_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data);
+static sr_subscription_ctx_t *manual_notification_subscription = 0;
+
+int manual_notification_feature_get_status(void) {
+    return (manual_notification_subscription != 0);
+}
 
 int manual_notification_feature_start(sr_session_ctx_t *current_session) {
     assert_session();
+    assert(current_session);
 
-    int rc = sr_rpc_subscribe(current_session, MANUAL_NOTIFICATION_RPC_SCHEMA_XPATH, manual_notification_pm_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
-    if(rc != SR_ERR_OK) {
-        log_error("error from sr_rpc_subscribe: %s\n", sr_strerror(rc));
-        return NTS_ERR_FAILED;
+    if(manual_notification_subscription == 0) {
+        int rc = sr_rpc_subscribe(current_session, MANUAL_NOTIFICATION_RPC_SCHEMA_XPATH, manual_notification_pm_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &manual_notification_subscription);
+        if(rc != SR_ERR_OK) {
+            log_error("error from sr_rpc_subscribe: %s\n", sr_strerror(rc));
+            return NTS_ERR_FAILED;
+        }
     }
 
     return NTS_ERR_OK;
 }
+
+int manual_notification_feature_stop(void) {
+    assert_session();
+
+    if(manual_notification_subscription) {
+        int rc = sr_unsubscribe(manual_notification_subscription);
+        if(rc != SR_ERR_OK) {
+            log_error("error from sr_rpc_subscribe: %s\n", sr_strerror(rc));
+            return NTS_ERR_FAILED;
+        }
+
+        manual_notification_subscription = 0;
+    }
+
+    return NTS_ERR_OK;
+}
+
 
 static int manual_notification_pm_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data) {
     int rc;

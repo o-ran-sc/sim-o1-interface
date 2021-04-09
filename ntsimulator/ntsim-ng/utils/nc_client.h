@@ -18,6 +18,7 @@
 #pragma once
 
 #define NC_ENABLED_SSH
+#define NC_ENABLED_TLS
 #include <libyang/libyang.h>
 #include <libnetconf2/session.h>
 #include <libnetconf2/session_client.h>
@@ -34,6 +35,7 @@ typedef struct {
 } nc_client_t;
 
 nc_client_t *nc_client_ssh_connect(const char *host, uint16_t port, const char *username, const char *password);
+nc_client_t *nc_client_tls_connect(const char *host, uint16_t port);
 int nc_client_disconnect(nc_client_t *client);
 
 struct lyd_node *nc_client_send_rpc(nc_client_t *client, struct lyd_node *data, int timeout);

@@ -38,7 +38,7 @@ typedef struct {
     char *url;
 } ves_details_t;
 
-typedef struct {    
+typedef struct {   
     char *ip;
     uint16_t port;
     uint16_t nc_callhome_port;
@@ -59,3 +59,7 @@ void ves_details_free(ves_details_t *instance);
 
 controller_details_t *controller_details_get(sr_session_ctx_t *current_session);
 void controller_details_free(controller_details_t *instance);
+
+int nts_utils_populate_info(sr_session_ctx_t *current_session, const char *function_type);
+
+int nts_vercmp(const char *ver1, const char *ver2);

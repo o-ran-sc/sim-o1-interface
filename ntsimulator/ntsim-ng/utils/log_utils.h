@@ -38,14 +38,14 @@
 #define NTS_ERR_FAILED 			(-1)
 
 void log_init(const char *logfilename);
-void log_message(const int verbose_level, const char *format, ...);
+void log_redirect_stderr(const char *stderrfilename);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wvariadic-macros"
-#define log_message(verbose_level, format, args...)  log__message(__FILE__, (uint32_t)__LINE__, verbose_level, format, ## args);
-#define log_error(format, args...)  log__error(__func__, (uint32_t)__LINE__, format, ## args);
+#define log_add_verbose(verbose_level, format, args...)  log__message(__FILE__, (uint32_t)__LINE__, verbose_level, format, ## args);
+#define log_add(verbose_level, format, args...)  log__message(__FILE__, (uint32_t)__LINE__, -verbose_level, format, ## args);
+#define log_error(format, args...)  log__message(__FILE__, (uint32_t)__LINE__, 0, format, ## args);
 #pragma GCC diagnostic pop
 void log_close(void);
 
-//use log_error instead
-void log__error(char const * const function, uint32_t location, const char *format, ...);
-void log__message(char const * const filename, uint32_t location, const int verbose_level, const char *format, ...);
+//masked functions (use macros defined above)
+void log__message(char const * const fname, uint32_t location, int verbose_level, const char *format, ...);

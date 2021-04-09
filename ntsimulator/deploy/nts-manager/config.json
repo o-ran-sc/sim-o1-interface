@@ -1,26 +1,30 @@
 {
-    "docker-rules": {
+    "container-rules": {
         "excluded-modules": [],
         "excluded-features": ["faults-status"]
     },
+
+    "supervisor-rules": {
+        "netopeer": {
+            "path": "/usr/local/bin/netopeer2-server",
+            "args": ["-d", "-v2"],
+            "autorestart": true,
+            "stdout": "log/netopeer-stdout.log",
+            "stderr": "log/netopeer-stderr.log"
+        },
     
-    "populate-rules" : {
-        "excluded-modules": [
-            "sysrepo",
-            "sysrepo-monitoring",
-            "ietf-yang-library",
-            "ietf-netconf-acm",
-            "ietf-netconf-monitoring",
-            "nc-notifications",
-            "ietf-keystore",
-            "ietf-truststore",
-            "ietf-system",
-            "ietf-netconf-server",
-            "nts-network-function",
-            "nts-manager"
-        ],
-        
-        "default-list-instances": 2,
-        "custom-list-instances" : []
+        "sshd": {
+            "path": "/usr/sbin/sshd",
+            "args": ["-D"],
+            "autorestart": true,
+            "stdout": "log/sshd-stdout.log",
+            "stderr": "log/sshd-stderr.log"
+        },
+    
+        "ntsim-manager": {
+            "path": "/opt/dev/ntsim-ng/ntsim-ng",
+            "args": ["-w/opt/dev/ntsim-ng", "-m"],
+            "nomanual": true
+        }
     }
 }

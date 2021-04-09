@@ -19,4 +19,7 @@
 
 #include <sysrepo.h>
 
+int manual_notification_feature_get_status(void);
 int manual_notification_feature_start(sr_session_ctx_t *current_session);
+int manual_notification_feature_stop(void);
+

@@ -1,34 +1,106 @@
-version: '2.4'
+version: '3.7'
 services:
   ntsim-ng:
-    image: "${DOCKER_REPO}nts-ng-manager:${BUILD_VERSION}"
+    image: "${DOCKER_REPO}nts-ng-manager:${NTS_BUILD_VERSION}"
     container_name: nts-ng-manager
+    stop_grace_period: 5m
     ports:
      - "::${NTS_MANAGER_PORT}:830"
     volumes:
      - "/var/run/docker.sock:/var/run/docker.sock"
      - "/usr/bin/docker:/usr/bin/docker"
     environment:
-      IPv6_ENABLED: "false"
+      NTS_HOST_IP: "10.20.11.136"
+      NTS_HOST_BASE_PORT: 50000
+      NTS_HOST_NETCONF_SSH_BASE_PORT: 0
+      NTS_HOST_NETCONF_TLS_BASE_PORT: 1000
+      NTS_HOST_TRANSFER_FTP_BASE_PORT: 2000
+      NTS_HOST_TRANSFER_SFTP_BASE_PORT: 2000
+
       DOCKER_ENGINE_VERSION: "1.40"
+      IPv6_ENABLED: ${IPv6_ENABLED}
+      SSH_CONNECTIONS: ${SSH_CONNECTIONS}
+      TLS_CONNECTIONS: ${TLS_CONNECTIONS}
+            
+      SDN_CONTROLLER_PROTOCOL: ${SDN_CONTROLLER_PROTOCOL}
+      SDN_CONTROLLER_IP: ${SDN_CONTROLLER_IP}
+      SDN_CONTROLLER_PORT: ${SDN_CONTROLLER_PORT}
+      SDN_CONTROLLER_CALLHOME_PORT: ${SDN_CONTROLLER_CALLHOME_PORT}
+      SDN_CONTROLLER_USERNAME: ${SDN_CONTROLLER_USERNAME}
+      SDN_CONTROLLER_PASSWORD: ${SDN_CONTROLLER_PASSWORD}
 
-      NETCONF_NTS_HOST_IP: "10.20.11.121"
-      NETCONF_NTS_HOST_BASE_PORT: 50000
-      SSH_CONNECTIONS: 1
-      TLS_CONNECTIONS: 0
+      VES_COMMON_HEADER_VERSION: ${VES_COMMON_HEADER_VERSION}
+      VES_ENDPOINT_PROTOCOL: ${VES_ENDPOINT_PROTOCOL}
+      VES_ENDPOINT_IP: ${VES_ENDPOINT_IP}
+      VES_ENDPOINT_PORT: ${VES_ENDPOINT_PORT}
+      VES_ENDPOINT_AUTH_METHOD: ${VES_ENDPOINT_AUTH_METHOD}
+      VES_ENDPOINT_USERNAME: ${VES_ENDPOINT_USERNAME}
+      VES_ENDPOINT_PASSWORD: ${VES_ENDPOINT_PASSWORD}
+    # networks:
+    #   app_net:
 
-      SDN_CONTROLLER_IP: "10.20.11.131"
-      SDN_CONTROLLER_PORT: 8181
-      SDN_CONTROLLER_CALLHOME_PORT: 6666
-      SDN_CONTROLLER_USERNAME: "admin"
-      SDN_CONTROLLER_PASSWORD: "admin"
+  ntsim-ng-o-ru:
+    image: "${DOCKER_REPO}nts-ng-o-ran-ru-fh:${NTS_BUILD_VERSION}"
+    cap_add:
+      - SYS_ADMIN
+    stop_grace_period: 5m
+    hostname: "O-RAN-O-RU-1"
+    ports:
+     - "::18300:830"
+    environment:
+        IPv6_ENABLED: ${IPv6_ENABLED}
+        SSH_CONNECTIONS: ${SSH_CONNECTIONS}
+        TLS_CONNECTIONS: ${TLS_CONNECTIONS}
+        
+        NTS_NF_STANDALONE_START_FEATURES: "datastore-populate ves-heartbeat ves-file-ready ves-pnf-registration netconf-call-home web-cut-through"
+        
+        SDN_CONTROLLER_PROTOCOL: ${SDN_CONTROLLER_PROTOCOL}
+        SDN_CONTROLLER_IP: ${SDN_CONTROLLER_IP}
+        SDN_CONTROLLER_PORT: ${SDN_CONTROLLER_PORT}
+        SDN_CONTROLLER_CALLHOME_PORT: ${SDN_CONTROLLER_CALLHOME_PORT}
+        SDN_CONTROLLER_USERNAME: ${SDN_CONTROLLER_USERNAME}
+        SDN_CONTROLLER_PASSWORD: ${SDN_CONTROLLER_PASSWORD}
+  
+        VES_COMMON_HEADER_VERSION: ${VES_COMMON_HEADER_VERSION}
+        VES_ENDPOINT_PROTOCOL: ${VES_ENDPOINT_PROTOCOL}
+        VES_ENDPOINT_IP: ${VES_ENDPOINT_IP}
+        VES_ENDPOINT_PORT: ${VES_ENDPOINT_PORT}
+        VES_ENDPOINT_AUTH_METHOD: ${VES_ENDPOINT_AUTH_METHOD}
+        VES_ENDPOINT_USERNAME: ${VES_ENDPOINT_USERNAME}
+        VES_ENDPOINT_PASSWORD: ${VES_ENDPOINT_PASSWORD}
+
+    networks:
+      app_net:
+
+  ntsim-ng-o-du:
+    image: "${DOCKER_REPO}nts-ng-o-ran-du:${NTS_BUILD_VERSION}"
+    cap_add:
+      - SYS_ADMIN
+    stop_grace_period: 5m
+    hostname: "O-RAN-O-DU-1"
+    ports:
+     - "::18301:830"
+    environment:
+      IPv6_ENABLED: ${IPv6_ENABLED}
+      SSH_CONNECTIONS: ${SSH_CONNECTIONS}
+      TLS_CONNECTIONS: ${TLS_CONNECTIONS}
       
-      VES_ENDPOINT_PROTOCOL: "https"
-      VES_ENDPOINT_IP: "127.0.0.1"
-      VES_ENDPOINT_PORT: 1234
-      VES_ENDPOINT_AUTH_METHOD: "no-auth"
-      VES_ENDPOINT_USERNAME: "admin"
-      VES_ENDPOINT_PASSWORD: "admin"
+      NTS_NF_STANDALONE_START_FEATURES: "datastore-populate ves-heartbeat ves-file-ready ves-pnf-registration netconf-call-home web-cut-through"
+      
+      SDN_CONTROLLER_PROTOCOL: ${SDN_CONTROLLER_PROTOCOL}
+      SDN_CONTROLLER_IP: ${SDN_CONTROLLER_IP}
+      SDN_CONTROLLER_PORT: ${SDN_CONTROLLER_PORT}
+      SDN_CONTROLLER_CALLHOME_PORT: ${SDN_CONTROLLER_CALLHOME_PORT}
+      SDN_CONTROLLER_USERNAME: ${SDN_CONTROLLER_USERNAME}
+      SDN_CONTROLLER_PASSWORD: ${SDN_CONTROLLER_PASSWORD}
+
+      VES_COMMON_HEADER_VERSION: ${VES_COMMON_HEADER_VERSION}
+      VES_ENDPOINT_PROTOCOL: ${VES_ENDPOINT_PROTOCOL}
+      VES_ENDPOINT_IP: ${VES_ENDPOINT_IP}
+      VES_ENDPOINT_PORT: ${VES_ENDPOINT_PORT}
+      VES_ENDPOINT_AUTH_METHOD: ${VES_ENDPOINT_AUTH_METHOD}
+      VES_ENDPOINT_USERNAME: ${VES_ENDPOINT_USERNAME}
+      VES_ENDPOINT_PASSWORD: ${VES_ENDPOINT_PASSWORD}
     networks:
       app_net:
   
@@ -37,3 +109,9 @@ networks:
     driver: bridge
     ipam:
       driver: default
+
+# We can attach to any other docker network, like in the example below        
+# networks:
+#   default:
+#     external:
+#       name: smo_integration

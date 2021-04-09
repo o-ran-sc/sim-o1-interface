@@ -59,7 +59,7 @@ int faults_counters_increase(const char *severity) {
         fault_counters.critical++;
     }
     else {
-        log_error("severity not found: %s", severity);
+        log_error("severity not found: %s\n", severity);
         ret = NTS_ERR_FAILED;
     }
 

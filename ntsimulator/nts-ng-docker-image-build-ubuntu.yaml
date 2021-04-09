@@ -19,7 +19,7 @@ services:
   ####### Base docker image containing the framework
   ###################################################
   nts-ng-base:
-    image: o-ran-sc/nts-ng-base
+    image: ${DOCKER_REPO}nts-ng-base
     build: 
       context: .
       dockerfile: ./deploy/base/ubuntu.Dockerfile
@@ -28,31 +28,53 @@ services:
   ####### NTS-NG Manager
   ###################################################
   nts-ng-manager:
-    image: o-ran-sc/nts-ng-manager
+    image: ${DOCKER_REPO}nts-ng-manager:${NTS_BUILD_VERSION}
     build:
       context: ./deploy/nts-manager
-      dockerfile: ubuntu.Dockerfile
-      args: 
-        - BUILD_DATE
-
-  ###################################################
-  ####### O-RAN FH
-  ###################################################
-  nts-ng-o-ran-fh:
-    image: o-ran-sc/nts-ng-o-ran-fh
-    build:
-      context: ./deploy/o-ran
-      dockerfile: ubuntu.Dockerfile
-      args: 
-        - BUILD_DATE
+      labels:
+       - "description=nts-ng"
+      dockerfile: local.Dockerfile
 
   ###################################################
   ####### X-RAN
   ###################################################
   nts-ng-x-ran:
-    image: o-ran-sc/nts-ng-x-ran
+    image: ${DOCKER_REPO}nts-ng-x-ran:${NTS_BUILD_VERSION}
     build:
       context: ./deploy/x-ran
-      dockerfile: ubuntu.Dockerfile
-      args: 
-        - BUILD_DATE
+      labels:
+       - "description=nts-ng"
+      dockerfile: local.Dockerfile
+
+  ###################################################
+  ####### O-RAN FH
+  ###################################################
+  nts-ng-o-ran-fh:
+    image: ${DOCKER_REPO}nts-ng-o-ran-fh:${NTS_BUILD_VERSION}
+    build:
+      context: ./deploy/o-ran
+      labels:
+       - "description=nts-ng"
+      dockerfile: local.Dockerfile
+
+  ###################################################
+  ####### O-RAN RU FH November Train
+  ###################################################
+  nts-ng-o-ran-ru-fh:
+    image: ${DOCKER_REPO}nts-ng-o-ran-ru-fh:${NTS_BUILD_VERSION}
+    build:
+      context: ./deploy/o-ran-ru-fh
+      labels:
+       - "description=nts-ng"
+      dockerfile: local.Dockerfile
+
+  ###################################################
+  ####### O-RAN DU
+  ###################################################
+  nts-ng-o-ran-du:
+    image: ${DOCKER_REPO}nts-ng-o-ran-du:${NTS_BUILD_VERSION}
+    build:
+      context: ./deploy/o-ran-du
+      labels:
+       - "description=nts-ng"
+      dockerfile: local.Dockerfile

@@ -47,7 +47,7 @@ static bool check_identity_of_type(const struct lys_ident *ident, const struct l
 static int identity_get_id(const struct lys_ident *ident);
 
 int context_init(const struct ly_ctx *ly_ctx) {
-    log_message(2, "context_init() begin\n");
+    log_add_verbose(2, "context_init() begin\n");
 
     identities = 0;
     identities_size = 0;
@@ -55,30 +55,30 @@ int context_init(const struct ly_ctx *ly_ctx) {
     features = 0;
     features_size = 0;
 
-    log_message(2, "loading modules\n");
+    log_add_verbose(2, "loading modules\n");
     uint32_t idx = 0;
     struct lys_module *module;
     while((module = (struct lys_module *)ly_ctx_get_module_iter(ly_ctx, &idx)) != 0) {
-        log_message(2, "MODULE %s\n", module->name);
-        log_message(2, "  prefix: %s\n", module->prefix);
-        log_message(2, "  namespace: %s\n", module->ns);
-        log_message(2, "  imports [%d]", module->imp_size);
+        log_add_verbose(2, "MODULE %s\n", module->name);
+        log_add_verbose(2, "  prefix: %s\n", module->prefix);
+        log_add_verbose(2, "  namespace: %s\n", module->ns);
+        log_add_verbose(2, "  imports [%d]", module->imp_size);
         if(module->imp_size) {
-            log_message(2, ": ");
+            log_add(2, ": ");
             for(int i = 0; i < module->imp_size; i++) {
-                log_message(2, "%s(%s), ", module->imp[i].module->name, module->imp[i].module->prefix);
+                log_add(2, "%s(%s), ", module->imp[i].module->name, module->imp[i].module->prefix);
             }
         }
-        log_message(2, "\n");
-        log_message(2, "  implemented: %d\n", module->implemented);
+        log_add(2, "\n");
+        log_add_verbose(2, "  implemented: %d\n", module->implemented);
         
         if(module->implemented) {
-            log_message(2, "  IDENT count: %d\n", module->ident_size);
+            log_add_verbose(2, "  IDENT count: %d\n", module->ident_size);
             if(module->ident_size) {
                 //add to list of identities
                 identities = (struct lys_ident_with_childcount *)realloc(identities, sizeof(struct lys_ident_with_childcount) * (identities_size + module->ident_size));
                 if(!identities) {
-                    log_error("bad realloc");
+                    log_error("bad realloc\n");
                     return 1;
                 }
 
@@ -88,50 +88,50 @@ int context_init(const struct ly_ctx *ly_ctx) {
                     identities_size++;
 
                     if(module->ident[i].base_size) {
-                        log_message(2, "  IDENT[%d]  %s with base %s:%s\n", i, module->ident[i].name, module->ident[i].base[0]->module->name, module->ident[i].base[0]->name);
+                        log_add_verbose(2, "  IDENT[%d]  %s with base %s:%s\n", i, module->ident[i].name, module->ident[i].base[0]->module->name, module->ident[i].base[0]->name);
                         int id = identity_get_id(module->ident[i].base[0]);
                         if(id != -1) {
                             identities[id].children++;
                         }
                     }
                     else {
-                        log_message(2, "  IDENT[%d]  %s as base\n", i, module->ident[i].name);
+                        log_add_verbose(2, "  IDENT[%d]  %s as base\n", i, module->ident[i].name);
                     }
                 }
             }
 
 
-            log_message(2, "  FEATURES count: %d\n", module->features_size);
+            log_add_verbose(2, "  FEATURES count: %d\n", module->features_size);
             if(module->features_size) {
                 //add to list of features
                 features = (struct features_with_info *)realloc(features, sizeof(struct features_with_info) * (features_size + module->features_size));
                 if(!features) {
-                    log_error("bad realloc");
+                    log_error("bad realloc\n");
                     return 1;
                 }
 
                 for(int i = 0; i < module->features_size; i++) {
                     asprintf(&features[features_size].name, "%s:%s", module->name, module->features[i].name);
                     features[features_size].enabled = (lys_features_state(module, module->features[i].name) == 1);
-                    log_message(2, "  FEATURE[%d]  %s iffeature_size=%d enabled=%d\n", i, module->features[i].name, module->features[i].iffeature_size, features[features_size].enabled);
+                    log_add_verbose(2, "  FEATURE[%d]  %s iffeature_size=%d enabled=%d\n", i, module->features[i].name, module->features[i].iffeature_size, features[features_size].enabled);
                     features_size++;
                 }
             }
         }
         else {
-            log_message(2, "Module not implemented, skipping...\n");
+            log_add_verbose(2, "-> module not implemented, skipping...\n");
         }
 
-        log_message(2, " ----\n");
+        log_add_verbose(2, " ----\n");
     }
 
-    log_message(2, "context_init() finished\n");
+    log_add_verbose(2, "context_init() finished\n");
 
     return 0;
 }
 
 void context_free(void) {
-    log_message(2, "context_free()... ");
+    log_add_verbose(2, "context_free()... ");
     free(identities);
     identities_size = 0;
 
@@ -139,14 +139,14 @@ void context_free(void) {
         free(features[i].name);
     }
     free(features);   
-    log_message(2, "done\n");
+    log_add(2, "done\n");
 }
 
 int context_get_identity_leafs_of_type(const struct lys_ident *ident, struct lys_ident ***found) {
 
     *found = (struct lys_ident **)malloc(sizeof(struct lys_ident *) * identities_size);
     if(!*found) {
-        log_error("bad malloc");
+        log_error("bad malloc\n");
     }
 
     int count = 0;
@@ -160,7 +160,7 @@ int context_get_identity_leafs_of_type(const struct lys_ident *ident, struct lys
     }
 
     if(count == 0) {
-        log_error("no identities found");
+        log_error("no identities found\n");
     }
     else {
         *found = (struct lys_ident **)realloc(*found, sizeof(struct lys_ident *) * count);
@@ -172,14 +172,14 @@ int context_get_identity_leafs_of_type(const struct lys_ident *ident, struct lys
 int context_get_features(char ***found_features) {
     char **ftrs = (char **)malloc(sizeof(char *) * features_size);
     if(!ftrs) {
-        log_error("could not alloc");
+        log_error("could not alloc\n");
         return 0;
     }
 
     for(int i = 0; i < features_size; i++) {
         ftrs[i] = (char *)malloc(sizeof(char) * (strlen(features[i].name) + 1));
         if(!ftrs) {
-            log_error("could not alloc");
+            log_error("could not alloc\n");
             return 0;
         }
 
@@ -252,7 +252,7 @@ bool context_module_install(const char *name, const char *path) {
     if(file_exists(data_path)) {
         rc = sr_install_module_data(session_connection, name, 0, data_path, LYD_XML);
         if(rc != SR_ERR_OK) {
-            log_message(1, " xml error    ");
+            log_add(1, " xml error    ");
             sr_remove_module(session_connection, name);
             context_apply_changes();
             return false;
@@ -264,7 +264,7 @@ bool context_module_install(const char *name, const char *path) {
     if(file_exists(data_path)) {
         rc = sr_install_module_data(session_connection, name, 0, data_path, LYD_JSON);
         if(rc != SR_ERR_OK) {
-            log_message(1, " json error    ");
+            log_add(1, " json error    ");
             sr_remove_module(session_connection, name);
             context_apply_changes();
             return false;
@@ -302,18 +302,18 @@ bool context_apply_changes(void) {
 
     /* get connection count */
     if((rc = sr_connection_count(&connection_count)) != SR_ERR_OK) {
-        log_error("sr_connection_count() failed to get connection count");
+        log_error("sr_connection_count() failed to get connection count\n");
         return false;
     }
 
     if(connection_count) {
-        log_error("cannot apply changes because of existing connections");
+        log_error("cannot apply changes because of existing connections\n");
         return false;
     }
 
     if((rc = sr_connect(SR_CONN_ERR_ON_SCHED_FAIL, &session_connection)) != SR_ERR_OK) {
         if((rc = sr_connect(0, &session_connection)) != SR_ERR_OK) {
-            log_error("failed to reconnect to sysrepo");
+            log_error("failed to reconnect to sysrepo\n");
         }
         return false;
     }
@@ -321,7 +321,7 @@ bool context_apply_changes(void) {
     /* get context */
     session_context = (struct ly_ctx *)sr_get_context(session_connection);
     if(session_context == 0) {
-        log_error("sr_get_context failed");
+        log_error("sr_get_context failed\n");
         return false;
     }
 
@@ -334,7 +334,7 @@ bool context_yang_is_module(const char *path) {
     bool ret = false;
     struct ly_ctx *ctx = ly_ctx_new(0, 0);
     if(!ctx) {
-        log_error("ly_ctx_new failed");
+        log_error("ly_ctx_new failed\n");
     }
 
     char *searchpath = strdup(path);

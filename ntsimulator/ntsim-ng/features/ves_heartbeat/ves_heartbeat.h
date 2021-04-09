@@ -19,4 +19,6 @@
 
 #include <sysrepo.h>
 
+int ves_heartbeat_feature_get_status(void);
 int ves_heartbeat_feature_start(sr_session_ctx_t *current_session);
+int ves_heartbeat_feature_stop(void);

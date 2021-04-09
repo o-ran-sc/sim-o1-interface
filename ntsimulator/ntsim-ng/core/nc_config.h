@@ -17,7 +17,9 @@
 
 #pragma once
 
-#include <string.h>
-#include <stdint.h>
+#define CLIENT_CONFIG_TLS_PORT                      800
+#define CLIENT_CA_FILE                              "/home/netconf/.ssh/ca.pem"
+#define CLIENT_CERT_PATH                            "/home/netconf/.ssh/client.crt"
+#define CLIENT_KEY_PATH                             "/home/netconf/.ssh/client.key"
 
 int netconf_configure(void);

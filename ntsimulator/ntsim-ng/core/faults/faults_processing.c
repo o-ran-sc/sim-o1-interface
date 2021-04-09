@@ -36,7 +36,7 @@ fault_settings_t *faults_settings_read(const char *json_plain) {
 
     fault_settings_t *ret = (fault_settings_t *)malloc(sizeof(fault_settings_t));
     if(ret == 0) {
-        log_error("malloc failed");
+        log_error("malloc failed\n");
         goto faults_settings_read_failed_cleanup;
     }
 
@@ -47,7 +47,7 @@ fault_settings_t *faults_settings_read(const char *json_plain) {
 
     cJSON *json = cJSON_Parse(json_plain);
     if(!json) {
-        log_error("json parsing error: %s", cJSON_GetErrorPtr());
+        log_error("json parsing error: %s\n", cJSON_GetErrorPtr());
         goto faults_settings_read_failed_cleanup;
     }
 
@@ -61,7 +61,7 @@ fault_settings_t *faults_settings_read(const char *json_plain) {
         ret->yang_notif_template = strdup(node->valuestring);
     }
     else {
-        log_error("could not find yang-notif-template");
+        log_error("could not find yang-notif-template\n");
         goto faults_settings_read_failed_cleanup;
     }
 
@@ -70,7 +70,7 @@ fault_settings_t *faults_settings_read(const char *json_plain) {
         ret->choosing_method = strdup(node->valuestring);
     }
     else {
-        log_error("could not find choosing-method");
+        log_error("could not find choosing-method\n");
         goto faults_settings_read_failed_cleanup;
     }
 
@@ -83,7 +83,7 @@ fault_settings_t *faults_settings_read(const char *json_plain) {
             ret->fault = (fault_details_t *)realloc(ret->fault, sizeof(fault_details_t)*ret->fault_count);
             if(ret->fault == 0) {
                 ret->fault_count--;
-                log_error("realloc failed");
+                log_error("realloc failed\n");
                 goto faults_settings_read_failed_cleanup;
             }
 
@@ -102,14 +102,14 @@ fault_settings_t *faults_settings_read(const char *json_plain) {
                 ret->fault[ret->fault_count - 1].field_name = (char **)realloc(ret->fault[ret->fault_count - 1].field_name, sizeof(char*) * ret->fault[ret->fault_count - 1].field_count);
                 if(ret->fault[ret->fault_count - 1].field_name == 0) {
                     ret->fault[ret->fault_count - 1].field_count--;
-                    log_error("realloc failed");
+                    log_error("realloc failed\n");
                     goto faults_settings_read_failed_cleanup;
                 }
 
                 ret->fault[ret->fault_count - 1].field_value = (char **)realloc(ret->fault[ret->fault_count - 1].field_value, sizeof(char*) * ret->fault[ret->fault_count - 1].field_count);
                 if(ret->fault[ret->fault_count - 1].field_value == 0) {
                     ret->fault[ret->fault_count - 1].field_count--;
-                    log_error("realloc failed");
+                    log_error("realloc failed\n");
                     goto faults_settings_read_failed_cleanup;
                 }
 
@@ -119,16 +119,16 @@ fault_settings_t *faults_settings_read(const char *json_plain) {
         }
     }
     else {
-        log_error("could not find faults list");
+        log_error("could not find faults list\n");
         goto faults_settings_read_failed_cleanup;
     }
 
-    cJSON_free(json);
+    cJSON_Delete(json);
     return ret;
 
     faults_settings_read_failed_cleanup:
     faults_settings_free(ret);
-    cJSON_free(json);
+    cJSON_Delete(json);
     return 0;
 }
 
@@ -195,32 +195,32 @@ int faults_settings_process(fault_settings_t *faults, int fault_no) {
     faults->fault[fault_no].yang_notif_processed = fault_process_vars(faults->yang_notif_template, &faults->fault[fault_no]);
 
     if(faults->fault[fault_no].condition == 0) {
-        log_error("could not find condition in fault");
+        log_error("could not find condition in fault\n");
         return NTS_ERR_FAILED;
     }
 
     if(faults->fault[fault_no].object == 0) {
-        log_error("could not find object in fault");
+        log_error("could not find object in fault\n");
         return NTS_ERR_FAILED;
     }
 
     if(faults->fault[fault_no].severity == 0) {
-        log_error("could not find severity in fault");
+        log_error("could not find severity in fault\n");
         return NTS_ERR_FAILED;
     }
 
     if(faults->fault[fault_no].date_time == 0) {
-        log_error("could not find date_time in fault");
+        log_error("could not find date_time in fault\n");
         return NTS_ERR_FAILED;
     }
 
     if(faults->fault[fault_no].specific_problem == 0) {
-        log_error("could not find specific_problem in fault");
+        log_error("could not find specific_problem in fault\n");
         return NTS_ERR_FAILED;
     }
 
     if(faults->fault[fault_no].yang_notif_processed == 0) {
-        log_error("could not find yang_notif_processed in fault");
+        log_error("could not find yang_notif_processed in fault\n");
         return NTS_ERR_FAILED;
     }
 
@@ -233,7 +233,7 @@ static char *fault_process_vars(const char *template, const fault_details_t *det
 
     char *ret = strdup(template);
     if(ret == 0) {
-        log_error("strdup error");
+        log_error("strdup error\n");
         return 0;
     }
 
@@ -272,7 +272,7 @@ static char *fault_process_vars(const char *template, const fault_details_t *det
             int var_size = pos_end - pos_start + 2;
             var = (char *)malloc(sizeof(char) * (var_size + 1));
             if(var == 0) {
-                log_error("bad malloc");
+                log_error("bad malloc\n");
                 goto fault_process_vars_failed;
             }
 
@@ -286,14 +286,14 @@ static char *fault_process_vars(const char *template, const fault_details_t *det
             vars = (char **)realloc(vars, sizeof(char *) * vars_count);
             if(!vars) {
                 vars_count = 0;
-                log_error("bad malloc");
+                log_error("bad malloc\n");
                 goto fault_process_vars_failed;
             }
 
             vars[vars_count - 1] = strdup(var);
             if(!vars[vars_count - 1]) {
                 vars_count--;
-                log_error("bad malloc");
+                log_error("bad malloc\n");
                 goto fault_process_vars_failed;
             }
             free(var);
@@ -309,7 +309,7 @@ static char *fault_process_vars(const char *template, const fault_details_t *det
             int func_size = pos_end - pos_start + 2;
             func = (char *)malloc(sizeof(char) * (func_size + 1));
             if(func == 0) {
-                log_error("bad malloc");
+                log_error("bad malloc\n");
                 goto fault_process_vars_failed;
             }
 
@@ -323,14 +323,14 @@ static char *fault_process_vars(const char *template, const fault_details_t *det
             funcs = (char **)realloc(funcs, sizeof(char *) * funcs_count);
             if(!funcs) {
                 funcs_count = 0;
-                log_error("bad malloc");
+                log_error("bad malloc\n");
                 goto fault_process_vars_failed;
             }
 
             funcs[funcs_count - 1] = strdup(func);
             if(!funcs[funcs_count - 1]) {
                 funcs_count--;
-                log_error("bad malloc");
+                log_error("bad malloc\n");
                 goto fault_process_vars_failed;
             }
             free(func);
@@ -349,7 +349,7 @@ static char *fault_process_vars(const char *template, const fault_details_t *det
             }
 
             if(var_value == 0) {
-                log_error("value %s not found", vars[i]);
+                log_error("value %s not found\n", vars[i]);
                 goto fault_process_vars_failed;
             }
 
@@ -369,7 +369,7 @@ static char *fault_process_vars(const char *template, const fault_details_t *det
         for(int i = 0; i < funcs_count; i++) {
             char *func_value = fault_process_function(funcs[i]);
             if(func_value == 0) {
-                log_error("function %s not found", vars[i]);
+                log_error("function %s not found\n", vars[i]);
                 goto fault_process_vars_failed;
             }
 

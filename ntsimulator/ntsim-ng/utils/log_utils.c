@@ -25,10 +25,16 @@
 #include <time.h>
 #include <assert.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+
+
 #include <core/framework.h>
 
 static int instances = 0;
-static int errors = 0;
 static FILE* logfile = 0;
 
 static char *extract_format(const char *format);
@@ -40,83 +46,104 @@ void log_init(const char *logfilename) {
     logfile = fopen(logfilename, "w");
 
     assert(logfile);
-
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    fprintf(logfile, "started at: %d-%02d-%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-    fprintf(stdout, LOG_COLOR_BOLD_RED"started at: %d-%02d-%02d %02d:%02d:%02d\n"LOG_COLOR_RESET, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 
-void log__message(char const * const filename, uint32_t location, const int verbose_level, const char *format, ...) {
+void log__message(char const * const fname, uint32_t location, int verbose_level, const char *format, ...) {
+
     va_list arg;
 
-    char *format2 = 0;
-    asprintf(&format2, "[%s:%u] %s", filename, location, format);
-    if(format2 == 0) {
-        fprintf(stderr, LOG_COLOR_BOLD_RED"bad malloc in log system\n"LOG_COLOR_RESET);
-        format2 = (char *)format;
-    }
+    char *verbose_file = 0;
+    int free_verbose_file = 0;
 
+    char *verbose_screen = 0;
+    int free_verbose_screen = 0;
+
+    if(verbose_level < 0) {
+        //when verbose negative, treat as add (no filename, line, time, etc)
+        verbose_level = -verbose_level;
+        verbose_file = (char *)format;
+        verbose_screen = (char *)format;
+    }
+    else {
+        //extract just the filename, no path
+        const char *filename = fname + strlen(fname) - 1;
+        while((filename != fname) && (*filename != '/')) {
+            filename--;
+        }
+        if(*filename == '/') {
+            filename++;
+        }
+
+        time_t t = time(NULL);
+        struct tm tm = *localtime(&t);
+
+        asprintf(&verbose_file, "[%d-%02d-%02d|%02d:%02d:%02d|%s:%u] %s", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, filename, location, format);
+        if(verbose_file == 0) {
+            verbose_file = (char *)format;
+        }
+        else {
+            free_verbose_file = 1;
+        }
+
+        if(verbose_level != 0) {
+            asprintf(&verbose_screen, "[%d-%02d-%02d|%02d:%02d:%02d] %s", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, format);
+        }
+        else {
+            verbose_screen = strdup(verbose_file);
+        }
+
+        if(verbose_screen == 0) {
+            verbose_screen = (char *)format;
+        }
+        else {
+            free_verbose_screen = 1;
+        }
+    }
+    
+    //log to file in an uncolored format (simple format)
     va_start(arg, format);
-    char *new_format = extract_format(format2);
-    vfprintf(logfile, new_format, arg);
+    char *simple_format = extract_format(verbose_file);
+    vfprintf(logfile, simple_format, arg);
 
-    if(new_format != format2) {
-        free(new_format);
+    if(simple_format != verbose_file) {
+        free(simple_format);
     }
-
-    if(format2 != format) {
-        free(format2);
-    }
-    fflush(logfile);
     va_end(arg);
+    fflush(logfile);
+
+    if(free_verbose_file) {
+        free(verbose_file);
+    }
 
     if(verbose_level <= framework_arguments.verbosity_level) {
+        
+        if(verbose_level == 0) {      
+            fprintf(stderr, LOG_COLOR_BOLD_RED);
+            va_start(arg, format);
+            vfprintf(stderr, verbose_screen, arg);
+            va_end(arg);
+            fprintf(stderr, LOG_COLOR_RESET);
+
+            fprintf(stdout, LOG_COLOR_BOLD_RED);
+        }
+
         va_start(arg, format);
-        vfprintf(stdout, format, arg);
+        vfprintf(stdout, verbose_screen, arg);
         va_end(arg);
-    }
-}
 
-void log__error(char const * const function, uint32_t location, const char *format, ...) {
-    va_list arg;
-    bool has_newline = false;
-    if(format[strlen(format) - 1] == '\n') {
-        has_newline = true;
+        if(verbose_level == 0) {
+            fprintf(stdout, LOG_COLOR_RESET);
+        }
     }
 
-    errors++;
-    char *new_format = extract_format(format);
-    fprintf(logfile, "[error in %s():%d] ", function, location);
-    va_start(arg, format);
-    vfprintf(logfile, new_format, arg);
-    if(new_format != format) {
-        free(new_format);
+    if(free_verbose_screen) {
+        free(verbose_screen);
     }
-    if(!has_newline) {
-        fprintf(logfile, "\n");
-    }
-    fflush(logfile);
-    va_end(arg);
-
-    fprintf(stderr, "["LOG_COLOR_RED"error in "LOG_COLOR_BOLD_RED"%s()"LOG_COLOR_RED":"LOG_COLOR_BOLD_CYAN"%d"LOG_COLOR_RESET"] ", function, location);
-    va_start(arg, format);
-    vfprintf(stderr, format, arg);
-    if(!has_newline) {
-        fprintf(stderr, "\n");
-    }
-    va_end(arg);
 }
 
 void log_close(void) {
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    fprintf(logfile, "finished at: %d-%02d-%02d %02d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
     fclose(logfile);
-
-    if(errors) {
-        fprintf(stderr, "-------- !!!!!! ERRORS WERE PRESENT, CHECK ERROR FILE !!!!!! ------------\n\n\n\n");
-    }
+    instances--;
 }
 
 static char *extract_format(const char *format) {
@@ -159,4 +186,11 @@ static char *extract_format(const char *format) {
     ret[d] = 0;
   
     return ret;
+}
+
+void log_redirect_stderr(const char *stderrfilename) {
+    remove(stderrfilename);
+    int stderr_fd = open(stderrfilename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    dup2(stderr_fd, STDERR_FILENO);
+    close(stderr_fd);
 }

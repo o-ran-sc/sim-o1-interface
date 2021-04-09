@@ -19,19 +19,22 @@
 
 FROM ubuntu:20.04 as builder
 LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@highstreet-technologies.com"
+
+RUN apt-get clean
 RUN apt-get update
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     # basic tools
-    tzdata build-essential git cmake pkg-config supervisor \
+    tzdata build-essential git cmake pkg-config \
     # libyang dependencies
     libpcre3-dev \
     # libssh dependencies
-    zlib1g-dev libssl-dev
+    zlib1g-dev libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # add netconf user and configure access
 RUN \
     adduser --system netconf && \
-    echo "netconf:netconf" | chpasswd
+    echo "netconf:netconf!" | chpasswd
 
 # use /opt/dev as working directory
 RUN mkdir /opt/dev
@@ -40,12 +43,12 @@ WORKDIR /opt/dev
 # get required build libs from git
 RUN \
     git config --global advice.detachedHead false && \
-    git clone --single-branch --branch v1.7.13 https://github.com/DaveGamble/cJSON.git && \
-    git clone --single-branch --branch v1.0.184 https://github.com/CESNET/libyang.git && \
-    git clone --single-branch --branch v1.4.70 https://github.com/sysrepo/sysrepo.git && \
+    git clone --single-branch --branch v1.7.14 https://github.com/DaveGamble/cJSON.git && \
+    git clone --single-branch --branch v1.0.225 https://github.com/CESNET/libyang.git && \
+    git clone --single-branch --branch v1.4.122 https://github.com/sysrepo/sysrepo.git && \
     git clone --single-branch --branch libssh-0.9.2 https://git.libssh.org/projects/libssh.git && \
-    git clone --single-branch --branch v1.1.26 https://github.com/CESNET/libnetconf2.git && \
-    git clone --single-branch --branch v1.1.39 https://github.com/CESNET/netopeer2.git && \
+    git clone --single-branch --branch v1.1.43 https://github.com/CESNET/libnetconf2.git && \
+    git clone --single-branch --branch v1.1.70 https://github.com/CESNET/netopeer2.git && \
     git clone --single-branch --branch curl-7_72_0 https://github.com/curl/curl.git
 
 # build and install cJSON
@@ -53,7 +56,7 @@ RUN \
     cd cJSON && \
     mkdir build && cd build && \
     cmake .. -DENABLE_CJSON_UTILS=On -DENABLE_CJSON_TEST=Off && \
-    make -j2 && \
+    make -j4 && \
     make install && \
     ldconfig
 
@@ -61,17 +64,18 @@ RUN \
 RUN \
     cd libyang && \
     mkdir build && cd build  && \
-    cmake -DCMAKE_BUILD_TYPE:String="Release" -DENABLE_BUILD_TESTS=OFF .. && \
-    make -j2  && \
+    cmake -DCMAKE_BUILD_TYPE:String="Release" -DGEN_LANGUAGE_BINDINGS=ON -DGEN_CPP_BINDINGS=ON -DGEN_PYTHON_BINDINGS=OFF -DENABLE_BUILD_TESTS=OFF .. && \
+    make -j4  && \
     make install && \
     ldconfig
 
 # build and install sysrepo
+COPY ./deploy/base/common.h.in /opt/dev/sysrepo/src/common.h.in
 RUN \
     cd sysrepo && \
     mkdir build && cd build  && \
-    cmake -DCMAKE_BUILD_TYPE:String="Release" -DENABLE_TESTS=OFF -DREPOSITORY_LOC:PATH=/etc/sysrepo -DREQUEST_TIMEOUT=60 -DOPER_DATA_PROVIDE_TIMEOUT=60 .. && \
-    make -j2 && \
+    cmake -DCMAKE_BUILD_TYPE:String="Release" -DGEN_LANGUAGE_BINDINGS=ON -DGEN_CPP_BINDINGS=ON -DGEN_PYTHON_BINDINGS=OFF -DENABLE_TESTS=OFF -DREPOSITORY_LOC:PATH=/etc/sysrepo -DREQUEST_TIMEOUT=60 -DOPER_DATA_PROVIDE_TIMEOUT=60 .. && \
+    make -j4 && \
     make install && \
     ldconfig
 
@@ -80,17 +84,16 @@ RUN \
     cd libssh && \
     mkdir build && cd build  && \
     cmake -DWITH_EXAMPLES=OFF ..  && \
-    make -j2 && \
+    make -j4 && \
     make install && \
     ldconfig
-
 
 # build and install libnetconf2
 RUN \
     cd libnetconf2 && \
     mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE:String="Release" -DENABLE_BUILD_TESTS=OFF .. && \
-    make -j2 && \
+    make -j4 && \
     make install && \
     ldconfig
 
@@ -99,7 +102,7 @@ RUN \
     cd netopeer2 && \
     mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE:String="Release" -DGENERATE_HOSTKEY=OFF -DMERGE_LISTEN_CONFIG=OFF .. && \
-    make -j2 && \
+    make -j4 && \
     make install
 
 # build and install cURL
@@ -107,7 +110,7 @@ RUN \
     cd curl && \
     mkdir build && cd build && \
     cmake -DBUILD_TESTING=OFF .. && \
-    make -j2 && \
+    make -j4 && \
     make install && \
     ldconfig
 
@@ -122,6 +125,9 @@ RUN \
     cd ..
 
 # ntsim-ng copy and build
+ARG BUILD_WITH_DEBUG
+ENV BUILD_WITH_DEBUG=${BUILD_WITH_DEBUG}
+
 RUN \
     mkdir /opt/dev/ntsim-ng && \
     mkdir /opt/dev/ntsim-ng/config && \
@@ -137,26 +143,36 @@ RUN \
 COPY ./deploy/base/ca.key /home/netconf/.ssh/ca.key
 COPY ./deploy/base/ca.pem /home/netconf/.ssh/ca.pem
 COPY ./deploy/base/client.crt /home/netconf/.ssh/client.crt
+COPY ./deploy/base/client.key /home/netconf/.ssh/client.key
 COPY ./deploy/base/generate-ssh-keys.sh /home/netconf/.ssh/generate-ssh-keys.sh
 
 #############################
 #### Lightweight Base ####
 #############################
 
+
 FROM ubuntu:20.04
 LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@highstreet-technologies.com"
+RUN apt-get clean
 RUN apt-get update
-RUN apt-get install -y \
-    supervisor \
+
+ARG BUILD_WITH_DEBUG
+ENV BUILD_WITH_DEBUG=${BUILD_WITH_DEBUG}
+RUN if [ -n "${BUILD_WITH_DEBUG}" ]; then DEBIAN_FRONTEND="noninteractive" apt-get install -y gdb valgrind ; fi
+
+RUN apt-get install -y --no-install-recommends \
+    psmisc \
     openssl \
     openssh-client \
     vsftpd \
-    openssh-server
+    openssh-server \
+    && rm -rf /var/lib/apt/lists/* \
+    && unset BUILD_WITH_DEBUG
 
 # add netconf user and configure access
 RUN \
     adduser netconf && \
-    echo "netconf:netconf" | chpasswd && \
+    echo "netconf:netconf!" | chpasswd && \
     mkdir -p /home/netconf/.ssh
 
 COPY --from=builder /usr/local/bin /usr/local/bin
@@ -198,3 +214,9 @@ WORKDIR /opt/dev/workspace
 ENV SSH_CONNECTIONS=1
 ENV TLS_CONNECTIONS=0
 ENV IPv6_ENABLED=false
+
+ARG NTS_BUILD_VERSION
+ENV NTS_BUILD_VERSION=${NTS_BUILD_VERSION}
+
+ARG NTS_BUILD_DATE
+ENV NTS_BUILD_DATE=${NTS_BUILD_DATE}

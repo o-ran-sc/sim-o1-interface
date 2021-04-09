@@ -19,4 +19,6 @@
 
 #include <sysrepo.h>
 
+int web_cut_through_feature_get_status(void);
 int web_cut_through_feature_start(sr_session_ctx_t *current_session);
+int web_cut_through_feature_stop(sr_session_ctx_t *current_session);

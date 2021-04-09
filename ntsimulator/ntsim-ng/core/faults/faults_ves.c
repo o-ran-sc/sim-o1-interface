@@ -36,13 +36,13 @@ static cJSON *ves_create_fault_fields(const char *alarm_condition, const char *a
 static int ves_message_send_internal(sr_session_ctx_t *session, const char *condition, const char *object, const char *severity, const char *date_time, const char *specific_problem, int port, uint32_t *seq_id);
 
 int faults_ves_init(void) {
-    fault_ves_sequence_number = (uint32_t *)malloc(sizeof(uint32_t) * (framework_environment.ssh_connections + framework_environment.tls_connections));
+    fault_ves_sequence_number = (uint32_t *)malloc(sizeof(uint32_t) * (framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections));
     if(fault_ves_sequence_number == 0) {
-        log_error("malloc failed"); 
+        log_error("malloc failed\n");
         return NTS_ERR_FAILED; 
     }
 
-    for(int i = 0; i < (framework_environment.ssh_connections + framework_environment.tls_connections); i++) {
+    for(int i = 0; i < (framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections); i++) {
         fault_ves_sequence_number[i] = 0;
     }
 
@@ -61,22 +61,36 @@ int faults_ves_message_send(sr_session_ctx_t *session, const char *condition, co
     assert(date_time);
     assert(specific_problem);
 
+    int sequence_index = 0;
+    int ssh_base_port = 0;
+    int tls_base_port = 0;
     nts_mount_point_addressing_method_t mp = nts_mount_point_addressing_method_get(session);
     if(mp == UNKNOWN_MAPPING) {
-        log_error("mount-point-addressing-method failed");
+        log_error("mount-point-addressing-method failed\n");
         return NTS_ERR_FAILED;
     }
-
-    int base_port = STANDARD_NETCONF_PORT;
-    if(mp == HOST_MAPPING) {
-        base_port = framework_environment.host_base_port;
+    else if(mp == DOCKER_MAPPING) {
+        ssh_base_port = STANDARD_NETCONF_PORT;
+        tls_base_port = ssh_base_port + framework_environment.settings.ssh_connections;
+    }
+    else {
+        ssh_base_port = framework_environment.host.ssh_base_port;
+        tls_base_port = framework_environment.host.tls_base_port;       
     }
 
-    for(int port = base_port; port < base_port + (framework_environment.ssh_connections + framework_environment.tls_connections); port++) {
-        uint32_t *seq_id = &fault_ves_sequence_number[port - base_port];
+    for(int port = ssh_base_port; port < ssh_base_port + framework_environment.settings.ssh_connections; port++) {
+        uint32_t *seq_id = &fault_ves_sequence_number[sequence_index++];
         int rc = ves_message_send_internal(session, condition, object, severity, date_time, specific_problem, port, seq_id);
         if(rc != NTS_ERR_OK) {
-            log_error("ves_message_send_internal failed");
+            log_error("ves_message_send_internal failed\n");
+        }
+    }
+
+    for(int port = tls_base_port; port < tls_base_port + framework_environment.settings.tls_connections; port++) {
+        uint32_t *seq_id = &fault_ves_sequence_number[sequence_index++];
+        int rc = ves_message_send_internal(session, condition, object, severity, date_time, specific_problem, port, seq_id);
+        if(rc != NTS_ERR_OK) {
+            log_error("ves_message_send_internal failed\n");
         }
     }
 
@@ -92,80 +106,80 @@ static cJSON *ves_create_fault_fields(const char *alarm_condition, const char *a
     
     cJSON *faultFields = cJSON_CreateObject();
     if(faultFields == 0) {
-        log_error("could not create JSON object: faultFields");
+        log_error("could not create JSON object: faultFields\n");
         return 0;
     }
 
     if(cJSON_AddStringToObject(faultFields, "faultFieldsVersion", "4.0") == 0) {
-        log_error("could not create JSON object: faultFieldsVersion");
+        log_error("could not create JSON object: faultFieldsVersion\n");
         cJSON_Delete(faultFields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(faultFields, "alarmCondition", alarm_condition) == 0) {
-        log_error("could not create JSON object: alarmCondition");
+        log_error("could not create JSON object: alarmCondition\n");
         cJSON_Delete(faultFields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(faultFields, "alarmInterfaceA", alarm_object) == 0) {
-        log_error("could not create JSON object: alarmInterfaceA");
+        log_error("could not create JSON object: alarmInterfaceA\n");
         cJSON_Delete(faultFields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(faultFields, "eventSourceType", "O_RAN_COMPONENT") == 0) {
-        log_error("could not create JSON object: eventSourceType");
+        log_error("could not create JSON object: eventSourceType\n");
         cJSON_Delete(faultFields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(faultFields, "specificProblem", specific_problem) == 0) {
-        log_error("could not create JSON object: specificProblem");
+        log_error("could not create JSON object: specificProblem\n");
         cJSON_Delete(faultFields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(faultFields, "eventSeverity", severity) == 0) {
-        log_error("could not create JSON object: eventSeverity");
+        log_error("could not create JSON object: eventSeverity\n");
         cJSON_Delete(faultFields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(faultFields, "vfStatus", "Active") == 0) {
-        log_error("could not create JSON object: vfStatus");
+        log_error("could not create JSON object: vfStatus\n");
         cJSON_Delete(faultFields);
         return 0;
     }
 
     cJSON *alarmAdditionalInformation = cJSON_CreateObject();
     if(alarmAdditionalInformation == 0) {
-        log_error("could not create JSON object: alarmAdditionalInformation");
+        log_error("could not create JSON object: alarmAdditionalInformation\n");
         cJSON_Delete(faultFields);
         return 0;
     }
     cJSON_AddItemToObject(faultFields, "alarmAdditionalInformation", alarmAdditionalInformation);
 
     if(cJSON_AddStringToObject(alarmAdditionalInformation, "eventTime", date_time) == 0) {
-        log_error("could not create JSON object: eventTime");
+        log_error("could not create JSON object: eventTime\n");
         cJSON_Delete(faultFields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(alarmAdditionalInformation, "equipType", "O-RAN-sim") == 0) {
-        log_error("could not create JSON object: equipType");
+        log_error("could not create JSON object: equipType\n");
         cJSON_Delete(faultFields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(alarmAdditionalInformation, "vendor", "Melacon") == 0) {
-        log_error("could not create JSON object: vendor");
+        log_error("could not create JSON object: vendor\n");
         cJSON_Delete(faultFields);
         return 0;
     }
 
     if(cJSON_AddStringToObject(alarmAdditionalInformation, "model", "Simulated Device") == 0) {
-        log_error("could not create JSON object: model");
+        log_error("could not create JSON object: model\n");
         cJSON_Delete(faultFields);
         return 0;
     }
@@ -180,28 +194,34 @@ static int ves_message_send_internal(sr_session_ctx_t *session, const char *cond
     assert(date_time);
     assert(specific_problem);
 
-    char *hostname_string = framework_environment.hostname;
+    char *hostname_string = framework_environment.settings.hostname;
     cJSON *post_data_json = cJSON_CreateObject();
     if(post_data_json == 0) {
-        log_error("cJSON_CreateObject failed");
+        log_error("cJSON_CreateObject failed\n");
         return NTS_ERR_FAILED;
     }
 
     cJSON *event = cJSON_CreateObject();
     if(event == 0) {
-        log_error("cJSON_CreateObject failed");
+        log_error("cJSON_CreateObject failed\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
     cJSON_AddItemToObject(post_data_json, "event", event);
 
     char *source_name = 0;
-    asprintf(&source_name, "%s-%d", hostname_string, port);
+    if (framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections == 1) {
+        // we don't want to append the port to the source name if we only expose one port
+        asprintf(&source_name, "%s", hostname_string);
+    }
+    else {
+        asprintf(&source_name, "%s_%d", hostname_string, port);
+    }
     cJSON *common_event_header = ves_create_common_event_header("fault", "O_RAN_COMPONENT_Alarms", source_name, "Low", (*seq_id)++);
     free(source_name);
 
     if(common_event_header == 0) {
-        log_error("ves_create_common_event_header failed");
+        log_error("ves_create_common_event_header failed\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
@@ -209,7 +229,7 @@ static int ves_message_send_internal(sr_session_ctx_t *session, const char *cond
 
     cJSON *fault_fields = ves_create_fault_fields(condition, object, severity, date_time, specific_problem);
     if(fault_fields == 0) {
-        log_error("ves_create_fault_fields failed");
+        log_error("ves_create_fault_fields failed\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
     }
@@ -218,7 +238,7 @@ static int ves_message_send_internal(sr_session_ctx_t *session, const char *cond
     char *post_data = cJSON_PrintUnformatted(post_data_json);
     ves_details_t *ves_details = ves_endpoint_details_get(session);
     if(!ves_details) {
-        log_error("ves_endpoint_details_get failed");
+        log_error("ves_endpoint_details_get failed\n");
         return NTS_ERR_FAILED;
     }
     
@@ -228,7 +248,7 @@ static int ves_message_send_internal(sr_session_ctx_t *session, const char *cond
     free(post_data);
     
     if(rc != NTS_ERR_OK) {
-        log_error("http_request failed");
+        log_error("http_request failed\n");
         return NTS_ERR_FAILED;
     }
 

@@ -20,35 +20,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <libyang/libyang.h>
 
-typedef struct {
-    int init;
+#define DATASTORE_OPERATIONAL_PATH      "log/datastore-operational.json"
+#define DATASTORE_RUNNING_PATH          "log/datastore-running.json"
 
-    char *xpath;
-
-    const struct lys_module **modules;
-    int mod_count;
-
-    struct lyd_node *operational;
-    struct lyd_node *running;
-} populate_instance_t;
-
-typedef struct {
-    struct lyd_node *operational;
-    struct lyd_node *running;
-    bool late_resolving;
-
-    int late_resolve_count;
-    struct lys_node **late_resolve_schema;
-    struct lyd_node **late_resolve_parent_o;
-    struct lyd_node **late_resolve_parent_r;
-    populate_instance_t **late_resolve_instance;
-} populate_job_t;
-
-//populate.c
-int schema_populate(void);                     //populate all available root nodes (taking into consideration excluded, deprecated and unimplemented)
-
-//populate_rec.c
-int schema_populate_recursive(populate_job_t *job, populate_instance_t *instance, struct lys_node *schema, struct lyd_node *parent_o, struct lyd_node *parent_r);
-int schema_populate_add_leaf(populate_job_t *job, populate_instance_t *instance, struct lys_node *schema, struct lyd_node *parent_o, struct lyd_node *parent_r);
+int datastore_populate(int retries);

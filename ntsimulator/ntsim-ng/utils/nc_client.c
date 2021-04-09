@@ -25,6 +25,7 @@
 #include <assert.h>
 
 #include "core/session.h"
+#include "core/nc_config.h"
 
 #include <libnetconf2/session.h>
 #include <libnetconf2/session_client.h>
@@ -52,8 +53,6 @@ nc_client_t *nc_client_ssh_connect(const char *host, uint16_t port, const char *
 
     client->edit_batch_root = 0;
 
-    nc_client_init();
-
     nc_client_ssh_set_auth_pref(NC_SSH_AUTH_PASSWORD, 3);
     nc_client_ssh_set_auth_pref(NC_SSH_AUTH_PUBLICKEY, -1);
     nc_client_ssh_set_auth_pref(NC_SSH_AUTH_INTERACTIVE, -1);
@@ -61,7 +60,9 @@ nc_client_t *nc_client_ssh_connect(const char *host, uint16_t port, const char *
     nc_client_ssh_set_username(username);
     client->password = strdup(password);
     if(client->password == 0) {
+        log_error("strdup failed\n");
         free(client);
+        return 0;
     }
 
     nc_client_ssh_set_auth_password_clb(nc_client_pass_cb, client);
@@ -69,8 +70,41 @@ nc_client_t *nc_client_ssh_connect(const char *host, uint16_t port, const char *
 
     client->session = nc_connect_ssh(host, port, 0);
     if(client->session == 0) {
-        log_error("nc_connect_ssh failed");
+        log_error("nc_connect_ssh failed\n");
         free(client->password);
+        free(client);
+        return 0;
+    }
+
+    return client;
+}
+
+nc_client_t *nc_client_tls_connect(const char *host, uint16_t port) {
+    assert(host);
+    assert(port > 20);
+
+    nc_client_t *client = (nc_client_t *)malloc(sizeof(nc_client_t));
+    if(client == 0) {
+        return 0;
+    }
+
+    client->edit_batch_root = 0;
+    client->password = 0;
+    int rc = nc_client_tls_set_cert_key_paths(CLIENT_CERT_PATH, CLIENT_KEY_PATH);
+    if(rc != 0) {
+        log_error("nc_client_tls_set_cert_key_paths failed\n");
+        return 0;
+    }
+
+    rc = nc_client_tls_set_trusted_ca_paths(CLIENT_CA_FILE, 0);
+    if(rc != 0) {
+        log_error("nc_client_tls_set_trusted_ca_paths failed\n");
+        return 0;
+    }
+
+    client->session = nc_connect_tls(host, port, 0);
+    if(client->session == 0) {
+        log_error("nc_connect_tls failed\n");
         free(client);
         return 0;
     }
@@ -100,13 +134,13 @@ struct lyd_node *nc_client_send_rpc(nc_client_t *client, struct lyd_node *data, 
 
     char *xmldata = 0;
     if(lyd_print_mem(&xmldata, data, LYD_XML, 0) != 0) {
-        log_error("lyd_print_mem failed");
+        log_error("lyd_print_mem failed\n");
         return 0;
     }
 
     rpc = nc_rpc_act_generic_xml(xmldata, NC_PARAMTYPE_CONST);
     if(rpc == 0) {
-        log_error("could not create rpc");
+        log_error("could not create rpc\n");
         free(xmldata);
         return 0;
     }
@@ -114,7 +148,7 @@ struct lyd_node *nc_client_send_rpc(nc_client_t *client, struct lyd_node *data, 
     msg_id = 0;
     send_ret = nc_send_rpc(client->session, rpc, timeout, &msg_id);
     if(send_ret != NC_MSG_RPC) {
-        log_error("could not send rpc");
+        log_error("could not send rpc\n");
         free(xmldata);
         nc_rpc_free(rpc);
         return 0;
@@ -127,14 +161,14 @@ struct lyd_node *nc_client_send_rpc(nc_client_t *client, struct lyd_node *data, 
             goto repeat_nc_recv_reply;
         }
 
-        log_error("could not get rpc reply");
+        log_error("could not get rpc reply\n");
         free(xmldata);
         nc_rpc_free(rpc);
         return 0;
     }
 
     if(reply->type != NC_RPL_DATA) {
-        log_error("reply has no data");
+        log_error("reply has no data\n");
         free(xmldata);
         nc_rpc_free(rpc);
         nc_reply_free(reply);
@@ -146,7 +180,7 @@ struct lyd_node *nc_client_send_rpc(nc_client_t *client, struct lyd_node *data, 
     LY_TREE_FOR(((struct nc_reply_data *)reply)->data->child, chd) {
         char *temp_xml = 0;
         if(lyd_print_mem(&temp_xml, chd, LYD_XML, 0) != 0) {
-            log_error("lyd_print_mem failed");
+            log_error("lyd_print_mem failed\n");
             free(ret_data_xml);
             free(xmldata);
             nc_rpc_free(rpc);
@@ -180,14 +214,14 @@ struct lyd_node *nc_client_get_batch(nc_client_t *client, const char *xpath, int
 
     rpc = nc_rpc_get(xpath, NC_WD_UNKNOWN, NC_PARAMTYPE_CONST);
     if(rpc == 0) {
-        log_error("could not create rpc");
+        log_error("could not create rpc\n");
         return 0;
     }
 
     msg_id = 0;
     send_ret = nc_send_rpc(client->session, rpc, timeout, &msg_id);
     if(send_ret != NC_MSG_RPC) {
-        log_error("could not send rpc");
+        log_error("could not send rpc\n");
         nc_rpc_free(rpc);
         return 0;
     }
@@ -200,13 +234,13 @@ struct lyd_node *nc_client_get_batch(nc_client_t *client, const char *xpath, int
             goto repeat_nc_recv_reply;
         }
 
-        log_error("could not get rpc reply");
+        log_error("could not get rpc reply\n");
         nc_rpc_free(rpc);
         return 0;
     }
 
     if(reply->type != NC_RPL_DATA) {
-        log_error("reply has no data");
+        log_error("reply has no data\n");
         nc_rpc_free(rpc);
         nc_reply_free(reply);
         return 0;
@@ -214,7 +248,7 @@ struct lyd_node *nc_client_get_batch(nc_client_t *client, const char *xpath, int
 
     char *ret_data_xml = 0;
     if(lyd_print_mem(&ret_data_xml, ((struct nc_reply_data *)reply)->data, LYD_XML, 0) != 0) {
-        log_error("lyd_print_mem failed");
+        log_error("lyd_print_mem failed\n");
         nc_reply_free(reply);
         nc_rpc_free(rpc);
         return 0;
@@ -241,13 +275,13 @@ int nc_client_edit_batch(nc_client_t *client, struct lyd_node *data, int timeout
     char *content = 0;
     int rc = lyd_print_mem(&content, data, LYD_XML, 0);
     if(rc != 0) {
-        log_error("lyd_print_mem failed");
+        log_error("lyd_print_mem failed\n");
         return NTS_ERR_FAILED;
     }
 
     rpc = nc_rpc_edit(NC_DATASTORE_RUNNING, NC_RPC_EDIT_DFLTOP_MERGE, NC_RPC_EDIT_TESTOPT_SET, NC_RPC_EDIT_ERROPT_STOP, content, NC_PARAMTYPE_CONST);
     if(rpc == 0) {
-        log_error("could not create rpc");
+        log_error("could not create rpc\n");
         free(content);
         return NTS_ERR_FAILED;
     }
@@ -255,7 +289,7 @@ int nc_client_edit_batch(nc_client_t *client, struct lyd_node *data, int timeout
     msg_id = 0;
     send_ret = nc_send_rpc(client->session, rpc, timeout, &msg_id);
     if(send_ret != NC_MSG_RPC) {
-        log_error("could not send rpc");
+        log_error("could not send rpc\n");
         free(content);
         nc_rpc_free(rpc);
         return NTS_ERR_FAILED;
@@ -263,7 +297,7 @@ int nc_client_edit_batch(nc_client_t *client, struct lyd_node *data, int timeout
 
     reply_ret = nc_recv_reply(client->session, rpc, msg_id, timeout, LYD_OPT_DESTRUCT | LYD_OPT_NOSIBLINGS, &reply);
     if((reply_ret != NC_MSG_REPLY) || (reply->type != NC_RPL_OK)) {
-        log_error("could not get rpc reply");
+        log_error("could not get rpc reply\n");
 
         free(content);
         nc_rpc_free(rpc);
@@ -285,14 +319,14 @@ int nc_client_set_item_str(nc_client_t *client, const char *xpath, const char *v
     if(client->edit_batch_root) {
         struct lyd_node *n = lyd_new_path(client->edit_batch_root, 0, xpath, (void*)value, LYD_ANYDATA_CONSTSTRING, 0);
         if(n == 0) {
-            log_error("lyd_new_path error");
+            log_error("lyd_new_path error\n");
             return NTS_ERR_FAILED;
         }
     }
     else {
         client->edit_batch_root = lyd_new_path(0, session_context, xpath, (void*)value, LYD_ANYDATA_CONSTSTRING, 0);
         if(client->edit_batch_root == 0) {
-            log_error("lyd_new_path error");
+            log_error("lyd_new_path error\n");
             return NTS_ERR_FAILED;
         }
     }
@@ -339,7 +373,8 @@ int lyd_utils_dup(sr_session_ctx_t *session, const char *xpath_s, const char *xp
             const char *value = ((struct lyd_node_leaf_list*)snode)->value_str;
             char *new_xpath = str_replace(xpath_c, xpath_s, xpath_d);
             
-            ly_log_options(0);
+            // ly_log_options(0);
+            ly_verb(LY_LLERR);  //checkAL
             lyd_new_path(*tree, 0, new_xpath, (void*)value, LYD_ANYDATA_CONSTSTRING, 0);
             free(xpath_c);
             free(new_xpath);

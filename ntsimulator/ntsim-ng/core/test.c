@@ -37,29 +37,29 @@
 int exhaustive_test_run(void) {
     //first get all xpaths
     char **xpaths = 0;
-    int xpaths_count = schema_get_xpaths(&xpaths);
+    int xpaths_count = datastore_schema_get_xpaths(&xpaths);
     if(xpaths_count < 0) {
-        log_error("schema_get_xpaths failed");
+        log_error("datastore_schema_get_xpaths failed\n");
         return NTS_ERR_FAILED;
     }
     else {
-        log_message(0, "schema_get_xpaths executed with "LOG_COLOR_BOLD_GREEN"success"LOG_COLOR_RESET" (%d)\n", xpaths_count);
+        log_add_verbose(0, "datastore_schema_get_xpaths executed with "LOG_COLOR_BOLD_GREEN"success"LOG_COLOR_RESET" (%d)\n", xpaths_count);
     }
 
     //switching verbosity level to 0 so we don't see logs
     int old_verbosity_level = framework_arguments.verbosity_level;
     framework_arguments.verbosity_level = 0;
 
-    //testing schema_print_xpath()
+    //testing datastore_schema_print_xpath()
     for(int i = 0 ; i < xpaths_count; i++) {
-        int rc = schema_print_xpath(xpaths[i]);
+        int rc = datastore_schema_print_xpath(xpaths[i]);
         if(rc != NTS_ERR_OK) {
-            log_error("error in schema_print_xpath");
+            log_error("error in datastore_schema_print_xpath\n");
             return rc;
         }
     }
 
-    log_message(0, "schema_print_xpath executed with "LOG_COLOR_BOLD_GREEN"success"LOG_COLOR_RESET" for all paths\n");
+    log_add_verbose(0, "datastore_schema_print_xpath executed with "LOG_COLOR_BOLD_GREEN"success"LOG_COLOR_RESET" for all paths\n");
 
     //freeing paths
     for(int i = 0; i < xpaths_count; i++) {
@@ -68,15 +68,14 @@ int exhaustive_test_run(void) {
     free(xpaths);
 
     //testing schema_populate
-    int rc = schema_populate();
+    int rc = datastore_populate(1);
     if(rc != NTS_ERR_OK) {
-        log_error("error in schema_populate");
+        log_error("error in datastore_populate\n");
         return rc;
     }
     
-    log_message(0, "schema_populate executed with "LOG_COLOR_BOLD_GREEN"success"LOG_COLOR_RESET"\n");
-
-    log_message(0, LOG_COLOR_BOLD_GREEN"ALL TESTS WENT GOOD!"LOG_COLOR_RESET"\n\n\n");
+    log_add_verbose(0, "datastore_populate executed with "LOG_COLOR_BOLD_GREEN"success"LOG_COLOR_RESET"\n");
+    log_add_verbose(0, LOG_COLOR_BOLD_GREEN"ALL TESTS WENT GOOD!"LOG_COLOR_RESET"\n\n\n");
 
     //switching back verbosity level
     framework_arguments.verbosity_level = old_verbosity_level;

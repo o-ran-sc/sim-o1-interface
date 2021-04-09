@@ -45,7 +45,7 @@ int http_request(const char *url, const char *username, const char* password, co
 
     CURL *curl = curl_easy_init();
     if(curl == 0) {
-        log_error("could not initialize cURL");
+        log_error("could not initialize cURL\n");
         return NTS_ERR_FAILED;
     }
 
@@ -53,14 +53,14 @@ int http_request(const char *url, const char *username, const char* password, co
     struct curl_slist *header = 0;
     header = curl_slist_append(header, "Content-Type: application/json");
     if(!header) {
-        log_error("curl_slist_append failed");
+        log_error("curl_slist_append failed\n");
         curl_easy_cleanup(curl);
         return NTS_ERR_FAILED;
     }
 
     header = curl_slist_append(header, "Accept: application/json");
     if(!header) {
-        log_error("curl_slist_append failed");
+        log_error("curl_slist_append failed\n");
         curl_easy_cleanup(curl);
         return NTS_ERR_FAILED;
     }
@@ -85,7 +85,7 @@ int http_request(const char *url, const char *username, const char* password, co
         char *credentials = 0;
         asprintf(&credentials, "%s:%s", username, password);
         if(credentials == 0) {
-            log_error("asprintf failed");
+            log_error("asprintf failed\n");
             curl_slist_free_all(header);
             curl_easy_cleanup(curl);
             return NTS_ERR_FAILED;
@@ -100,14 +100,17 @@ int http_request(const char *url, const char *username, const char* password, co
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&response_data);
     }
     
-    log_message(2, "%s-ing cURL to url=\"%s\" with body=\"%s\"\n", method, url, send_data_good);
+    log_add_verbose(2, "%s-ing cURL to url=\"%s\" with body=\"%s\"... ", method, url, send_data_good);
     CURLcode res = curl_easy_perform(curl);
     curl_slist_free_all(header);
 
     if(res != CURLE_OK) {
-        log_message(2, "--> could not send cURL to url=%s, with error: %s\n", url, curl_easy_strerror(res));
+        log_add(2, "failed with error: %s\n", curl_easy_strerror(res));
         curl_easy_cleanup(curl);
         return NTS_ERR_FAILED;
+    }
+    else {
+        log_add(2, "success\n");
     }
 
     if(response_code) {
@@ -136,7 +139,7 @@ int http_socket_request(const char *url, const char *sock_fname, const char *met
 
     CURL *curl = curl_easy_init();
     if(curl == 0) {
-        log_error("could not initialize cURL");
+        log_error("could not initialize cURL\n");
         return NTS_ERR_FAILED;
     }
 
@@ -144,21 +147,21 @@ int http_socket_request(const char *url, const char *sock_fname, const char *met
     struct curl_slist *header = 0;
     header = curl_slist_append(header, "Content-Type: application/json");
     if(!header) {
-        log_error("curl_slist_append failed");
+        log_error("curl_slist_append failed\n");
         curl_easy_cleanup(curl);
         return NTS_ERR_FAILED;
     }
 
     header = curl_slist_append(header, "Accept: application/json");
     if(!header) {
-        log_error("curl_slist_append failed");
+        log_error("curl_slist_append failed\n");
         curl_easy_cleanup(curl);
         return NTS_ERR_FAILED;
     }
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 1L);     //seconds timeout for a connection
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 2L);            //seconds timeout for an operation
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 15L);     //seconds timeout for a connection
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);            //seconds timeout for an operation
     curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, 1L);
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
 
@@ -173,14 +176,17 @@ int http_socket_request(const char *url, const char *sock_fname, const char *met
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&response_data);
     }
     
-    log_message(2, "%s-ing cURL to url=\"%s\" with body=\"%s\"\n", method, url, send_data_good);
+    log_add_verbose(2, "%s-ing cURL to url=\"%s\" with body=\"%s\"\n", method, url, send_data_good);
     CURLcode res = curl_easy_perform(curl);
     curl_slist_free_all(header);
 
     if(res != CURLE_OK) {
-        log_message(2, "--> could not send cURL to url=%s, with error: %s\n", url, curl_easy_strerror(res));
+        log_add(2, "failed with error %s\n", curl_easy_strerror(res));
         curl_easy_cleanup(curl);
         return NTS_ERR_FAILED;
+    }
+    else {
+        log_add(2, "success\n");
     }
 
     if(response_code) {
@@ -203,7 +209,7 @@ static size_t curl_write_cb(void *data, size_t size, size_t nmemb, void *userp) 
 
     char *ptr = realloc(mem->response, mem->size + realsize + 1);
     if(ptr == NULL) {
-        log_error("realloc failed");
+        log_error("realloc failed\n");
         return 0;  /* out of memory! */
     }
 

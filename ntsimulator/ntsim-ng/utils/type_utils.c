@@ -205,7 +205,7 @@ char* typeutils_type_to_str(const struct lys_type *type) {
             if(type->info.enums.count) {
                 ret = (char*)realloc(ret, sizeof(char) * 1024 * 1024);
                 if(!ret) {
-                    log_error("bad malloc");
+                    log_error("bad malloc\n");
                     return 0;
                 }
 

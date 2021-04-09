@@ -35,33 +35,27 @@ int session_init(void) {
     /* connect to sysrepo */
     rc = sr_connect(0, &session_connection);
     if(SR_ERR_OK != rc) {
-        log_error("sr_connect failed");
+        log_error("sr_connect failed\n");
         goto session_init_cleanup;
     }
 
     /* start session */
     rc = sr_session_start(session_connection, SR_DS_OPERATIONAL, &session_operational);
     if (rc != SR_ERR_OK) {
-        log_error("sr_session_start operational failed");
+        log_error("sr_session_start operational failed\n");
         goto session_init_cleanup;
     }
 
-    if(framework_arguments.operational_only == false) {
-        rc = sr_session_start(session_connection, SR_DS_RUNNING, &session_running);
-        if (rc != SR_ERR_OK) {
-            log_error("sr_session_start running failed");
-            goto session_init_cleanup;
-        }
+    rc = sr_session_start(session_connection, SR_DS_RUNNING, &session_running);
+    if (rc != SR_ERR_OK) {
+        log_error("sr_session_start running failed\n");
+        goto session_init_cleanup;
     }
-    else {
-        session_running = session_operational;
-    }
-
 
     /* get context */
     session_context = (struct ly_ctx *)sr_get_context(session_connection);
     if(session_context == 0) {
-        log_error("sr_get_context failed");
+        log_error("sr_get_context failed\n");
         goto session_init_cleanup;
     }
 
@@ -72,20 +66,19 @@ session_init_cleanup:
 }
 
 void session_free(void) {
-    log_message(2, "session_free()... ");
+    log_add_verbose(2, "session_free()... ");
     if(session_subscription) {
         sr_unsubscribe(session_subscription);
     }
 
     sr_session_stop(session_operational);
-    if(framework_arguments.operational_only == false) {
-        sr_session_stop(session_running);
-    }
+    sr_session_stop(session_running);
+
     sr_disconnect(session_connection);
 
     session_connection = 0;
     session_running = 0;
     session_operational = 0;
     session_context = 0;
-    log_message(2, "done\n");
+    log_add(2, "done\n");
 }

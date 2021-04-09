@@ -34,7 +34,7 @@ int faults_init(void) {
 
     rc = faults_ves_init();
     if(rc != NTS_ERR_OK) {
-        log_error("faults_ves_init failed"); 
+        log_error("faults_ves_init failed\n");
         return NTS_ERR_FAILED; 
     }
 
@@ -87,14 +87,14 @@ fault_details_t *faults_generate_fault(void) {
             break;
 
         default:
-            log_error("invalid fault choosing method");
+            log_error("invalid fault choosing method\n");
             return 0;
             break;
     }
 
     int rc = faults_settings_process(faults, fault_iterator);
     if(rc != NTS_ERR_OK) {
-        log_error("faults_settings_process failed");
+        log_error("faults_settings_process failed\n");
         faults_settings_free(faults);
         return 0;
     }
