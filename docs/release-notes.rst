@@ -21,6 +21,9 @@ Version history
 | **Date**           | **Ver.**           | **Author**         | **Comment**        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
+| 2021-04-15         | 1.2.1              |  Alex Stancu       | "D" release        |
+|                    |                    |                    |                    |
++--------------------+--------------------+--------------------+--------------------+
 | 2021-04-12         | 1.2.0              |  Alex Stancu       | "D" release        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
@@ -46,6 +49,12 @@ The O1 interface simulator is a framework that provides simulated network functi
 
 Release Data
 ------------
+
+version 1.2.1
+
+- [fix] VES commmon header made uniform across all VES-related messages
+
+
 version 1.2.0
 
 - [change] **Default password of the NETCONF Server was changed to "netconf!", to be complant with O-RAN requirements**
@@ -59,8 +68,6 @@ version 1.2.0
 - [change] Change ietf-system default configuration and web-ui URL (now points to ConfigApp in SDN-R)
 
 - [fix] Correctly construct URL for SDN Controller and VES Collector when they are addressed via IPv6
-
-- [fix] VES commmon header made uniform across all VES-related messages
 
 
 version 1.0.3

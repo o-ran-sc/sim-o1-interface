@@ -429,15 +429,16 @@ Fault generation is controlled using a combination of JSON and YANG settings. Fr
         ]
     }
 
-    * **fault-rules** node should be a main node in *config.json* for the respective network function in order for the fault generation to be enabled
-    * **yang-notif-template** - template of the yang notification model in current network function. can be "" to disable notifications. must always be present
-    * **choosing-method** - method to choose the fault. can be either *linear* or *random*, and must always be present
-    * **faults** list of faults to choose from by "choosing-method". it can contain any number of fields, custom ones, along with the mandatory VES fields presented below:
-        * **condition**
-        * **object**
-        * **severity** - should correspond to VES defined: NORMAL, WARNING, MINOR, MAJOR, CRITICAL (case sensitive)
-        * **date-time**
-        * **specific-problem**
+- **fault-rules** node should be a main node in *config.json* for the respective network function in order for the fault generation to be enabled
+- **yang-notif-template** - template of the yang notification model in current network function. can be "" to disable notifications. must always be present
+- **choosing-method** - method to choose the fault. can be either *linear* or *random*, and must always be present
+- **faults** list of faults to choose from by "choosing-method". it can contain any number of fields, custom ones, along with the mandatory VES fields presented below:
+
+    - **condition**
+    - **object**
+    - **severity** - should correspond to VES defined: NORMAL, WARNING, MINOR, MAJOR, CRITICAL (case sensitive)
+    - **date-time**
+    - **specific-problem**
 
 On the **yang-notif-template** and on any of the fields, there are two options for creating "dynamic" content (also see example above):
 - **variables** - any field put in between %% will be replaced with the field's value
