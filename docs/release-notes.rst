@@ -21,6 +21,9 @@ Version history
 | **Date**           | **Ver.**           | **Author**         | **Comment**        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
+| 2021-04-12         | 1.2.0              |  Alex Stancu       | "D" release        |
+|                    |                    |                    |                    |
++--------------------+--------------------+--------------------+--------------------+
 | 2020-12-02         | 1.0.3              |  Alex Stancu       | Cherry release     |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
@@ -38,26 +41,43 @@ Version history
 Summary
 -------
 
-The O1 interface simulator is a framework that provides simulated devices with a management plane exposed through a NETCONF/YANG interface, using the O-RAN O1 interface YANG modules.
+The O1 interface simulator is a framework that provides simulated network functions (NF) with a management plane exposed through a NETCONF/YANG interface, using YANG models defined in O-RAN.
 
 
 Release Data
 ------------
+version 1.2.0
+
+- [change] **Default password of the NETCONF Server was changed to "netconf!", to be complant with O-RAN requirements**
+
+- [feature-add] NACM (NETCONF Access Control Module) default configuration is now according to O-RAN WG4 requirements instead of disabled, like before
+
+- [change] Do not expose sysrepo internal YANG models in the yang-schema-list
+
+- [change] Provide both IPv4 and IPv6 addresses (if available) in pnfRegistration message
+
+- [change] Change ietf-system default configuration and web-ui URL (now points to ConfigApp in SDN-R)
+
+- [fix] Correctly construct URL for SDN Controller and VES Collector when they are addressed via IPv6
+
+- [fix] VES commmon header made uniform across all VES-related messages
+
+
 version 1.0.3
 
-[fixed] fixed issues where ODL could not parse the correct versions for yang files
+- [fixed] fixed issues where ODL could not parse the correct versions for yang files
 
 
 version 1.0.2
 
-[fixed] bug that occured when trying to start a wrong instance (bad docker-repository or docker-tag)
-[fixed] when populating the fault-delay-list, if the sum of all the faults was 0, the network funciton kept on generating faults and crashed
+- [fixed] bug that occured when trying to start a wrong instance (bad docker-repository or docker-tag)
+- [fixed] when populating the fault-delay-list, if the sum of all the faults was 0, the network funciton kept on generating faults and crashed
 
 
 version 1.0.1
 
-[feature-add] added web-cut-through feature
-[fixed] mount-point-addressing-method was mistakenly changing after starting
+- [feature-add] added web-cut-through feature
+- [fixed] mount-point-addressing-method was mistakenly changing after starting
 
 
 version 1.0.0
@@ -85,10 +105,13 @@ The following docker containers are the resulting artefacts of the sim-o1-projec
 
 * **o-ran-sc/ntsim-manager** - this image contains the NTS Manager, which handles the simulation environment;
 
-* **o-ran-sc/ntsim-o-ran-ru-fh** - this image contains a simulated device which exposes a management interface via NETCONF/YANG, implementing the O1 FH interface specifications;
+* **o-ran-sc/ntsim-o-ran-fh** - this image contains a simulated device which exposes a management interface via NETCONF/YANG, implementing the O1 FH interface specifications;
 
 * **o-ran-sc/ntsim-x-ran** - this image contains a simulated device which exposes a management interface via NETCONF/YANG, implementing the X-RAN Management interface.
 
+* **o-ran-sc/ntsim-o-ran-ru-fh** - this image contains a simulated device which exposes a management interface via NETCONF/YANG, implementing the O-RU FH YANG models, as per the November 2020 train;
+
+* **o-ran-sc/ntsim-o-ran-du** - this image contains a simulated device which exposes a management interface via NETCONF/YANG, implementing the O-DU YANG models;
 
 Documentation Deliverables
 ++++++++++++++++++++++++++
