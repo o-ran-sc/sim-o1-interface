@@ -46,7 +46,7 @@ static pthread_mutex_t ves_heartbeat_lock;
 static int ves_heartbeat_period_get(void);
 static void ves_heartbeat_period_set(int new_period);
 
-static int ves_heartbeat_send_ves_message(void);
+static int ves_heartbeat_send_ves_message(int port);
 static void *ves_heartbeat_thread_routine(void *arg);
 static cJSON* ves_create_heartbeat_fields(int heartbeat_period);
 static int heartbeat_change_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, sr_event_t event, uint32_t request_id, void *private_data);
@@ -132,7 +132,7 @@ static void ves_heartbeat_period_set(int new_period) {
     pthread_mutex_unlock(&ves_heartbeat_lock);
 }
 
-static int ves_heartbeat_send_ves_message(void) {
+static int ves_heartbeat_send_ves_message(int port) {
     char *hostname_string = framework_environment.settings.hostname;
     cJSON *post_data_json = cJSON_CreateObject();
     if(post_data_json == 0) {
@@ -153,7 +153,7 @@ static int ves_heartbeat_send_ves_message(void) {
         return NTS_ERR_FAILED;
     }
 
-    cJSON *common_event_header = ves_create_common_event_header("heartbeat", "Controller", hostname_string, "Low", ves_sequence_number++);
+    cJSON *common_event_header = ves_create_common_event_header("heartbeat", "Controller", hostname_string, port, "Low", ves_sequence_number++);
     if(common_event_header == 0) {
         log_error("ves_create_common_event_header failed\n");
         cJSON_Delete(post_data_json);
@@ -206,8 +206,29 @@ static int ves_heartbeat_send_ves_message(void) {
 }
 
 static void *ves_heartbeat_thread_routine(void *arg) {
+    assert_session();
+
     int current_heartbeat_period = 0;
     unsigned int timer_counter = 0;
+
+    int ssh_base_port = 0;
+    int tls_base_port = 0;
+    nts_mount_point_addressing_method_t mp = nts_mount_point_addressing_method_get(0);
+    if(mp == UNKNOWN_MAPPING) {
+        log_error("mount-point-addressing-method failed, assuming DOCKER_MAPPING\n");
+        mp = DOCKER_MAPPING;
+        ssh_base_port = STANDARD_NETCONF_PORT;
+        tls_base_port = ssh_base_port + framework_environment.settings.ssh_connections;
+    }
+    else if(mp == DOCKER_MAPPING) {
+        ssh_base_port = STANDARD_NETCONF_PORT;
+        tls_base_port = ssh_base_port + framework_environment.settings.ssh_connections;
+    }
+    else {
+        ssh_base_port = framework_environment.host.ssh_base_port;
+        tls_base_port = framework_environment.host.tls_base_port;       
+    }
+
 
     while((!framework_sigint) && (!ves_heartbeat_stopsig)) {
         current_heartbeat_period = ves_heartbeat_period_get();
@@ -216,10 +237,28 @@ static void *ves_heartbeat_thread_routine(void *arg) {
         if((timer_counter >= current_heartbeat_period) && (current_heartbeat_period > 0)) {
             timer_counter = 0;
 
-            int rc = ves_heartbeat_send_ves_message();
-            if(rc != NTS_ERR_FAILED) {
-                log_error("could not send VES heartbeat\n");
+            if((framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections) > 1) {
+                for(int port = ssh_base_port; port < ssh_base_port + framework_environment.settings.ssh_connections; port++) {
+                    int rc = ves_heartbeat_send_ves_message(port);
+                    if(rc != NTS_ERR_FAILED) {
+                        log_error("could not send VES heartbeat\n");
+                    }
+                }
+
+                for(int port = tls_base_port; port < tls_base_port + framework_environment.settings.tls_connections; port++) {
+                    int rc = ves_heartbeat_send_ves_message(port);
+                    if(rc != NTS_ERR_FAILED) {
+                        log_error("could not send VES heartbeat\n");
+                    }
+                }
             }
+            else {
+                int rc = ves_heartbeat_send_ves_message(0);
+                if(rc != NTS_ERR_FAILED) {
+                    log_error("could not send VES heartbeat\n");
+                }
+            }
+            
         }
 
         sleep(1);

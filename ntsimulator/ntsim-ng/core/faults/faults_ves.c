@@ -78,17 +78,26 @@ int faults_ves_message_send(sr_session_ctx_t *session, const char *condition, co
         tls_base_port = framework_environment.host.tls_base_port;       
     }
 
-    for(int port = ssh_base_port; port < ssh_base_port + framework_environment.settings.ssh_connections; port++) {
-        uint32_t *seq_id = &fault_ves_sequence_number[sequence_index++];
-        int rc = ves_message_send_internal(session, condition, object, severity, date_time, specific_problem, port, seq_id);
-        if(rc != NTS_ERR_OK) {
-            log_error("ves_message_send_internal failed\n");
+    if((framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections) > 1) {
+        for(int port = ssh_base_port; port < ssh_base_port + framework_environment.settings.ssh_connections; port++) {
+            uint32_t *seq_id = &fault_ves_sequence_number[sequence_index++];
+            int rc = ves_message_send_internal(session, condition, object, severity, date_time, specific_problem, port, seq_id);
+            if(rc != NTS_ERR_OK) {
+                log_error("ves_message_send_internal failed\n");
+            }
+        }
+
+        for(int port = tls_base_port; port < tls_base_port + framework_environment.settings.tls_connections; port++) {
+            uint32_t *seq_id = &fault_ves_sequence_number[sequence_index++];
+            int rc = ves_message_send_internal(session, condition, object, severity, date_time, specific_problem, port, seq_id);
+            if(rc != NTS_ERR_OK) {
+                log_error("ves_message_send_internal failed\n");
+            }
         }
     }
-
-    for(int port = tls_base_port; port < tls_base_port + framework_environment.settings.tls_connections; port++) {
+    else {
         uint32_t *seq_id = &fault_ves_sequence_number[sequence_index++];
-        int rc = ves_message_send_internal(session, condition, object, severity, date_time, specific_problem, port, seq_id);
+        int rc = ves_message_send_internal(session, condition, object, severity, date_time, specific_problem, 0, seq_id);
         if(rc != NTS_ERR_OK) {
             log_error("ves_message_send_internal failed\n");
         }
@@ -209,17 +218,7 @@ static int ves_message_send_internal(sr_session_ctx_t *session, const char *cond
     }
     cJSON_AddItemToObject(post_data_json, "event", event);
 
-    char *source_name = 0;
-    if (framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections == 1) {
-        // we don't want to append the port to the source name if we only expose one port
-        asprintf(&source_name, "%s", hostname_string);
-    }
-    else {
-        asprintf(&source_name, "%s_%d", hostname_string, port);
-    }
-    cJSON *common_event_header = ves_create_common_event_header("fault", "O_RAN_COMPONENT_Alarms", source_name, "Low", (*seq_id)++);
-    free(source_name);
-
+    cJSON *common_event_header = ves_create_common_event_header("fault", "O_RAN_COMPONENT_Alarms", hostname_string, port, "Low", (*seq_id)++);
     if(common_event_header == 0) {
         log_error("ves_create_common_event_header failed\n");
         cJSON_Delete(post_data_json);

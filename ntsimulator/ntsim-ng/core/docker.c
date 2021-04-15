@@ -191,6 +191,12 @@ int docker_start(const char *container_name, const char *tag, const char *image,
     container->docker_ip = 0;
     container->docker_netconf_ssh_port = STANDARD_NETCONF_PORT;
     container->docker_netconf_tls_port = container->docker_netconf_ssh_port + framework_environment.settings.ssh_connections;
+    if(framework_environment.settings.ssh_connections == 0) {
+        container->docker_netconf_ssh_port = 0;
+    }
+    if(framework_environment.settings.tls_connections == 0) {
+        container->docker_netconf_tls_port = 0;
+    }
     container->docker_ftp_port= STANDARD_FTP_PORT;
     container->docker_sftp_port= STANDARD_SFTP_PORT;
 

@@ -34,7 +34,7 @@
 #define FILE_READY_RPC_SCHEMA_XPATH         "/nts-network-function:invoke-ves-pm-file-ready"
 
 static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data);
-static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *file_location);
+static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *file_location, int port);
 static cJSON* ves_create_file_ready_fields(const char* file_location);
 static void ves_file_ready_vsftp_daemon_init(void);
 static void ves_file_ready_vsftp_daemon_deinit(void);
@@ -88,10 +88,52 @@ static void ves_file_ready_vsftp_daemon_deinit(void) {
 }
 
 static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data) {
-    int rc;
+    int ssh_base_port = 0;
+    int tls_base_port = 0;
+    nts_mount_point_addressing_method_t mp = nts_mount_point_addressing_method_get(session);
+    if(mp == UNKNOWN_MAPPING) {
+        log_error("mount-point-addressing-method failed\n");
+        return NTS_ERR_FAILED;
+    }
+    else if(mp == DOCKER_MAPPING) {
+        ssh_base_port = STANDARD_NETCONF_PORT;
+        tls_base_port = ssh_base_port + framework_environment.settings.ssh_connections;
+    }
+    else {
+        ssh_base_port = framework_environment.host.ssh_base_port;
+        tls_base_port = framework_environment.host.tls_base_port;       
+    }
+
+    int failed = 0;
+
+    if((framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections) > 1) {
+        for(int port = ssh_base_port; port < ssh_base_port + framework_environment.settings.ssh_connections; port++) {
+            int rc = ves_file_ready_send_message(session, input[0].data.string_val, port);
+            if(rc != NTS_ERR_OK) {
+                log_error("ves_file_ready_send_message failed\n");
+                failed++;
+            }
+        }
+
+        for(int port = tls_base_port; port < tls_base_port + framework_environment.settings.tls_connections; port++) {
+            int rc = ves_file_ready_send_message(session, input[0].data.string_val, port);
+            if(rc != NTS_ERR_OK) {
+                log_error("ves_file_ready_send_message failed\n");
+                failed++;
+            }
+        }
+    }
+    else {
+        int rc = ves_file_ready_send_message(session, input[0].data.string_val, 0);
+        if(rc != NTS_ERR_OK) {
+            log_error("ves_file_ready_send_message failed\n");
+            failed++;
+        }
+    }
+    
 
     *output_cnt = 1;
-    rc = sr_new_values(*output_cnt, output);
+    int rc = sr_new_values(*output_cnt, output);
     if(SR_ERR_OK != rc) {
         return rc;
     }
@@ -100,9 +142,8 @@ static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *pa
     if(SR_ERR_OK != rc) {
         return rc;
     }
-
-    rc = ves_file_ready_send_message(session, input[0].data.string_val);
-    if(rc != NTS_ERR_OK) {
+    
+    if(failed != 0) {
         rc = sr_val_build_str_data(output[0], SR_ENUM_T, "%s", "ERROR");
     }
     else {
@@ -112,7 +153,7 @@ static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *pa
     return rc;
 }
 
-static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *file_location) {
+static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *file_location, int port) {
     assert(session);
     assert(file_location);
 
@@ -138,8 +179,7 @@ static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *fi
         return NTS_ERR_FAILED;
     }
 
-    char *hostname_string = framework_environment.settings.hostname;
-    cJSON *common_event_header = ves_create_common_event_header("notification", "Notification-gnb_Nokia-FileReady", hostname_string, "Normal", sequence_number++);
+    cJSON *common_event_header = ves_create_common_event_header("notification", "Notification-gnb_Nokia-FileReady", framework_environment.settings.hostname, port, "Normal", sequence_number++);
     if(common_event_header == 0) {
         log_error("could not create cJSON object\n");
         cJSON_Delete(post_data_json);

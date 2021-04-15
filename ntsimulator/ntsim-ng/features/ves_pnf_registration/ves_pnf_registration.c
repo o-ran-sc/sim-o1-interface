@@ -33,7 +33,7 @@
 
 static int ves_pnf_sequence_number = 0;
 
-static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const char *nf_ip_v4_address, const char *nf_ip_v6_address, int nf_port, bool is_tls);
+static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const char *nf_ip_v4_address, const char *nf_ip_v6_address, int nf_port, nts_mount_point_addressing_method_t mp, bool is_tls);
 static cJSON* ves_create_pnf_registration_fields(const char *nf_ip_v4_address, const char *nf_ip_v6_address, int nf_port, bool is_tls);
 
 static int ves_pnf_registration_status = 0;
@@ -61,7 +61,9 @@ int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session) {
     }
     else {
         // if value is not set yet, feature enable means we want to start pnf-registration
-        pnf_registration_enabled = true;
+        if(strlen(framework_environment.nts.nf_standalone_start_features)) {
+            pnf_registration_enabled = true;
+        }
     }
 
     if(pnf_registration_enabled == false) {
@@ -69,11 +71,14 @@ int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session) {
         return NTS_ERR_OK;
     }
 
+    int ssh_base_port = 0;
+    int tls_base_port = 0;
     char nf_ip_v4_address[128];
     char nf_ip_v6_address[128];
-    int nf_ssh_port;
-    int nf_tls_port;
 
+    nf_ip_v4_address[0] = 0;
+    nf_ip_v6_address[0] = 0;
+    
     nts_mount_point_addressing_method_t mp = nts_mount_point_addressing_method_get(current_session);
     if(mp == UNKNOWN_MAPPING) {
         log_error("mount-point-addressing-method failed\n");
@@ -86,33 +91,52 @@ int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session) {
         if (framework_environment.settings.ip_v6) {
             strcpy(nf_ip_v6_address, framework_environment.settings.ip_v6);
         }
-        nf_ssh_port = STANDARD_NETCONF_PORT;
-        nf_tls_port = nf_ssh_port + framework_environment.settings.ssh_connections;
+
+        ssh_base_port = STANDARD_NETCONF_PORT;
+        tls_base_port = ssh_base_port + framework_environment.settings.ssh_connections;
     }
     else {
-        if (framework_environment.settings.ip_v6_enabled) {
+        if(framework_environment.settings.ip_v6_enabled) {
             strcpy(nf_ip_v6_address, framework_environment.host.ip);
         }
         else {
             strcpy(nf_ip_v4_address, framework_environment.host.ip);
         }
-        nf_ssh_port = framework_environment.host.ssh_base_port;
-        nf_tls_port = framework_environment.host.tls_base_port;
+
+        ssh_base_port = framework_environment.host.ssh_base_port;
+        tls_base_port = framework_environment.host.tls_base_port;
     }
 
-    for(int i = 0; i < framework_environment.settings.ssh_connections; i++) {
-        rc = ves_pnf_registration_send(current_session, nf_ip_v4_address, nf_ip_v6_address, nf_ssh_port + i, false);
-        if(rc != NTS_ERR_OK) {
-            log_error("could not send pnfRegistration message for IPv4=%s and IPv6=%s and port=%d and protocol SSH\n", nf_ip_v4_address, nf_ip_v6_address, nf_ssh_port + i);
-            continue;
+    if((framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections) > 1) {
+        for(int port = ssh_base_port; port < ssh_base_port + framework_environment.settings.ssh_connections; port++) {
+            int rc = ves_pnf_registration_send(current_session, nf_ip_v4_address, nf_ip_v6_address, port, mp, false);
+            if(rc != NTS_ERR_OK) {
+                log_error("could not send pnfRegistration message for IPv4=%s and IPv6=%s and port=%d and protocol SSH\n", nf_ip_v4_address, nf_ip_v6_address, port);
+            }
+        }
+
+        for(int port = tls_base_port; port < tls_base_port + framework_environment.settings.tls_connections; port++) {
+            int rc = ves_pnf_registration_send(current_session, nf_ip_v4_address, nf_ip_v6_address, port, mp, true);
+            if(rc != NTS_ERR_OK) {
+                log_error("could not send pnfRegistration message for IPv4=%s and IPv6=%s and port=%d and protocol TLS\n", nf_ip_v4_address, nf_ip_v6_address, port);
+            }
         }
     }
+    else {
+        bool tls;
+        int port;
+        if(framework_environment.settings.tls_connections == 0) {
+            tls = false;
+            port = ssh_base_port;
+        }
+        else {
+            tls = true;
+            port = tls_base_port;
+        }
 
-    for(int i = 0; i < framework_environment.settings.tls_connections; i++) {
-        rc = ves_pnf_registration_send(current_session, nf_ip_v4_address, nf_ip_v6_address, nf_tls_port + i, true);
+        int rc = ves_pnf_registration_send(current_session, nf_ip_v4_address, nf_ip_v6_address, 0, mp, tls);
         if(rc != NTS_ERR_OK) {
-            log_error("could not send pnfRegistration message for IPv4=%s and IPv6=%s and port=%d and protocol TLS\n", nf_ip_v4_address, nf_ip_v6_address, nf_tls_port + i);
-            continue;
+            log_error("could not send pnfRegistration message for IPv4=%s and IPv6=%s\n", nf_ip_v4_address, nf_ip_v6_address, port);
         }
     }
 
@@ -122,8 +146,7 @@ int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session) {
     return NTS_ERR_OK;
 }
 
-
-static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const char *nf_ip_v4_address, const char *nf_ip_v6_address, int nf_port, bool is_tls) {
+static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const char *nf_ip_v4_address, const char *nf_ip_v6_address, int nf_port, nts_mount_point_addressing_method_t mp, bool is_tls) {
     assert(current_session);
 
     cJSON *post_data_json = cJSON_CreateObject();
@@ -146,21 +169,25 @@ static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const ch
     }
 
     char *hostname_string = framework_environment.settings.hostname;
-    char source_name[100];
-
-    if (framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections == 1) {
-        // we don't want to append the port to the mountpoint name if we only expose one port
-        sprintf(source_name, "%s", hostname_string);
-    }
-    else {
-	    sprintf(source_name, "%s_%d", hostname_string, nf_port);
-    }
-
-    cJSON *common_event_header = ves_create_common_event_header("pnfRegistration", "EventType5G", source_name, "Normal", ves_pnf_sequence_number++);
+    cJSON *common_event_header = ves_create_common_event_header("pnfRegistration", "EventType5G", hostname_string, nf_port, "Normal", ves_pnf_sequence_number++);
     if(common_event_header == 0) {
         log_error("could not create cJSON object\n");
         cJSON_Delete(post_data_json);
         return NTS_ERR_FAILED;
+    }
+
+    if(nf_port == 0) {
+        if(mp == DOCKER_MAPPING) {
+            nf_port = STANDARD_NETCONF_PORT;
+        }
+        else {
+            if(is_tls) {
+                nf_port = framework_environment.host.tls_base_port;
+            }
+            else {
+                nf_port = framework_environment.host.ssh_base_port;
+            }
+        }
     }
     
     if(cJSON_AddItemToObject(event, "commonEventHeader", common_event_header) == 0) {

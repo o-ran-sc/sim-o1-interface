@@ -287,6 +287,17 @@ static int framework_env_init(void) {
     }
     
     log_add_verbose(2, "[framework-env] host.ip = %s\n", framework_environment.host.ip);
+    if(framework_environment.settings.ip_v6_enabled) {
+        if(strstr(framework_environment.host.ip, ".")) {
+            log_error("[framework-env] host.ip is an invalid IP v6\n");
+        }
+    }
+    else {
+        if(strstr(framework_environment.host.ip, ":")) {
+            log_error("[framework-env] host.ip is an invalid IP v4\n");
+        }
+    }
+
     log_add_verbose(2, "[framework-env] host.base_port = %d\n", framework_environment.host.base_port);
     log_add_verbose(2, "[framework-env] host.ssh_base_port = %d\n", framework_environment.host.ssh_base_port);
     log_add_verbose(2, "[framework-env] host.tls_base_port = %d\n", framework_environment.host.tls_base_port);

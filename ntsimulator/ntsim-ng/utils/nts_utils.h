@@ -50,7 +50,7 @@ typedef struct {
     char *auth_method;
 } controller_details_t;
 
-cJSON* ves_create_common_event_header(const char *domain, const char *event_type, const char *source_name, const char *priority, int seq_id);
+cJSON* ves_create_common_event_header(const char *domain, const char *event_type, const char *hostname, int port, const char *priority, int seq_id);
 
 nts_mount_point_addressing_method_t nts_mount_point_addressing_method_get(sr_session_ctx_t *current_session);
 

@@ -452,7 +452,7 @@ int manager_actions_mount(manager_context_t *ctx) {
             protocol = "SSH";
             protocol_data = "\
             \"network-topology:netconf-node-topology:username\": \"netconf\",\
-            \"network-topology:netconf-node-topology:password\": \"netconf\"";
+            \"network-topology:netconf-node-topology:password\": \"netconf!\"";
 
             if(instance->mount_point_addressing_method[0] == 'd') {
                 port = instance->container.docker_netconf_ssh_port + i;
@@ -496,7 +496,12 @@ int manager_actions_mount(manager_context_t *ctx) {
 
         char node_id[128];
         char json[4096];
-        sprintf(node_id, "%s-%d", instance->container.name, port);
+        if(framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections > 1) {
+            sprintf(node_id, "%s-%d", instance->container.name, port);
+        }
+        else {
+            sprintf(node_id, "%s", instance->container.name);
+        }
         sprintf(json, json_template, node_id, ip, port, protocol, protocol_data);
 
         char url[512];
@@ -560,7 +565,12 @@ int manager_actions_unmount(manager_context_t *ctx) {
             }
         }
         char node_id[128];
-        sprintf(node_id, "%s-%d", instance->container.name, port);
+        if(framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections > 1) {
+            sprintf(node_id, "%s-%d", instance->container.name, port);
+        }
+        else {
+            sprintf(node_id, "%s", instance->container.name);
+        }
 
         char url[512];
         sprintf(url, "%s/rests/data/network-topology:network-topology/topology=topology-netconf/node=%s", controller->base_url, node_id);

@@ -38,10 +38,10 @@
 #define NTS_NETWORK_FUNCTION_VES_SCHEMA_XPATH               "/nts-network-function:simulation/network-function/ves"
 
 
-cJSON* ves_create_common_event_header(const char *domain, const char *event_type, const char *source_name, const char *priority, int seq_id) {
+cJSON* ves_create_common_event_header(const char *domain, const char *event_type, const char *hostname, int port, const char *priority, int seq_id) {
     assert(domain);
     assert(event_type);
-    assert(source_name);
+    assert(hostname);
     assert(priority);
 
     char *eventId = 0;
@@ -98,6 +98,14 @@ cJSON* ves_create_common_event_header(const char *domain, const char *event_type
         log_error("cJSON AddStringToObject error\n");
         cJSON_Delete(common_event_header);
         return 0;
+    }
+
+    char source_name[512];
+    if(port) {
+        sprintf(source_name, "%s-%d", hostname, port);
+    }
+    else {
+        sprintf(source_name, "%s", hostname);
     }
 
     if(cJSON_AddStringToObject(common_event_header, "reportingEntityName", source_name) == 0) {

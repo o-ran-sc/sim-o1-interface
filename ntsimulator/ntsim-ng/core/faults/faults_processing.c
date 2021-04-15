@@ -20,6 +20,7 @@
 #include "faults.h"
 #include "utils/log_utils.h"
 #include "utils/sys_utils.h"
+#include "core/framework.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -455,6 +456,11 @@ static char *fault_process_function(const char *function) {
         char *ret = 0;
         asprintf(&ret, "%d", uint32_counter);
         uint32_counter++;
+        return ret;
+    }
+    else if(strcmp(function, "$$hostname$$") == 0) {
+        char *ret = 0;
+        asprintf(&ret, "%s", framework_environment.settings.hostname);
         return ret;
     }
 

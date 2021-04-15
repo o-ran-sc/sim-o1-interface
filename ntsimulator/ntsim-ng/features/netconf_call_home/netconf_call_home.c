@@ -57,7 +57,9 @@ int netconf_call_home_feature_start(sr_session_ctx_t *current_session) {
     }
     else {
         // if value is not set yet, feature enable means we want to start call-home
-        callhome_enabled = true;
+        if(strlen(framework_environment.nts.nf_standalone_start_features)) {
+            callhome_enabled = true;
+        }
     }
 
     if(callhome_enabled == false) {
