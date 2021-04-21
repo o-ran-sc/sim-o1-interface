@@ -603,7 +603,7 @@ static int create_tls_listen_endpoints(struct lyd_node *netconf_node, int tls_co
         }
 
         sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tls-server-parameters/client-authentication/cert-maps/cert-to-name[id='1']/name", endpoint_name);
-        rcl = lyd_new_path(netconf_node, 0, xpath, "netconf-tls", 0, LYD_PATH_OPT_NOPARENTRET);
+        rcl = lyd_new_path(netconf_node, 0, xpath, "netconf", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
