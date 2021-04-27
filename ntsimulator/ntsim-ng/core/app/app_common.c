@@ -24,10 +24,8 @@
 #include <assert.h>
 
 #include "core/session.h"
+#include "core/xpath.h"
 #include "core/framework.h"
-
-#define SYSREPO_BUILD_TIME_XPATH    "/nts-network-function:info/build-time"
-#define SYSREPO_VERSION_XPATH       "/nts-network-function:info/version"
 
 static int app_common_populate_info(void);
 
@@ -46,14 +44,14 @@ int app_common_init(void) {
 static int app_common_populate_info(void) {
     int rc;
     if (framework_environment.nts.build_time && strlen(framework_environment.nts.build_time) > 0) {
-        rc  = sr_set_item_str(session_operational, SYSREPO_BUILD_TIME_XPATH, framework_environment.nts.build_time, 0, 0);
+        rc  = sr_set_item_str(session_operational, NTS_NF_INFO_BUILD_TIME_XPATH, framework_environment.nts.build_time, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
             return NTS_ERR_FAILED;
         }
     }
 
-    rc = sr_set_item_str(session_operational, SYSREPO_VERSION_XPATH, framework_environment.nts.version, 0, 0);
+    rc = sr_set_item_str(session_operational, NTS_NF_INFO_VERSION_XPATH, framework_environment.nts.version, 0, 0);
     if(rc != SR_ERR_OK) {
         log_error("sr_set_item_str failed\n");
         return NTS_ERR_FAILED;

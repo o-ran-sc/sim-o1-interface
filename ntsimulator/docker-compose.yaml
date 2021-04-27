@@ -86,6 +86,7 @@ services:
       TLS_CONNECTIONS: ${TLS_CONNECTIONS}
       
       NTS_NF_STANDALONE_START_FEATURES: "datastore-populate ves-heartbeat ves-file-ready ves-pnf-registration netconf-call-home web-cut-through"
+      NTS_NF_MOUNT_POINT_ADDRESSING_METHOD: ${NTS_NF_MOUNT_POINT_ADDRESSING_METHOD}
       
       SDN_CONTROLLER_PROTOCOL: ${SDN_CONTROLLER_PROTOCOL}
       SDN_CONTROLLER_IP: ${SDN_CONTROLLER_IP}

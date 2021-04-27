@@ -28,6 +28,7 @@
 #include "core/framework.h"
 #include "core/docker.h"
 #include "core/session.h"
+#include "core/xpath.h"
 #include "core/nc_config.h"
 #include "utils/nc_client.h"
 #include "utils/http_client.h"
@@ -257,14 +258,14 @@ int manager_actions_config_instance(manager_context_t *ctx, manager_network_func
 
     //populate sdn-controller and ves-endpoint
     struct lyd_node *local_tree = 0;
-    int rc = lyd_utils_dup(session_running, "/nts-manager:simulation/sdn-controller", "/nts-network-function:simulation/sdn-controller", &local_tree);
+    int rc = lyd_utils_dup(session_running, NTS_MANAGER_SDN_CONTROLLER_CONFIG_XPATH, NTS_NF_SDN_CONTROLLER_CONFIG_XPATH, &local_tree);
     if(rc != NTS_ERR_OK) {
         log_error("lyd_utils_dup failed\n");
         manager_sr_notif_send_instance_changed("config FAILED - libyang", ctx->function_type, instance->container.name, instance);
         return NTS_ERR_FAILED;
     }
 
-    rc = lyd_utils_dup(session_running, "/nts-manager:simulation/ves-endpoint", "/nts-network-function:simulation/ves-endpoint", &local_tree);
+    rc = lyd_utils_dup(session_running, NTS_MANAGER_VES_ENDPOINT_CONFIG_XPATH, NTS_NF_VES_ENDPOINT_CONFIG_XPATH, &local_tree);
     if(rc != NTS_ERR_OK) {
         log_error("lyd_utils_dup failed\n");
         manager_sr_notif_send_instance_changed("config FAILED - libyang", ctx->function_type, instance->container.name, instance);
@@ -273,8 +274,8 @@ int manager_actions_config_instance(manager_context_t *ctx, manager_network_func
     }
 
     char xpath_s[512];
-    sprintf(xpath_s, "/nts-manager:simulation/network-functions/network-function[function-type='%s']", ctx->function_type);
-    rc = lyd_utils_dup(session_running, xpath_s, "/nts-network-function:simulation/network-function", &local_tree);
+    sprintf(xpath_s, NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH"[function-type='%s']", ctx->function_type);
+    rc = lyd_utils_dup(session_running, xpath_s, NTS_NF_NETWORK_FUNCTION_SCHEMA_XPATH, &local_tree);
     if(rc != NTS_ERR_OK) {
         log_error("lyd_utils_dup failed\n");
         manager_sr_notif_send_instance_changed("config FAILED - libyang", ctx->function_type, instance->container.name, instance);
@@ -304,7 +305,7 @@ int manager_actions_config_instance(manager_context_t *ctx, manager_network_func
         //run datastore-populate rpc
         struct lyd_node *rpc_node = 0;
         struct lyd_node *rpcout = 0;
-        rpc_node = lyd_new_path(0, session_context, "/nts-network-function:datastore-populate", 0, 0, 0);
+        rpc_node = lyd_new_path(0, session_context, NTS_NF_RPC_POPULATE_SCHEMA_XPATH, 0, 0, 0);
         if(rpc_node == 0) {
             log_error("failed to create rpc node\n");
             manager_sr_notif_send_instance_changed("config FAILED - populate RPC", ctx->function_type, instance->container.name, instance);
@@ -326,7 +327,7 @@ int manager_actions_config_instance(manager_context_t *ctx, manager_network_func
         lyd_free_withsiblings(rpc_node);
 
         //run feature-control rpc
-        rpc_node = lyd_new_path(0, session_context, "/nts-network-function:feature-control/start-features", "ves-file-ready ves-heartbeat ves-pnf-registration manual-notification-generation netconf-call-home web-cut-through", 0, 0);
+        rpc_node = lyd_new_path(0, session_context, NTS_NF_RPC_FEATURE_CONTROL_SCHEMA_XPATH"/start-features", "ves-file-ready ves-heartbeat ves-pnf-registration manual-notification-generation netconf-call-home web-cut-through", 0, 0);
         if(rpc_node == 0) {
             log_error("failed to create rpc node\n");
             manager_sr_notif_send_instance_changed("config FAILED - feature-control RPC", ctx->function_type, instance->container.name, instance);

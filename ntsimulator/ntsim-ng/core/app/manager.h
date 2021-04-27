@@ -24,9 +24,6 @@
 #include <sysrepo/values.h>
 #include "core/docker.h"
 
-#define NTS_MANAGER_MODULE                          "nts-manager"
-#define NTS_SIMULATION_SCHEMA_XPATH                 "/nts-manager:simulation"
-#define NTS_FUNCTION_LIST_SCHEMA_XPATH              "/nts-manager:simulation/network-functions/network-function"
 
 typedef struct {
     //meta-data

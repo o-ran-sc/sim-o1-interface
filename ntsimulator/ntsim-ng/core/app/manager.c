@@ -28,6 +28,7 @@
 
 #include "core/framework.h"
 #include "core/session.h"
+#include "core/xpath.h"
 #include "core/context.h"
 
 #include "app_common.h"
@@ -70,21 +71,21 @@ int manager_run(void) {
     }
     
     // subscribe to any changes on the list
-    rc = sr_module_change_subscribe(session_running, NTS_MANAGER_MODULE, NTS_SIMULATION_SCHEMA_XPATH, manager_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE | SR_SUBSCR_UPDATE, &session_subscription);
+    rc = sr_module_change_subscribe(session_running, NTS_MANAGER_MODULE, NTS_MANAGER_SIMULATION_SCHEMA_XPATH, manager_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE | SR_SUBSCR_UPDATE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("could not subscribe to simulation changes\n");
         return NTS_ERR_FAILED;
     }
 
     //subscribe to stats
-    rc = sr_oper_get_items_subscribe(session_running, NTS_MANAGER_MODULE, NTS_SIMULATION_SCHEMA_XPATH, manager_sr_stats_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE | SR_SUBSCR_OPER_MERGE, &session_subscription);
+    rc = sr_oper_get_items_subscribe(session_running, NTS_MANAGER_MODULE, NTS_MANAGER_SIMULATION_SCHEMA_XPATH, manager_sr_stats_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE | SR_SUBSCR_OPER_MERGE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("could not subscribe to oper faults\n");
         return NTS_ERR_FAILED;
     }
 
     //subscribe to instances oper change
-    rc = sr_oper_get_items_subscribe(session_running, NTS_MANAGER_MODULE, NTS_FUNCTION_LIST_SCHEMA_XPATH, manager_instances_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    rc = sr_oper_get_items_subscribe(session_running, NTS_MANAGER_MODULE, NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, manager_instances_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("could not subscribe to oper faults\n");
         return 0;
@@ -149,7 +150,7 @@ static int manager_change_cb(sr_session_ctx_t *session, const char *module_name,
     }
 
     if(event == SR_EV_UPDATE) {
-        rc = sr_get_changes_iter(session, NTS_FUNCTION_LIST_SCHEMA_XPATH"//.", &it);
+        rc = sr_get_changes_iter(session, NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH"//.", &it);
         if(rc != SR_ERR_OK) {
             log_error("sr_get_changes_iter failed\n");
             return SR_ERR_VALIDATION_FAILED;
@@ -270,7 +271,7 @@ static int manager_change_cb(sr_session_ctx_t *session, const char *module_name,
         bool global_change = false;
 
         // go throughout all the changes, not just NF list
-        rc = sr_get_changes_iter(session, NTS_SIMULATION_SCHEMA_XPATH"//.", &it);
+        rc = sr_get_changes_iter(session, NTS_MANAGER_SIMULATION_SCHEMA_XPATH"//.", &it);
         if(rc != SR_ERR_OK) {
             log_error("sr_get_changes_iter failed\n");
             return SR_ERR_VALIDATION_FAILED;
@@ -278,7 +279,7 @@ static int manager_change_cb(sr_session_ctx_t *session, const char *module_name,
 
         while((rc = sr_get_change_next(session, it, &oper, &old_value, &new_value)) == SR_ERR_OK) {
             if(new_value) {
-                if(strstr(new_value->xpath, NTS_FUNCTION_LIST_SCHEMA_XPATH) != new_value->xpath) {
+                if(strstr(new_value->xpath, NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH) != new_value->xpath) {
                     global_change = true;
                     sr_free_val(old_value);
                     sr_free_val(new_value);
@@ -309,7 +310,7 @@ static int manager_change_cb(sr_session_ctx_t *session, const char *module_name,
 
 static int manager_instances_get_items_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data) {
 
-    *parent = lyd_new_path(NULL, sr_get_context(sr_session_get_connection(session)), NTS_FUNCTION_LIST_SCHEMA_XPATH, 0, 0, 0);
+    *parent = lyd_new_path(NULL, sr_get_context(sr_session_get_connection(session)), NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, 0, 0, 0);
     if(*parent == 0) {
         log_error("lyd_new_path failed\n");
         return SR_ERR_OPERATION_FAILED;
@@ -317,7 +318,7 @@ static int manager_instances_get_items_cb(sr_session_ctx_t *session, const char 
 
     for(int i = 0; i < docker_context_count; i++) {
         char ftype_path[512];
-        sprintf(ftype_path, "%s[function-type='%s']/instances/instance", NTS_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
+        sprintf(ftype_path, "%s[function-type='%s']/instances/instance", NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
         for(int j = 0; j < manager_context[i].started_instances; j++) {
             char instance_path[1024];
             sprintf(instance_path, "%s[name='%s']", ftype_path, manager_context[i].instance[j].container.name);

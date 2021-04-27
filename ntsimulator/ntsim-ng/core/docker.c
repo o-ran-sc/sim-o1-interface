@@ -358,6 +358,42 @@ int docker_usage_get(const char **instances_id, int count, docker_usage_t *usage
     return NTS_ERR_OK;
 }
 
+int docker_pull(const char *repo, const char *image, const char *tag) {
+    assert(repo);
+    assert(image);
+    assert(tag);
+
+    char image_full[256];
+    if(tag && (tag[0] != 0)) {
+        sprintf(image_full, "%s/%s:%s", repo, image, tag);
+    }
+    else {
+        sprintf(image_full, "%s/%s:latest", repo, image);    
+    }
+
+    char url[512];
+    sprintf(url, "http:/v%s/images/create?fromImage=%s", framework_environment.settings.docker_engine_version, image_full);
+
+    char *response = 0;
+    int response_code = 0;
+    int rc = http_socket_request(url, DOCKER_SOCK_FNAME, "POST", 0, &response_code, &response);
+
+    if(rc != NTS_ERR_OK) {
+        log_error("http_socket_request failed\n");
+        return NTS_ERR_FAILED;
+    }
+
+    if(response_code != 200) {
+        char *message = docker_parse_json_message(response);
+        log_error("docker_pull failed (%d): %s\n", response_code, message);
+        free(message);
+        free(response);
+        return NTS_ERR_FAILED;
+    }
+    
+    return NTS_ERR_OK;
+}
+
 static char *docker_parse_json_message(const char *json_string) {
     assert(json_string);
 

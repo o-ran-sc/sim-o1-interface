@@ -28,10 +28,9 @@
 
 #include "core/session.h"
 #include "core/framework.h"
+#include "core/xpath.h"
 
-#define NETCONF_CALLHOME_ENABLED_SCHEMA_PATH        "/nts-network-function:simulation/network-function/netconf/call-home"
 #define NETCONF_CALLHOME_CURL_SEND_PAYLOAD_FORMAT   "{\"odl-netconf-callhome-server:device\":[{\"odl-netconf-callhome-server:unique-id\":\"%s\",\"odl-netconf-callhome-server:ssh-host-key\":\"%s\",\"odl-netconf-callhome-server:credentials\":{\"odl-netconf-callhome-server:username\":\"netconf\",\"odl-netconf-callhome-server:passwords\":[\"netconf!\"]}}]}"
-#define SDN_CONTROLLER_DETAILS_SCHEMA_PATH          "/nts-network-function:simulation/sdn-controller"
 
 static int create_ssh_callhome_endpoint(sr_session_ctx_t *current_session, struct lyd_node *netconf_node);
 static int create_tls_callhome_endpoint(sr_session_ctx_t *current_session, struct lyd_node *netconf_node);
@@ -50,7 +49,7 @@ int netconf_call_home_feature_start(sr_session_ctx_t *current_session) {
     sr_val_t *value = 0;
 
     bool callhome_enabled = false;
-    int rc = sr_get_item(current_session, NETCONF_CALLHOME_ENABLED_SCHEMA_PATH, 0, &value);
+    int rc = sr_get_item(current_session, NTS_NF_NETCONF_CALLHOME_ENABLED_SCHEMA_PATH, 0, &value);
     if(rc == SR_ERR_OK) {
         callhome_enabled = value->data.bool_val;
         sr_free_val(value);
@@ -68,7 +67,7 @@ int netconf_call_home_feature_start(sr_session_ctx_t *current_session) {
     }
 
     struct lyd_node *netconf_node = 0;
-    netconf_node = lyd_new_path(NULL, session_context, "/ietf-netconf-server:netconf-server", 0, 0, 0);
+    netconf_node = lyd_new_path(NULL, session_context, IETF_NETCONF_SERVER_SCHEMA_XPATH, 0, 0, 0);
     if(netconf_node == 0) {
         log_error("could not create a new lyd_node\n");
         return NTS_ERR_FAILED;
@@ -92,7 +91,7 @@ int netconf_call_home_feature_start(sr_session_ctx_t *current_session) {
         return NTS_ERR_FAILED;
     }
 
-    rc = sr_validate(current_session, "ietf-netconf-server", 0);
+    rc = sr_validate(current_session, IETF_NETCONF_SERVER_MODULE, 0);
     if(rc != SR_ERR_OK) {
         log_error("sr_validate issues on STARTUP\n");
         return NTS_ERR_FAILED;
@@ -130,33 +129,29 @@ static int create_ssh_callhome_endpoint(sr_session_ctx_t *current_session, struc
         return NTS_ERR_FAILED;
     }
 
-    char xpath[500];
-    sprintf(xpath, "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-ssh']/ssh/tcp-client-parameters/keepalives/idle-time");
-    struct lyd_node *rcl = lyd_new_path(netconf_node, 0, xpath, "1", 0, LYD_PATH_OPT_NOPARENTRET);
+    
+    struct lyd_node *rcl = lyd_new_path(netconf_node, 0, IETF_NETCONF_SERVER_CH_SSH_TCP_CLIENT_SCHEMA_XPATH"/keepalives/idle-time", "1", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         free(controller_ip);
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-ssh']/ssh/tcp-client-parameters/keepalives/max-probes");
-    rcl = lyd_new_path(netconf_node, 0, xpath, "10", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(netconf_node, 0, IETF_NETCONF_SERVER_CH_SSH_TCP_CLIENT_SCHEMA_XPATH"/keepalives/max-probes", "10", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         free(controller_ip);
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-ssh']/ssh/tcp-client-parameters/keepalives/probe-interval");
-    rcl = lyd_new_path(netconf_node, 0, xpath, "5", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(netconf_node, 0, IETF_NETCONF_SERVER_CH_SSH_TCP_CLIENT_SCHEMA_XPATH"/keepalives/probe-interval", "5", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         free(controller_ip);
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-ssh']/ssh/tcp-client-parameters/remote-address");
-    rcl = lyd_new_path(netconf_node, 0, xpath, controller_ip, 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(netconf_node, 0, IETF_NETCONF_SERVER_CH_SSH_TCP_CLIENT_SCHEMA_XPATH"/remote-address", controller_ip, 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         free(controller_ip);
@@ -164,52 +159,44 @@ static int create_ssh_callhome_endpoint(sr_session_ctx_t *current_session, struc
     }
     free(controller_ip);
 
-    sprintf(xpath, "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-ssh']/ssh/tcp-client-parameters/remote-port");
     char port[20];
     sprintf(port, "%d", controller_callhome_port);
-    rcl = lyd_new_path(netconf_node, 0, xpath, port, 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(netconf_node, 0, IETF_NETCONF_SERVER_CH_SSH_TCP_CLIENT_SCHEMA_XPATH"/remote-port", port, 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-ssh']/ssh/ssh-server-parameters/server-identity/host-key[name='default-key']/public-key/keystore-reference");
-    rcl = lyd_new_path(netconf_node, 0, xpath, KS_KEY_NAME, 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(netconf_node, 0, IETF_NETCONF_SERVER_CH_SSH_SERVER_PARAMS_SCEHMA_XPATH"/server-identity/host-key[name='default-key']/public-key/keystore-reference", KS_KEY_NAME, 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-ssh']/ssh/ssh-server-parameters/client-authentication/supported-authentication-methods/publickey");
-    rcl = lyd_new_path(netconf_node, 0, xpath, "", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(netconf_node, 0, IETF_NETCONF_SERVER_CH_SSH_SERVER_PARAMS_SCEHMA_XPATH"/client-authentication/supported-authentication-methods/publickey", "", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-ssh']/ssh/ssh-server-parameters/client-authentication/supported-authentication-methods/passsword");
-    rcl = lyd_new_path(netconf_node, 0, xpath, "", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(netconf_node, 0, IETF_NETCONF_SERVER_CH_SSH_SERVER_PARAMS_SCEHMA_XPATH"/client-authentication/supported-authentication-methods/passsword", "", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-ssh']/ssh/ssh-server-parameters/client-authentication/supported-authentication-methods/other");
-    rcl = lyd_new_path(netconf_node, 0, xpath, "interactive", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(netconf_node, 0, IETF_NETCONF_SERVER_CH_SSH_SERVER_PARAMS_SCEHMA_XPATH"/client-authentication/supported-authentication-methods/other", "interactive", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-ssh']/ssh/ssh-server-parameters/client-authentication/users");
-    rcl = lyd_new_path(netconf_node, 0, xpath, "", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(netconf_node, 0, IETF_NETCONF_SERVER_CH_SSH_SERVER_PARAMS_SCEHMA_XPATH"/client-authentication/users", "", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         return NTS_ERR_FAILED;
     }
-
-    sprintf(xpath, "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/connection-type/persistent");
-    rcl = lyd_new_path(netconf_node, 0, xpath, "", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(netconf_node, 0, IETF_NETCONF_SERVER_CH_CONN_PERSISTENT_SCHEMA_XPATH, "", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         return NTS_ERR_FAILED;

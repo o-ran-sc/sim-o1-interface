@@ -22,20 +22,10 @@
 #include "utils/sys_utils.h"
 #include "core/framework.h"
 #include "core/session.h"
+#include "core/xpath.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-
-#define NTS_MANAGER_SDN_CONTROLLER_CONFIG_XPATH             "/nts-manager:simulation/sdn-controller"
-#define NTS_NF_SDN_CONTROLLER_CONFIG_XPATH                  "/nts-network-function:simulation/sdn-controller"
-#define NTS_MANAGER_VES_ENDPOINT_CONFIG_XPATH               "/nts-manager:simulation/ves-endpoint"
-#define NTS_NF_VES_ENDPOINT_CONFIG_XPATH                    "/nts-network-function:simulation/ves-endpoint"
-
-#define NTS_NETWORK_FUNCTION_FTYPE_SCHEMA_XPATH             "/nts-network-function:simulation/network-function/function-type"
-#define NTS_NETWORK_FUNCTION_MPAM_SCHEMA_XPATH              "/nts-network-function:simulation/network-function/mount-point-addressing-method"
-#define NTS_NETWORK_FUNCTION_FAULT_GENERATION_SCHEMA_XPATH  "/nts-network-function:simulation/network-function/fault-generation"
-#define NTS_NETWORK_FUNCTION_NETCONF_SCHEMA_XPATH           "/nts-network-function:simulation/network-function/netconf"
-#define NTS_NETWORK_FUNCTION_VES_SCHEMA_XPATH               "/nts-network-function:simulation/network-function/ves"
 
 
 cJSON* ves_create_common_event_header(const char *domain, const char *event_type, const char *hostname, int port, const char *priority, int seq_id) {
@@ -188,7 +178,7 @@ nts_mount_point_addressing_method_t nts_mount_point_addressing_method_get(sr_ses
     }
 
     sr_val_t *value = 0;
-    rc = sr_get_item(session_running, NTS_NETWORK_FUNCTION_MPAM_SCHEMA_XPATH, 0, &value);
+    rc = sr_get_item(session_running, NTS_NF_NETWORK_FUNCTION_MPAM_SCHEMA_XPATH, 0, &value);
     if(rc == SR_ERR_OK) {
         if(strcmp(value->data.enum_val, "host-mapping") == 0) {
             ret = HOST_MAPPING;
@@ -229,10 +219,10 @@ ves_details_t *ves_endpoint_details_get(sr_session_ctx_t *current_session) {
     char *xpath_to_get;
 
     if(framework_arguments.nts_mode == NTS_MODE_MANAGER) {
-        xpath_to_get = "/nts-manager:simulation/ves-endpoint";
+        xpath_to_get = NTS_MANAGER_VES_ENDPOINT_CONFIG_XPATH;
     }
     else {
-        xpath_to_get = "/nts-network-function:simulation/ves-endpoint";
+        xpath_to_get = NTS_NF_VES_ENDPOINT_CONFIG_XPATH;
     }
 
     rc = sr_get_subtree(current_session, xpath_to_get, 0, &data);
@@ -352,10 +342,10 @@ controller_details_t *controller_details_get(sr_session_ctx_t *current_session) 
     char *xpath_to_get;
 
     if(framework_arguments.nts_mode == NTS_MODE_MANAGER) {
-        xpath_to_get = "/nts-manager:simulation/sdn-controller";
+        xpath_to_get = NTS_MANAGER_SDN_CONTROLLER_CONFIG_XPATH;
     }
     else {
-        xpath_to_get = "/nts-network-function:simulation/sdn-controller";
+        xpath_to_get = NTS_NF_SDN_CONTROLLER_CONFIG_XPATH;
     }
 
     rc = sr_get_subtree(current_session, xpath_to_get, 0, &data);
@@ -717,19 +707,19 @@ int nts_utils_populate_info(sr_session_ctx_t *current_session, const char *funct
 
     if(manager == false) {
         //presence containers
-        rc = sr_set_item_str(current_session, NTS_NETWORK_FUNCTION_FAULT_GENERATION_SCHEMA_XPATH, 0, 0, 0);
+        rc = sr_set_item_str(current_session, NTS_NF_FAULT_GENERATION_SCHEMA_XPATH, 0, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
             return NTS_ERR_FAILED;
         }
 
-        rc = sr_set_item_str(current_session, NTS_NETWORK_FUNCTION_NETCONF_SCHEMA_XPATH, 0, 0, 0);
+        rc = sr_set_item_str(current_session, NTS_NF_NETCONF_SCHEMA_XPATH, 0, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
             return NTS_ERR_FAILED;
         }
 
-        rc = sr_set_item_str(current_session, NTS_NETWORK_FUNCTION_VES_SCHEMA_XPATH, 0, 0, 0);
+        rc = sr_set_item_str(current_session, NTS_NF_VES_SCHEMA_XPATH, 0, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
             return NTS_ERR_FAILED;
@@ -737,14 +727,14 @@ int nts_utils_populate_info(sr_session_ctx_t *current_session, const char *funct
     }
 
     //also set the network-function module for easy identifying the function type
-    rc = sr_set_item_str(current_session, NTS_NETWORK_FUNCTION_FTYPE_SCHEMA_XPATH, function_type, 0, 0);
+    rc = sr_set_item_str(current_session, NTS_NF_NETWORK_FUNCTION_FTYPE_SCHEMA_XPATH, function_type, 0, 0);
     if(rc != SR_ERR_OK) {
         log_error("sr_set_item_str failed\n");
         return NTS_ERR_FAILED;
     }
 
     //mount-point-addressing-method
-    rc = sr_set_item_str(current_session, NTS_NETWORK_FUNCTION_MPAM_SCHEMA_XPATH, "docker-mapping", 0, 0);
+    rc = sr_set_item_str(current_session, NTS_NF_NETWORK_FUNCTION_MPAM_SCHEMA_XPATH, framework_environment.nts.nf_mount_point_addressing_method, 0, 0);
     if(rc != SR_ERR_OK) {
         log_error("sr_set_item_str failed\n");
         return NTS_ERR_FAILED;

@@ -29,10 +29,8 @@
 
 #include "core/framework.h"
 #include "core/session.h"
+#include "core/xpath.h"
 #include "core/context.h"
-
-#define NTS_AVAILABLE_IMAGES_SCHEMA_XPATH           "/nts-manager:simulation/available-images"
-
 
 manager_context_t *manager_context = 0;
 docker_context_t *docker_context = 0;
@@ -44,9 +42,9 @@ static int manager_populate_available_simulations(void);
 int manager_context_init(void) {
 
     //get installed function types
-    struct lys_node_leaf *elem = (struct lys_node_leaf *)ly_ctx_get_node(session_context, 0, NTS_FUNCTION_LIST_SCHEMA_XPATH"/function-type", 0);
+    struct lys_node_leaf *elem = (struct lys_node_leaf *)ly_ctx_get_node(session_context, 0, NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH"/function-type", 0);
     if(elem == 0) {
-        log_error("ly_ctx_get_node failed for xpath: %s\n", NTS_FUNCTION_LIST_SCHEMA_XPATH"/function-type");
+        log_error("ly_ctx_get_node failed for xpath: %s\n", NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH"/function-type");
         return NTS_ERR_FAILED;
     }
 
@@ -70,13 +68,56 @@ int manager_context_init(void) {
         docker_filter[i] = function_types[i]->ref;
     }
 
-    int rc = docker_init(docker_filter, docker_context_count, "1.2.0", &docker_context);
-    free(docker_filter);
+    int rc = docker_init(docker_filter, docker_context_count, NTS_VERSION_FALLBACK, &docker_context);
     if(rc != NTS_ERR_OK) {
         log_error("docker_init() failed\n");
+        free(docker_filter);
         free(function_types);
         return NTS_ERR_FAILED;
     }
+
+    //check if an image needs to be pulled
+    log_add_verbose(1, "Docker auto-pull is ");
+    if(strlen(framework_environment.settings.docker_repository)) {
+        log_add(1, LOG_COLOR_BOLD_GREEN"enabled"LOG_COLOR_RESET"\n");
+        int pull_count = 0;
+        for(int i = 0; i < docker_context_count; i++) {
+            bool pull = true;
+            for(int j = 0; j < docker_context[i].available_images_count; j++) {
+                if(strcmp(framework_environment.nts.version, docker_context[i].available_images[j].tag) == 0) {
+                    pull = false;
+                }
+            }
+            
+            if(pull) {
+                log_add_verbose(1, "pulling "LOG_COLOR_RED"%s/"LOG_COLOR_CYAN"%s"LOG_COLOR_RESET":"LOG_COLOR_YELLOW"%s"LOG_COLOR_RESET"... ", framework_environment.settings.docker_repository, docker_context[i].image, framework_environment.nts.version);
+                rc = docker_pull(framework_environment.settings.docker_repository, docker_context[i].image, framework_environment.nts.version);
+                if(rc != NTS_ERR_OK) {
+                    log_add(1, LOG_COLOR_BOLD_RED"failed"LOG_COLOR_RESET"\n");
+                }
+                else {
+                    log_add(1, LOG_COLOR_BOLD_GREEN"OK"LOG_COLOR_RESET"\n");
+                    pull_count++;
+                }
+            }
+        }
+
+        if(pull_count) {
+            //reinit docker
+            docker_free(docker_context, docker_context_count);
+            rc = docker_init(docker_filter, docker_context_count, NTS_VERSION_FALLBACK, &docker_context);
+            if(rc != NTS_ERR_OK) {
+                log_error("docker_init() failed\n");
+                free(docker_filter);
+                free(function_types);
+                return NTS_ERR_FAILED;
+            }
+        }
+    }
+    else {
+        log_add(1, LOG_COLOR_YELLOW"disabled"LOG_COLOR_RESET"\n");
+    }
+    free(docker_filter);
 
 
     //remove non-present network functions
@@ -174,7 +215,7 @@ static int manager_populate_sysrepo_network_function_list(void) {
     //check whether everything is already populated, read and update (if previously ran)
     sr_val_t *values = 0;
     size_t value_count = 0;
-    int rc = sr_get_items(session_running, NTS_FUNCTION_LIST_SCHEMA_XPATH, 0, 0, &values, &value_count);
+    int rc = sr_get_items(session_running, NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, 0, 0, &values, &value_count);
     if(rc != SR_ERR_OK) {
         log_error("get items failed\n");
         return NTS_ERR_FAILED;
@@ -202,7 +243,7 @@ static int manager_populate_sysrepo_network_function_list(void) {
     for(int i = 0; i < docker_context_count; i++) {
         char *xpath = 0;
 
-        asprintf(&xpath, "%s[function-type='%s']/function-type", NTS_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
+        asprintf(&xpath, "%s[function-type='%s']/function-type", NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
         rc = sr_set_item_str(session_running, xpath, (const char *)manager_context[i].function_type, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
@@ -210,7 +251,7 @@ static int manager_populate_sysrepo_network_function_list(void) {
         }
         free(xpath);
 
-        asprintf(&xpath, "%s[function-type='%s']/started-instances", NTS_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
+        asprintf(&xpath, "%s[function-type='%s']/started-instances", NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
         rc = sr_set_item_str(session_running, xpath, "0", 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
@@ -218,7 +259,7 @@ static int manager_populate_sysrepo_network_function_list(void) {
         }
         free(xpath);
 
-        asprintf(&xpath, "%s[function-type='%s']/mounted-instances", NTS_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
+        asprintf(&xpath, "%s[function-type='%s']/mounted-instances", NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
         rc = sr_set_item_str(session_running, xpath, "0", 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
@@ -226,7 +267,7 @@ static int manager_populate_sysrepo_network_function_list(void) {
         }
         free(xpath);
 
-        asprintf(&xpath, "%s[function-type='%s']/docker-instance-name", NTS_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
+        asprintf(&xpath, "%s[function-type='%s']/docker-instance-name", NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
         rc = sr_set_item_str(session_running, xpath, (const char*)manager_context[i].docker_instance_name, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
@@ -234,7 +275,7 @@ static int manager_populate_sysrepo_network_function_list(void) {
         }
         free(xpath);
 
-        asprintf(&xpath, "%s[function-type='%s']/docker-version-tag", NTS_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
+        asprintf(&xpath, "%s[function-type='%s']/docker-version-tag", NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
         rc = sr_set_item_str(session_running, xpath, (const char*)manager_context[i].docker_version_tag, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
@@ -242,7 +283,7 @@ static int manager_populate_sysrepo_network_function_list(void) {
         }
         free(xpath);
 
-        asprintf(&xpath, "%s[function-type='%s']/docker-repository", NTS_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
+        asprintf(&xpath, "%s[function-type='%s']/docker-repository", NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
         rc = sr_set_item_str(session_running, xpath, (const char*)manager_context[i].docker_repository, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
@@ -250,7 +291,7 @@ static int manager_populate_sysrepo_network_function_list(void) {
         }
         free(xpath);
 
-        asprintf(&xpath, "%s[function-type='%s']/mount-point-addressing-method", NTS_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
+        asprintf(&xpath, "%s[function-type='%s']/mount-point-addressing-method", NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
         rc = sr_set_item_str(session_running, xpath, (const char *)manager_context[i].mount_point_addressing_method, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
@@ -259,7 +300,7 @@ static int manager_populate_sysrepo_network_function_list(void) {
         free(xpath);
 
         //presence containers
-        asprintf(&xpath, "%s[function-type='%s']/fault-generation", NTS_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
+        asprintf(&xpath, "%s[function-type='%s']/fault-generation", NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
         rc = sr_set_item_str(session_running, xpath, 0, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
@@ -267,7 +308,7 @@ static int manager_populate_sysrepo_network_function_list(void) {
         }
         free(xpath);
 
-        asprintf(&xpath, "%s[function-type='%s']/netconf", NTS_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
+        asprintf(&xpath, "%s[function-type='%s']/netconf", NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
         rc = sr_set_item_str(session_running, xpath, 0, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
@@ -275,7 +316,7 @@ static int manager_populate_sysrepo_network_function_list(void) {
         }
         free(xpath);
 
-        asprintf(&xpath, "%s[function-type='%s']/ves", NTS_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
+        asprintf(&xpath, "%s[function-type='%s']/ves", NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH, manager_context[i].function_type);
         rc = sr_set_item_str(session_running, xpath, 0, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
@@ -297,7 +338,7 @@ static int manager_populate_sysrepo_network_function_list(void) {
 static int manager_populate_available_simulations(void) {
     assert_session();
 
-    struct lyd_node *container = lyd_new_path(0, session_context, NTS_AVAILABLE_IMAGES_SCHEMA_XPATH, 0, LYD_ANYDATA_CONSTSTRING, LYD_PATH_OPT_NOPARENTRET);
+    struct lyd_node *container = lyd_new_path(0, session_context, NTS_MANAGER_AVAILABLE_IMAGES_SCHEMA_XPATH, 0, LYD_ANYDATA_CONSTSTRING, LYD_PATH_OPT_NOPARENTRET);
     if(container == 0) {
         log_error("lyd_new_path failed\n");
         return NTS_ERR_FAILED;
