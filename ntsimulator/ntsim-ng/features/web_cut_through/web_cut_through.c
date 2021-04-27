@@ -28,14 +28,7 @@
 
 #include "core/session.h"
 #include "core/framework.h"
-
-#define SYSTEM_NAME_SCHEMA_XPATH                "/ietf-system:system/onap-system:name"
-#define SYSTEM_WEB_UI_SCHEMA_XPATH              "/ietf-system:system/onap-system:web-ui"
-#define IETF_SYSTEM_CONTACT_SCHEMA_XPATH        "/ietf-system:system/contact"
-#define IETF_SYSTEM_HOSTNAME_SCHEMA_XPATH       "/ietf-system:system/hostname"
-#define IETF_SYSTEM_LOCATION_SCHEMA_XPATH       "/ietf-system:system/location"
-#define IETF_SYSTEM_TIMEZONE_NAME_SCHEMA_XPATH  "/ietf-system:system/clock/timezone-name"
-#define IETF_SYSTEM_NTP_ENABLED_SCHEMA_XPATH    "/ietf-system:system/ntp/enabled"
+#include "core/xpath.h"
 
 static int web_cut_through_status = 0;
 
@@ -49,7 +42,7 @@ int web_cut_through_feature_start(sr_session_ctx_t *current_session) {
 
     if(web_cut_through_status == 0) {
         //update ietf-system details
-        int rc = sr_set_item_str(current_session, SYSTEM_NAME_SCHEMA_XPATH, framework_environment.settings.hostname, 0, 0);
+        int rc = sr_set_item_str(current_session, IETF_SYSTEM_NAME_SCHEMA_XPATH, framework_environment.settings.hostname, 0, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
             return NTS_ERR_FAILED;
@@ -70,7 +63,7 @@ int web_cut_through_feature_start(sr_session_ctx_t *current_session) {
             return NTS_ERR_FAILED;
         }
 
-        rc = sr_set_item_str(current_session, SYSTEM_WEB_UI_SCHEMA_XPATH, web_ui, 0, 0);
+        rc = sr_set_item_str(current_session, IETF_SYSTEM_WEB_UI_SCHEMA_XPATH, web_ui, 0, 0);
         free(web_ui);
         if(rc != SR_ERR_OK) {
             log_error("sr_set_item_str failed\n");
@@ -125,13 +118,13 @@ int web_cut_through_feature_stop(sr_session_ctx_t *current_session) {
 
     if(web_cut_through_status) {
         //update ietf-system details
-        int rc = sr_delete_item(current_session, SYSTEM_NAME_SCHEMA_XPATH, 0);
+        int rc = sr_delete_item(current_session, IETF_SYSTEM_NAME_SCHEMA_XPATH, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_delete_item failed\n");
             return NTS_ERR_FAILED;
         }
 
-        rc = sr_delete_item(current_session, SYSTEM_WEB_UI_SCHEMA_XPATH, 0);
+        rc = sr_delete_item(current_session, IETF_SYSTEM_WEB_UI_SCHEMA_XPATH, 0);
         if(rc != SR_ERR_OK) {
             log_error("sr_delete_item failed\n");
             return NTS_ERR_FAILED;

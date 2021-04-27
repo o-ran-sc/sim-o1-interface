@@ -21,6 +21,9 @@ Version history
 | **Date**           | **Ver.**           | **Author**         | **Comment**        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
+| 2021-04-27         | 1.2.3              |  Alex Stancu       | "D" release        |
+|                    |                    |                    |                    |
++--------------------+--------------------+--------------------+--------------------+
 | 2021-04-15         | 1.2.1              |  Alex Stancu       | "D" release        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
@@ -49,6 +52,17 @@ The O1 interface simulator is a framework that provides simulated network functi
 
 Release Data
 ------------
+
+version 1.2.3
+
+- [change] moved all NETCONF x-paths to xpath.h for easier management and cleaner codebase
+  
+- [feature-add] Manager now automatically tries to pull missing images (last version) when not found, if **DOCKER_REPOSITORY** env var is set to a certain Docker repository; note that repository authentication currently not supported
+  
+- [feature-add] log-rotation application; does not include supervisor redirected paths, not stderr; log is hard-coded at ~5000 lines per file
+  
+- [feature-add] host-mapping is now available when running NF is running in standalone mode via the **NTS_NF_MOUNT_POINT_ADDRESSING_METHOD** variable
+  
 
 version 1.2.1
 

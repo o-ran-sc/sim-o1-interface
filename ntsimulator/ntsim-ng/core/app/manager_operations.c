@@ -27,6 +27,7 @@
 
 #include "core/framework.h"
 #include "core/session.h"
+#include "core/xpath.h"
 
 static manager_operation_t *manager_operations;
 static pthread_mutex_t manager_operations_mutex;

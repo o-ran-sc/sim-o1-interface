@@ -23,40 +23,44 @@
 #include <unistd.h>
 #include <signal.h>
 
-#define ENV_VAR_NTS_MANUAL                          "NTS_MANUAL"
-#define ENV_VAR_NTS_BUILD_VERSION                   "NTS_BUILD_VERSION"
-#define ENV_VAR_NTS_BUILD_TIME                      "NTS_BUILD_DATE"
-#define ENV_VAR_NTS_FUNCTION_TYPE                   "NTS_FUNCTION_TYPE"
-#define ENV_VAR_NTS_NF_STANDALONE_START_FEATURES    "NTS_NF_STANDALONE_START_FEATURES"
+#define NTS_VERSION_FALLBACK                            "1.2.0"
 
-#define ENV_VAR_DOCKER_ENGINE_VERSION               "DOCKER_ENGINE_VERSION"
-#define ENV_VAR_HOSTNAME                            "HOSTNAME"
-#define ENV_VAR_IPV6ENABLED                         "IPv6_ENABLED"
-#define ENV_VAR_SSH_CONNECTIONS                     "SSH_CONNECTIONS"
-#define ENV_VAR_TLS_CONNECTIONS                     "TLS_CONNECTIONS"
+#define ENV_VAR_NTS_MANUAL                              "NTS_MANUAL"
+#define ENV_VAR_NTS_BUILD_VERSION                       "NTS_BUILD_VERSION"
+#define ENV_VAR_NTS_BUILD_TIME                          "NTS_BUILD_DATE"
+#define ENV_VAR_NTS_FUNCTION_TYPE                       "NTS_FUNCTION_TYPE"
+#define ENV_VAR_NTS_NF_STANDALONE_START_FEATURES        "NTS_NF_STANDALONE_START_FEATURES"
+#define ENV_VAR_NTS_NF_MOUNT_POINT_ADDRESSING_METHOD    "NTS_NF_MOUNT_POINT_ADDRESSING_METHOD"
 
-#define ENV_VAR_HOST_IP                             "NTS_HOST_IP"
-#define ENV_VAR_HOST_BASE_PORT                      "NTS_HOST_BASE_PORT"
-#define ENV_VAR_HOST_NETCONF_SSH_BASE_PORT          "NTS_HOST_NETCONF_SSH_BASE_PORT"
-#define ENV_VAR_HOST_NETCONF_TLS_BASE_PORT          "NTS_HOST_NETCONF_TLS_BASE_PORT"
-#define ENV_VAR_HOST_TRANSFER_FTP_BASE_PORT         "NTS_HOST_TRANSFER_FTP_BASE_PORT"
-#define ENV_VAR_HOST_TRANSFER_SFTP_BASE_PORT        "NTS_HOST_TRANSFER_SFTP_BASE_PORT"
+#define ENV_VAR_DOCKER_REPOSITORY                       "DOCKER_REPOSITORY"
+#define ENV_VAR_DOCKER_ENGINE_VERSION                   "DOCKER_ENGINE_VERSION"
+#define ENV_VAR_HOSTNAME                                "HOSTNAME"
+#define ENV_VAR_IPV6ENABLED                             "IPv6_ENABLED"
+#define ENV_VAR_SSH_CONNECTIONS                         "SSH_CONNECTIONS"
+#define ENV_VAR_TLS_CONNECTIONS                         "TLS_CONNECTIONS"
 
-#define ENV_VAR_SDN_CONTROLLER_PROTOCOL             "SDN_CONTROLLER_PROTOCOL"
-#define ENV_VAR_SDN_CONTROLLER_IP                   "SDN_CONTROLLER_IP"
-#define ENV_VAR_SDN_CONTROLLER_PORT                 "SDN_CONTROLLER_PORT"
-#define ENV_VAR_SDN_CONTROLLER_CALLHOME_PORT        "SDN_CONTROLLER_CALLHOME_PORT"
-#define ENV_VAR_SDN_CONTROLLER_USERNAME             "SDN_CONTROLLER_USERNAME"
-#define ENV_VAR_SDN_CONTROLLER_PASSWORD             "SDN_CONTROLLER_PASSWORD"
+#define ENV_VAR_HOST_IP                                 "NTS_HOST_IP"
+#define ENV_VAR_HOST_BASE_PORT                          "NTS_HOST_BASE_PORT"
+#define ENV_VAR_HOST_NETCONF_SSH_BASE_PORT              "NTS_HOST_NETCONF_SSH_BASE_PORT"
+#define ENV_VAR_HOST_NETCONF_TLS_BASE_PORT              "NTS_HOST_NETCONF_TLS_BASE_PORT"
+#define ENV_VAR_HOST_TRANSFER_FTP_BASE_PORT             "NTS_HOST_TRANSFER_FTP_BASE_PORT"
+#define ENV_VAR_HOST_TRANSFER_SFTP_BASE_PORT            "NTS_HOST_TRANSFER_SFTP_BASE_PORT"
 
-#define ENV_VAR_VES_COMMON_HEADER_VERSION           "VES_COMMON_HEADER_VERSION"
-#define ENV_VAR_VES_ENDPOINT_PROTOCOL               "VES_ENDPOINT_PROTOCOL"
-#define ENV_VAR_VES_ENDPOINT_IP                     "VES_ENDPOINT_IP"
-#define ENV_VAR_VES_ENDPOINT_PORT                   "VES_ENDPOINT_PORT"
-#define ENV_VAR_VES_ENDPOINT_AUTH_METHOD            "VES_ENDPOINT_AUTH_METHOD"
-#define ENV_VAR_VES_ENDPOINT_USERNAME               "VES_ENDPOINT_USERNAME"
-#define ENV_VAR_VES_ENDPOINT_PASSWORD               "VES_ENDPOINT_PASSWORD"
-#define ENV_VAR_VES_ENDPOINT_CERTIFICATE            "VES_ENDPOINT_CERTIFICATE"
+#define ENV_VAR_SDN_CONTROLLER_PROTOCOL                 "SDN_CONTROLLER_PROTOCOL"
+#define ENV_VAR_SDN_CONTROLLER_IP                       "SDN_CONTROLLER_IP"
+#define ENV_VAR_SDN_CONTROLLER_PORT                     "SDN_CONTROLLER_PORT"
+#define ENV_VAR_SDN_CONTROLLER_CALLHOME_PORT            "SDN_CONTROLLER_CALLHOME_PORT"
+#define ENV_VAR_SDN_CONTROLLER_USERNAME                 "SDN_CONTROLLER_USERNAME"
+#define ENV_VAR_SDN_CONTROLLER_PASSWORD                 "SDN_CONTROLLER_PASSWORD"
+
+#define ENV_VAR_VES_COMMON_HEADER_VERSION               "VES_COMMON_HEADER_VERSION"
+#define ENV_VAR_VES_ENDPOINT_PROTOCOL                   "VES_ENDPOINT_PROTOCOL"
+#define ENV_VAR_VES_ENDPOINT_IP                         "VES_ENDPOINT_IP"
+#define ENV_VAR_VES_ENDPOINT_PORT                       "VES_ENDPOINT_PORT"
+#define ENV_VAR_VES_ENDPOINT_AUTH_METHOD                "VES_ENDPOINT_AUTH_METHOD"
+#define ENV_VAR_VES_ENDPOINT_USERNAME                   "VES_ENDPOINT_USERNAME"
+#define ENV_VAR_VES_ENDPOINT_PASSWORD                   "VES_ENDPOINT_PASSWORD"
+#define ENV_VAR_VES_ENDPOINT_CERTIFICATE                "VES_ENDPOINT_CERTIFICATE"
 
 typedef enum {
     NTS_MODE_DEFAULT = 0,
@@ -89,9 +93,11 @@ typedef struct {
         char *build_time;
         char *function_type;
         char *nf_standalone_start_features;
+        char *nf_mount_point_addressing_method;
     } nts;
 
     struct {
+        char *docker_repository;
         char *docker_engine_version;
 
         char *hostname;

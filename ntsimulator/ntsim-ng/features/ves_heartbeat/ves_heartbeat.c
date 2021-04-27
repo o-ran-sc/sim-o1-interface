@@ -32,8 +32,7 @@
 
 #include "core/session.h"
 #include "core/framework.h"
-
-#define HEARTBEAT_SCHEMA_XPATH      "/nts-network-function:simulation/network-function/ves/heartbeat-period" 
+#include "core/xpath.h"
 
 static volatile int ves_heartbeat_period;
 static int ves_sequence_number;
@@ -73,7 +72,7 @@ int ves_heartbeat_feature_start(sr_session_ctx_t *current_session) {
         ves_heartbeat_period = 0;
         ves_sequence_number = 0;
 
-        int rc = sr_get_item(current_session, HEARTBEAT_SCHEMA_XPATH, 0, &value);
+        int rc = sr_get_item(current_session, NTS_NF_VES_HEARTBEAT_SCHEMA_XPATH, 0, &value);
         if(rc == SR_ERR_OK) {
             ves_heartbeat_period_set(value->data.uint16_val);
             sr_free_val(value);
@@ -82,7 +81,7 @@ int ves_heartbeat_feature_start(sr_session_ctx_t *current_session) {
             log_error("sr_get_item failed\n");
         }
 
-        rc = sr_module_change_subscribe(current_session, "nts-network-function", HEARTBEAT_SCHEMA_XPATH, heartbeat_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE, &ves_heartbeat_subscription);
+        rc = sr_module_change_subscribe(current_session, NTS_NETWORK_FUNCTION_MODULE, NTS_NF_VES_HEARTBEAT_SCHEMA_XPATH, heartbeat_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE, &ves_heartbeat_subscription);
         if(rc != SR_ERR_OK) {
             log_error("could not subscribe to heartbeat\n");
             return NTS_ERR_FAILED;
@@ -326,7 +325,7 @@ static int heartbeat_change_cb(sr_session_ctx_t *session, const char *module_nam
     sr_val_t *new_value = 0;
 
     if(event == SR_EV_DONE) {
-        rc = sr_get_changes_iter(session, HEARTBEAT_SCHEMA_XPATH, &it);
+        rc = sr_get_changes_iter(session, NTS_NF_VES_HEARTBEAT_SCHEMA_XPATH, &it);
         if(rc != SR_ERR_OK) {
             log_error("sr_get_changes_iter failed\n");
             return SR_ERR_VALIDATION_FAILED;

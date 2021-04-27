@@ -37,6 +37,10 @@
 static int instances = 0;
 static FILE* logfile = 0;
 
+static int file_no = 0;
+static int line_no = 0;
+static const char *filename;
+
 static char *extract_format(const char *format);
 
 void log_init(const char *logfilename) {
@@ -46,9 +50,24 @@ void log_init(const char *logfilename) {
     logfile = fopen(logfilename, "w");
 
     assert(logfile);
+    file_no = 0;
+    line_no = 0;
+    filename = logfilename;
 }
 
 void log__message(char const * const fname, uint32_t location, int verbose_level, const char *format, ...) {
+    if(verbose_level >= 0) {
+        line_no++;
+        if(line_no >= 5000) {
+            fclose(logfile);
+
+            file_no++;
+            char logfilename[512];
+            sprintf(logfilename, "%s.%d", filename, file_no);
+            logfile = fopen(logfilename, "w");
+            line_no = 0;
+        }
+    }
 
     va_list arg;
 

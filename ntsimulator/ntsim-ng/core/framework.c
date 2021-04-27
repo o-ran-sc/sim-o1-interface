@@ -68,8 +68,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state);
 
 int framework_init(int argc, char **argv) {
     //environment vars
-    framework_environment.nts.version = getenv(ENV_VAR_NTS_BUILD_VERSION) ? strdup(getenv(ENV_VAR_NTS_BUILD_VERSION)) : strdup("N/A");
-    framework_environment.nts.build_time = getenv(ENV_VAR_NTS_BUILD_TIME) ? strdup(getenv(ENV_VAR_NTS_BUILD_TIME)) : strdup("N/A");
+    framework_environment.nts.version = (getenv(ENV_VAR_NTS_BUILD_VERSION) && strlen(getenv(ENV_VAR_NTS_BUILD_VERSION))) ? strdup(getenv(ENV_VAR_NTS_BUILD_VERSION)) : strdup(NTS_VERSION_FALLBACK"!");
+    framework_environment.nts.build_time = (getenv(ENV_VAR_NTS_BUILD_TIME) && strlen(getenv(ENV_VAR_NTS_BUILD_TIME))) ? strdup(getenv(ENV_VAR_NTS_BUILD_TIME)) : strdup("N/A");
 
     //set argp_version
     char *version = 0;
@@ -179,7 +179,14 @@ static int framework_env_init(void) {
     framework_environment.nts.manual = getenv(ENV_VAR_NTS_MANUAL) ? true : false;
     framework_environment.nts.function_type = getenv(ENV_VAR_NTS_FUNCTION_TYPE) ? strdup(getenv(ENV_VAR_NTS_FUNCTION_TYPE)) : strdup("");
     framework_environment.nts.nf_standalone_start_features = getenv(ENV_VAR_NTS_NF_STANDALONE_START_FEATURES) ? strdup(getenv(ENV_VAR_NTS_NF_STANDALONE_START_FEATURES)) : strdup("");
+    framework_environment.nts.nf_mount_point_addressing_method = getenv(ENV_VAR_NTS_NF_MOUNT_POINT_ADDRESSING_METHOD) ? strdup(getenv(ENV_VAR_NTS_NF_MOUNT_POINT_ADDRESSING_METHOD)) : strdup("docker-mapping");
 
+    framework_environment.settings.docker_repository = getenv(ENV_VAR_DOCKER_REPOSITORY) ? strdup(getenv(ENV_VAR_DOCKER_REPOSITORY)) : strdup("");
+    if(strlen(framework_environment.settings.docker_repository)) {
+        if(framework_environment.settings.docker_repository[strlen(framework_environment.settings.docker_repository) - 1] == '/') {
+            framework_environment.settings.docker_repository[strlen(framework_environment.settings.docker_repository) - 1] = 0;
+        }
+    }
     framework_environment.settings.docker_engine_version = getenv(ENV_VAR_DOCKER_ENGINE_VERSION) ? strdup(getenv(ENV_VAR_DOCKER_ENGINE_VERSION)) : strdup("1.40");
     framework_environment.settings.hostname = getenv(ENV_VAR_HOSTNAME) ? strdup(getenv(ENV_VAR_HOSTNAME)) : strdup("localhost");
 
@@ -227,8 +234,10 @@ static int framework_env_init(void) {
     log_add_verbose(2, "[framework-env] nts.build_time = %s\n", framework_environment.nts.build_time);
     log_add_verbose(2, "[framework-env] nts.function_type = %s\n", framework_environment.nts.function_type);
     log_add_verbose(2, "[framework-env] nts.nf_standalone_start_features = %s\n", framework_environment.nts.nf_standalone_start_features);
+    log_add_verbose(2, "[framework-env] nts.nf_mount_point_addressing_method = %s\n", framework_environment.nts.nf_mount_point_addressing_method);
 
     log_add_verbose(2, "[framework-env] settings.docker_engine_version = %s\n", framework_environment.settings.docker_engine_version);
+    log_add_verbose(2, "[framework-env] settings.docker_repository = %s\n", framework_environment.settings.docker_repository);
     log_add_verbose(2, "[framework-env] settings.hostname = %s\n", framework_environment.settings.hostname);
     log_add_verbose(2, "[framework-env] settings.ip_v4 = %s\n", framework_environment.settings.ip_v4);
     log_add_verbose(2, "[framework-env] settings.ip_v6 = %s\n", framework_environment.settings.ip_v6);
@@ -290,11 +299,13 @@ static int framework_env_init(void) {
     if(framework_environment.settings.ip_v6_enabled) {
         if(strstr(framework_environment.host.ip, ".")) {
             log_error("[framework-env] host.ip is an invalid IP v6\n");
+            return NTS_ERR_FAILED;
         }
     }
     else {
         if(strstr(framework_environment.host.ip, ":")) {
             log_error("[framework-env] host.ip is an invalid IP v4\n");
+            return NTS_ERR_FAILED;
         }
     }
 
@@ -693,9 +704,11 @@ void framework_free(void) {
     free(framework_environment.nts.build_time);
     free(framework_environment.nts.function_type);
     free(framework_environment.nts.nf_standalone_start_features);
+    free(framework_environment.nts.nf_mount_point_addressing_method);
     free(framework_environment.settings.ip_v4);
     free(framework_environment.settings.ip_v6);
     free(framework_environment.settings.docker_engine_version);
+    free(framework_environment.settings.docker_repository);
     free(framework_environment.settings.hostname);
     free(framework_environment.host.ip);
     free(framework_environment.sdn_controller.protocol);

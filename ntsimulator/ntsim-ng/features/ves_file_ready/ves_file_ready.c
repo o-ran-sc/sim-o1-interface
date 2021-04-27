@@ -30,8 +30,7 @@
 
 #include "core/framework.h"
 #include "core/session.h"
-
-#define FILE_READY_RPC_SCHEMA_XPATH         "/nts-network-function:invoke-ves-pm-file-ready"
+#include "core/xpath.h"
 
 static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data);
 static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *file_location, int port);
@@ -50,7 +49,7 @@ int ves_file_ready_feature_start(sr_session_ctx_t *current_session) {
     assert_session();
 
     if(ves_file_ready_subscription == 0) {
-        int rc = sr_rpc_subscribe(current_session, FILE_READY_RPC_SCHEMA_XPATH, ves_file_ready_invoke_pm_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &ves_file_ready_subscription);
+        int rc = sr_rpc_subscribe(current_session, NTS_NF_RPC_FILE_READY_SCHEMA_XPATH, ves_file_ready_invoke_pm_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &ves_file_ready_subscription);
         if(rc != SR_ERR_OK) {
             log_error("error from sr_rpc_subscribe: %s\n", sr_strerror(rc));
             return NTS_ERR_FAILED;
@@ -138,7 +137,7 @@ static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *pa
         return rc;
     }
 
-    rc = sr_val_set_xpath(output[0], FILE_READY_RPC_SCHEMA_XPATH"/status");
+    rc = sr_val_set_xpath(output[0], NTS_NF_RPC_FILE_READY_SCHEMA_XPATH"/status");
     if(SR_ERR_OK != rc) {
         return rc;
     }

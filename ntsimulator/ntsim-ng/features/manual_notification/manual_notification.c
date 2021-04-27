@@ -30,9 +30,8 @@
 #include <sysrepo/values.h>
 
 #include "core/session.h"
+#include "core/xpath.h"
 #include "core/framework.h"
-
-#define MANUAL_NOTIFICATION_RPC_SCHEMA_XPATH         "/nts-network-function:invoke-notification"
 
 static int manual_notification_pm_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data);
 static sr_subscription_ctx_t *manual_notification_subscription = 0;
@@ -46,7 +45,7 @@ int manual_notification_feature_start(sr_session_ctx_t *current_session) {
     assert(current_session);
 
     if(manual_notification_subscription == 0) {
-        int rc = sr_rpc_subscribe(current_session, MANUAL_NOTIFICATION_RPC_SCHEMA_XPATH, manual_notification_pm_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &manual_notification_subscription);
+        int rc = sr_rpc_subscribe(current_session, NTS_NF_RPC_MANUAL_NOTIF_SCHEMA_XPATH, manual_notification_pm_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &manual_notification_subscription);
         if(rc != SR_ERR_OK) {
             log_error("error from sr_rpc_subscribe: %s\n", sr_strerror(rc));
             return NTS_ERR_FAILED;
@@ -82,7 +81,7 @@ static int manual_notification_pm_cb(sr_session_ctx_t *session, const char *path
         return rc;
     }
 
-    rc = sr_val_set_xpath(output[0], MANUAL_NOTIFICATION_RPC_SCHEMA_XPATH"/status");
+    rc = sr_val_set_xpath(output[0], NTS_NF_RPC_MANUAL_NOTIF_SCHEMA_XPATH"/status");
     if(SR_ERR_OK != rc) {
         return rc;
     }

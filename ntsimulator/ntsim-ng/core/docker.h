@@ -61,3 +61,4 @@ int docker_start(const char *container_name, const char *tag, const char *image,
 int docker_stop(docker_container_t *container);
 
 int docker_usage_get(const char **instances_id, int count, docker_usage_t *usage);
+int docker_pull(const char *repo, const char *image, const char *tag);

@@ -28,8 +28,7 @@
 
 #include "core/session.h"
 #include "core/framework.h"
-
-#define PNF_REGISTRATION_SCHEMA_XPATH               "/nts-network-function:simulation/network-function/ves/pnf-registration"
+#include "core/xpath.h"
 
 static int ves_pnf_sequence_number = 0;
 
@@ -50,7 +49,7 @@ int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session) {
     sr_val_t *value = 0;
     int rc = NTS_ERR_OK;
     bool pnf_registration_enabled = false;
-    rc = sr_get_item(current_session, PNF_REGISTRATION_SCHEMA_XPATH, 0, &value);
+    rc = sr_get_item(current_session, NTS_NF_VES_PNF_REGISTRATION_SCHEMA_XPATH, 0, &value);
     if(rc == SR_ERR_OK) {
         pnf_registration_enabled = value->data.bool_val;
         sr_free_val(value);

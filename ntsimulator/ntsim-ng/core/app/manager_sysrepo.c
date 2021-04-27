@@ -25,6 +25,7 @@
 
 #include "core/framework.h"
 #include "core/session.h"
+#include "core/xpath.h"
 
 static int manager_context_sync = 0;
 
@@ -40,7 +41,7 @@ int manager_sr_update_context(manager_context_t *ctx) {
     char int_to_str[30];
 
     //setup sdn-controller defaults
-    sprintf(xpath, NTS_FUNCTION_LIST_SCHEMA_XPATH"[function-type='%s']/started-instances", ctx->function_type);
+    sprintf(xpath, NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH"[function-type='%s']/started-instances", ctx->function_type);
     sprintf(int_to_str, "%d", ctx->started_instances);
     int rc = sr_set_item_str(session_running, xpath, (const char*)int_to_str, 0, 0);
     if(rc != SR_ERR_OK) {
@@ -48,7 +49,7 @@ int manager_sr_update_context(manager_context_t *ctx) {
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, NTS_FUNCTION_LIST_SCHEMA_XPATH"[function-type='%s']/mounted-instances", ctx->function_type);
+    sprintf(xpath, NTS_MANAGER_FUNCTION_LIST_SCHEMA_XPATH"[function-type='%s']/mounted-instances", ctx->function_type);
     sprintf(int_to_str, "%d", ctx->mounted_instances);
     rc = sr_set_item_str(session_running, xpath, (const char*)int_to_str, 0, 0);
     if(rc != SR_ERR_OK) {
@@ -73,7 +74,7 @@ int manager_sr_update_context(manager_context_t *ctx) {
 int manager_sr_on_last_operation_status(const char *status, const char *errmsg) {
     assert(status);
 
-    int rc = sr_set_item_str(session_operational, NTS_SIMULATION_SCHEMA_XPATH"/last-operation-status", status, 0, 0);
+    int rc = sr_set_item_str(session_operational, NTS_MANAGER_SIMULATION_SCHEMA_XPATH"/last-operation-status", status, 0, 0);
     if(rc != SR_ERR_OK) {
         log_error("sr_set_item_str failed\n");
         return NTS_ERR_FAILED;
@@ -169,42 +170,42 @@ int manager_sr_update_static_stats(void) {
     int rc;
 
     sprintf(int_to_str, "%d", framework_environment.host.ssh_base_port);
-    rc = sr_set_item_str(session_operational, NTS_SIMULATION_SCHEMA_XPATH"/ports/netconf-ssh-port", (const char*)int_to_str, 0, 0);
+    rc = sr_set_item_str(session_operational, NTS_MANAGER_SIMULATION_SCHEMA_XPATH"/ports/netconf-ssh-port", (const char*)int_to_str, 0, 0);
     if(rc != SR_ERR_OK) {
         log_error("sr_set_item_str failed\n");
         return NTS_ERR_FAILED;
     }
 
     sprintf(int_to_str, "%d", framework_environment.host.tls_base_port);
-    rc = sr_set_item_str(session_operational, NTS_SIMULATION_SCHEMA_XPATH"/ports/netconf-tls-port", (const char*)int_to_str, 0, 0);
+    rc = sr_set_item_str(session_operational, NTS_MANAGER_SIMULATION_SCHEMA_XPATH"/ports/netconf-tls-port", (const char*)int_to_str, 0, 0);
     if(rc != SR_ERR_OK) {
         log_error("sr_set_item_str failed\n");
         return NTS_ERR_FAILED;
     }
 
     sprintf(int_to_str, "%d", framework_environment.host.ftp_base_port);
-    rc = sr_set_item_str(session_operational, NTS_SIMULATION_SCHEMA_XPATH"/ports/transport-ftp-port", (const char*)int_to_str, 0, 0);
+    rc = sr_set_item_str(session_operational, NTS_MANAGER_SIMULATION_SCHEMA_XPATH"/ports/transport-ftp-port", (const char*)int_to_str, 0, 0);
     if(rc != SR_ERR_OK) {
         log_error("sr_set_item_str failed\n");
         return NTS_ERR_FAILED;
     }
 
     sprintf(int_to_str, "%d", framework_environment.host.sftp_base_port);
-    rc = sr_set_item_str(session_operational, NTS_SIMULATION_SCHEMA_XPATH"/ports/transport-sftp-port", (const char*)int_to_str, 0, 0);
+    rc = sr_set_item_str(session_operational, NTS_MANAGER_SIMULATION_SCHEMA_XPATH"/ports/transport-sftp-port", (const char*)int_to_str, 0, 0);
     if(rc != SR_ERR_OK) {
         log_error("sr_set_item_str failed\n");
         return NTS_ERR_FAILED;
     }
 
     sprintf(int_to_str, "%d", framework_environment.settings.ssh_connections);
-    rc = sr_set_item_str(session_operational, NTS_SIMULATION_SCHEMA_XPATH"/ssh-connections", (const char*)int_to_str, 0, 0);
+    rc = sr_set_item_str(session_operational, NTS_MANAGER_SIMULATION_SCHEMA_XPATH"/ssh-connections", (const char*)int_to_str, 0, 0);
     if(rc != SR_ERR_OK) {
         log_error("sr_set_item_str failed\n");
         return NTS_ERR_FAILED;
     }
 
     sprintf(int_to_str, "%d", framework_environment.settings.tls_connections);
-    rc = sr_set_item_str(session_operational, NTS_SIMULATION_SCHEMA_XPATH"/tls-connections", (const char*)int_to_str, 0, 0);
+    rc = sr_set_item_str(session_operational, NTS_MANAGER_SIMULATION_SCHEMA_XPATH"/tls-connections", (const char*)int_to_str, 0, 0);
     if(rc != SR_ERR_OK) {
         log_error("sr_set_item_str failed\n");
         return NTS_ERR_FAILED;
@@ -223,7 +224,7 @@ int manager_sr_update_static_stats(void) {
 int manager_sr_stats_get_items_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data) {
     char value[128];
 
-    *parent = lyd_new_path(NULL, sr_get_context(sr_session_get_connection(session)), NTS_SIMULATION_SCHEMA_XPATH, 0, 0, 0);
+    *parent = lyd_new_path(NULL, sr_get_context(sr_session_get_connection(session)), NTS_MANAGER_SIMULATION_SCHEMA_XPATH, 0, 0, 0);
     if(*parent == 0) {
         log_error("lyd_new_path failed\n");
         return SR_ERR_OPERATION_FAILED;
@@ -257,13 +258,13 @@ int manager_sr_stats_get_items_cb(sr_session_ctx_t *session, const char *module_
     }
 
     sprintf(value, "%.2f", usage.cpu);
-    if(lyd_new_path(*parent, NULL, NTS_SIMULATION_SCHEMA_XPATH"/cpu-usage", value, 0, 0) == 0) {
+    if(lyd_new_path(*parent, NULL, NTS_MANAGER_SIMULATION_SCHEMA_XPATH"/cpu-usage", value, 0, 0) == 0) {
         log_error("lyd_new_path failed\n");
         return SR_ERR_OPERATION_FAILED;
     }
 
     sprintf(value, "%.0f", usage.mem);
-    if(lyd_new_path(*parent, NULL, NTS_SIMULATION_SCHEMA_XPATH"/mem-usage", value, 0, 0) == 0) {
+    if(lyd_new_path(*parent, NULL, NTS_MANAGER_SIMULATION_SCHEMA_XPATH"/mem-usage", value, 0, 0) == 0) {
         log_error("lyd_new_path failed\n");
         return SR_ERR_OPERATION_FAILED;
     }

@@ -340,6 +340,8 @@ The network function can run in standalone mode when the **NTS_NF_STANDALONE_STA
 
 Other than this, the network-function will operate just as it would when started by the manager and it can be controller through the **nts-network-function.yang** interface.
 
+The default mount point addressing method is "docker-mapping". However this behaviour can be changed by setting the  **NTS_NF_MOUNT_POINT_ADDRESSING_METHOD** enviroment variable to "host-mapping". When "host-mapping" is chosen, all the host ports must be fowareded from Docker by the user when running the network function, and **NTS_HOST_IP** and **NTS_HOST_xxxx_PORT** enviroment variables should be set for the network function to know how to perform its tasks.
+
 Datastore random population
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -497,6 +499,7 @@ Below all the available enviroment variables are listed. Please note that if a v
 - **NTS_BUILD_VERSION** - defines build version, set by Dockerfile
 - **NTS_BUILD_DATE** - defines build date, set by Dockerfile
 - **NTS_NF_STANDALONE_START_FEATURES** - when value is not blank, it allows the network function to run in standalone mode; see "Network function standalone mode" sub-chapter for this
+- **NTS_NF_MOUNT_POINT_ADDRESSING_METHOD** - either "docker-mapping" or "host-mapping"; available only when running in network function STANDALONE MODE
 
 - **DOCKER_ENGINE_VERSION** - Docker engine version, defaults to 1.40 if not set
 - **HOSTNAME** - Container hostname

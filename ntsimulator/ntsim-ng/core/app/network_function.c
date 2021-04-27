@@ -32,6 +32,7 @@
 #include "core/framework.h"
 #include "core/context.h"
 #include "core/session.h"
+#include "core/xpath.h"
 #include "core/datastore/populate.h"
 
 #include "core/faults/faults.h"
@@ -46,25 +47,6 @@
 #include "app_common.h"
 
 #define NF_FUNCTION_CONTROL_BUFFER_LENGTH                       32
-
-#define IETF_NETCONF_MONITORING_MODULE                          "ietf-netconf-monitoring"
-#define IETF_NETCONF_MONITORING_STATE_SCHEMAS_SCHEMA_XPATH      "/ietf-netconf-monitoring:netconf-state/schemas"
-
-#define NC_NOTIFICATIONS_MODULE                                 "nc-notifications"
-#define NC_NOTIFICATIONS_STREAMS_SCHEMA_XPATH                   "/nc-notifications:netconf/streams"
-
-#define NTS_NETWORK_FUNCTION_MODULE                             "nts-network-function"
-#define NTS_NETWORK_FUNCTION_SCHEMA_XPATH                       "/nts-network-function:simulation/network-function"
-
-#define POPULATE_RPC_SCHEMA_XPATH                               "/nts-network-function:datastore-populate"
-#define FEATURE_CONTROL_SCHEMA_XPATH                            "/nts-network-function:feature-control"
-#define FAULTS_CLEAR_SCHEMA_XPATH                               "/nts-network-function:clear-fault-counters"
-#define FAULTS_LIST_SCHEMA_XPATH                                "/nts-network-function:simulation/network-function/fault-generation"
-#define FAULTS_COUNT_LIST_SCHEMA_XPATH                          "/nts-network-function:simulation/network-function/fault-generation/fault-count"
-#define FAULTS_NC_ENABLED_SCHEMA_XPATH                          "/nts-network-function:simulation/network-function/netconf/faults-enabled"
-#define FAULTS_VES_ENABLED_SCHEMA_XPATH                         "/nts-network-function:simulation/network-function/ves/faults-enabled"
-
-#define STARTED_FEATURES_LIST_SCHEMA_XPATH                      "/nts-network-function:info/started-features"
 
 static int netconf_monitoring_state_schemas_cb(sr_session_ctx_t *session, const char *module_name, const char *path, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data);
 static int notifications_streams_cb(sr_session_ctx_t *session, const char *module_name, const char *path, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data);
@@ -132,39 +114,39 @@ int network_function_run(void) {
     }
 
     //populate
-    rc = sr_rpc_subscribe(session_running, POPULATE_RPC_SCHEMA_XPATH, network_function_populate_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    rc = sr_rpc_subscribe(session_running, NTS_NF_RPC_POPULATE_SCHEMA_XPATH, network_function_populate_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("error from sr_rpc_subscribe: %s\n", sr_strerror(rc));
         return NTS_ERR_FAILED;
     }
 
     //feature control
-    rc = sr_rpc_subscribe(session_running, FEATURE_CONTROL_SCHEMA_XPATH, network_function_feature_control_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    rc = sr_rpc_subscribe(session_running, NTS_NF_RPC_FEATURE_CONTROL_SCHEMA_XPATH, network_function_feature_control_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("error from sr_rpc_subscribe: %s\n", sr_strerror(rc));
         return NTS_ERR_FAILED;
     }
 
     //faults
-    rc = sr_module_change_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, FAULTS_LIST_SCHEMA_XPATH, network_function_faults_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    rc = sr_module_change_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, NTS_NF_FAULT_GENERATION_SCHEMA_XPATH, network_function_faults_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("could not subscribe to faults");
         return 0;
     }
 
-    rc = sr_oper_get_items_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, FAULTS_COUNT_LIST_SCHEMA_XPATH, network_function_faults_count_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    rc = sr_oper_get_items_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, NTS_NF_FAULT_COUNT_LIST_SCHEMA_XPATH, network_function_faults_count_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("could not subscribe to oper faults: %s\n", sr_strerror(rc));
         return 0;
     }
 
-    rc = sr_rpc_subscribe(session_running, FAULTS_CLEAR_SCHEMA_XPATH, network_function_faults_clear_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    rc = sr_rpc_subscribe(session_running, NTS_NF_RPC_FAULTS_CLEAR_SCHEMA_XPATH, network_function_faults_clear_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("error from sr_rpc_subscribe: %s\n", sr_strerror(rc));
         return NTS_ERR_FAILED;
     }
 
-    rc = sr_oper_get_items_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, STARTED_FEATURES_LIST_SCHEMA_XPATH, network_function_started_features_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    rc = sr_oper_get_items_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, NTS_NF_INFO_STARTED_FEATURES_SCHEMA_XPATH, network_function_started_features_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("could not subscribe to oper started-features: %s\n", sr_strerror(rc));
         return 0;
@@ -172,7 +154,7 @@ int network_function_run(void) {
     
 
     //subscribe to any changes on the main
-    rc = sr_module_change_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, NTS_NETWORK_FUNCTION_SCHEMA_XPATH, network_function_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE | SR_SUBSCR_UPDATE, &session_subscription);
+    rc = sr_module_change_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, NTS_NF_NETWORK_FUNCTION_SCHEMA_XPATH, network_function_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE | SR_SUBSCR_UPDATE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("could not subscribe to simulation changes\n");
         return NTS_ERR_FAILED;
@@ -397,7 +379,7 @@ static int notifications_streams_cb(sr_session_ctx_t *session, const char *modul
     struct lyd_node *root = lyd_new_path(0, session_context, NC_NOTIFICATIONS_STREAMS_SCHEMA_XPATH, 0, 0, 0);
 
     /* generic stream */
-    struct lyd_node *stream = lyd_new_path(root, 0, "/nc-notifications:netconf/streams/stream[name='NETCONF']", NULL, 0, 0);
+    struct lyd_node *stream = lyd_new_path(root, 0, NC_NOTIFICATIONS_STREAMS_SCHEMA_XPATH"/stream[name='NETCONF']", NULL, 0, 0);
     lyd_new_leaf(stream, stream->schema->module, "description", "Default NETCONF stream containing notifications from all the modules. Replays only notifications for modules that support replay.");
     lyd_new_leaf(stream, stream->schema->module, "replaySupport", "true");
     
@@ -460,7 +442,7 @@ static int network_function_populate_cb(sr_session_ctx_t *session, const char *p
         return rc;
     }
 
-    rc = sr_val_set_xpath(output[0], POPULATE_RPC_SCHEMA_XPATH"/status");
+    rc = sr_val_set_xpath(output[0], NTS_NF_RPC_POPULATE_SCHEMA_XPATH"/status");
     if(SR_ERR_OK != rc) {
         return rc;
     }
@@ -536,7 +518,7 @@ static int network_function_feature_control_cb(sr_session_ctx_t *session, const 
         return rc;
     }
 
-    rc = sr_val_set_xpath(output[0], FEATURE_CONTROL_SCHEMA_XPATH"/status");
+    rc = sr_val_set_xpath(output[0], NTS_NF_RPC_FEATURE_CONTROL_SCHEMA_XPATH"/status");
     if(SR_ERR_OK != rc) {
         return rc;
     }
@@ -580,7 +562,7 @@ static int network_function_faults_clear_cb(sr_session_ctx_t *session, const cha
         return rc;
     }
 
-    rc = sr_val_set_xpath(output[0], FAULTS_CLEAR_SCHEMA_XPATH"/status");
+    rc = sr_val_set_xpath(output[0], NTS_NF_RPC_FAULTS_CLEAR_SCHEMA_XPATH"/status");
     if(SR_ERR_OK != rc) {
         return rc;
     }
@@ -615,38 +597,38 @@ static int network_function_faults_count_get_items_cb(sr_session_ctx_t *session,
     pthread_mutex_unlock(&faults_lock);
     char value[20];
 
-    *parent = lyd_new_path(NULL, sr_get_context(sr_session_get_connection(session)), FAULTS_COUNT_LIST_SCHEMA_XPATH, 0, 0, 0);
+    *parent = lyd_new_path(NULL, sr_get_context(sr_session_get_connection(session)), NTS_NF_FAULT_COUNT_LIST_SCHEMA_XPATH, 0, 0, 0);
     if(*parent == 0) {
         log_error("lyd_new_path failed\n");
         return SR_ERR_OPERATION_FAILED;
     }
 
     sprintf(value, "%d", counters.normal);
-    if(lyd_new_path(*parent, NULL, FAULTS_COUNT_LIST_SCHEMA_XPATH"/normal", value, 0, 0) == 0) {
+    if(lyd_new_path(*parent, NULL, NTS_NF_FAULT_COUNT_LIST_SCHEMA_XPATH"/normal", value, 0, 0) == 0) {
         log_error("lyd_new_path failed\n");
         return SR_ERR_OPERATION_FAILED;
     }
 
     sprintf(value, "%d", counters.warning);
-    if(lyd_new_path(*parent, NULL, FAULTS_COUNT_LIST_SCHEMA_XPATH"/warning", value, 0, 0) == 0) {
+    if(lyd_new_path(*parent, NULL, NTS_NF_FAULT_COUNT_LIST_SCHEMA_XPATH"/warning", value, 0, 0) == 0) {
         log_error("lyd_new_path failed\n");
         return SR_ERR_OPERATION_FAILED;
     }
 
     sprintf(value, "%d", counters.minor);
-    if(lyd_new_path(*parent, NULL, FAULTS_COUNT_LIST_SCHEMA_XPATH"/minor", value, 0, 0) == 0) {
+    if(lyd_new_path(*parent, NULL, NTS_NF_FAULT_COUNT_LIST_SCHEMA_XPATH"/minor", value, 0, 0) == 0) {
         log_error("lyd_new_path failed\n");
         return SR_ERR_OPERATION_FAILED;
     }
 
     sprintf(value, "%d", counters.major);
-    if(lyd_new_path(*parent, NULL, FAULTS_COUNT_LIST_SCHEMA_XPATH"/major", value, 0, 0) == 0) {
+    if(lyd_new_path(*parent, NULL, NTS_NF_FAULT_COUNT_LIST_SCHEMA_XPATH"/major", value, 0, 0) == 0) {
         log_error("lyd_new_path failed\n");
         return SR_ERR_OPERATION_FAILED;
     }
 
     sprintf(value, "%d", counters.critical);
-    if(lyd_new_path(*parent, NULL, FAULTS_COUNT_LIST_SCHEMA_XPATH"/critical", value, 0, 0) == 0) {
+    if(lyd_new_path(*parent, NULL, NTS_NF_FAULT_COUNT_LIST_SCHEMA_XPATH"/critical", value, 0, 0) == 0) {
         log_error("lyd_new_path failed\n");
         return SR_ERR_OPERATION_FAILED;
     }
@@ -686,7 +668,7 @@ static int network_function_started_features_get_items_cb(sr_session_ctx_t *sess
         value[strlen(value) - 1] = 0;
     }
 
-    *parent = lyd_new_path(NULL, sr_get_context(sr_session_get_connection(session)), STARTED_FEATURES_LIST_SCHEMA_XPATH, value, 0, 0);
+    *parent = lyd_new_path(NULL, sr_get_context(sr_session_get_connection(session)), NTS_NF_INFO_STARTED_FEATURES_SCHEMA_XPATH, value, 0, 0);
     if(*parent == 0) {
         log_error("lyd_new_path failed\n");
         return SR_ERR_OPERATION_FAILED;
@@ -703,7 +685,7 @@ static int faults_update_config(sr_session_ctx_t *session) {
     
     int rc;
     struct lyd_node *data;
-    rc = sr_get_subtree(session, FAULTS_LIST_SCHEMA_XPATH, 0, &data);
+    rc = sr_get_subtree(session, NTS_NF_FAULT_GENERATION_SCHEMA_XPATH, 0, &data);
     if(rc != SR_ERR_OK) {
         log_error("sr_get_subtree failed\n");
         return NTS_ERR_FAILED;
@@ -791,13 +773,13 @@ static void *faults_thread_routine(void *arg) {
             bool nc_fault_enabled = false;
             bool ves_fault_enabled = false;
 
-            rc = sr_get_item(current_session_running, FAULTS_NC_ENABLED_SCHEMA_XPATH, 0, &val);
+            rc = sr_get_item(current_session_running, NTS_NF_NETCONF_FAULTS_ENABLED_SCHEMA_PATH, 0, &val);
             if(rc == SR_ERR_OK) {
                 nc_fault_enabled = val->data.bool_val;
                 sr_free_val(val);
             }
 
-            rc = sr_get_item(current_session_running, FAULTS_VES_ENABLED_SCHEMA_XPATH, 0, &val);
+            rc = sr_get_item(current_session_running, NTS_NF_VES_FAULTS_ENABLED_SCHEMA_XPATH, 0, &val);
             if(rc == SR_ERR_OK) {
                 ves_fault_enabled = val->data.bool_val;
                 sr_free_val(val);
@@ -850,7 +832,7 @@ static int network_function_change_cb(sr_session_ctx_t *session, const char *mod
     sr_val_t *new_value = 0;
 
     if(event == SR_EV_UPDATE) {
-        rc = sr_get_changes_iter(session, NTS_NETWORK_FUNCTION_SCHEMA_XPATH"//.", &it);
+        rc = sr_get_changes_iter(session, NTS_NF_NETWORK_FUNCTION_SCHEMA_XPATH"//.", &it);
         if(rc != SR_ERR_OK) {
             log_error("sr_get_changes_iter failed\n");
             return SR_ERR_VALIDATION_FAILED;
@@ -858,7 +840,7 @@ static int network_function_change_cb(sr_session_ctx_t *session, const char *mod
 
         while((rc = sr_get_change_next(session, it, &oper, &old_value, &new_value)) == SR_ERR_OK) {
             
-            if(new_value->xpath && (strcmp(new_value->xpath, NTS_NETWORK_FUNCTION_SCHEMA_XPATH"/function-type") == 0)) {
+            if(new_value->xpath && (strcmp(new_value->xpath, NTS_NF_NETWORK_FUNCTION_FTYPE_SCHEMA_XPATH) == 0)) {
                 if(old_value && !old_value->dflt) {
                     rc = sr_set_item(session, old_value->xpath, old_value, 0);
                     if(rc != SR_ERR_OK) {
@@ -868,7 +850,7 @@ static int network_function_change_cb(sr_session_ctx_t *session, const char *mod
                 }
             }
 
-            if(new_value->xpath && (strcmp(new_value->xpath, NTS_NETWORK_FUNCTION_SCHEMA_XPATH"/mount-point-addressing-method") == 0)) {
+            if(new_value->xpath && (strcmp(new_value->xpath, NTS_NF_NETWORK_FUNCTION_MPAM_SCHEMA_XPATH) == 0)) {
                 if(old_value && !old_value->dflt) {
                     rc = sr_set_item(session, old_value->xpath, old_value, 0);
                     if(rc != SR_ERR_OK) {

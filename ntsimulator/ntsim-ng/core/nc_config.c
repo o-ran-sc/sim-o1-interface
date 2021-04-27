@@ -29,6 +29,7 @@
 
 #include <libyang/libyang.h>
 #include "core/session.h"
+#include "core/xpath.h"
 #include "core/framework.h"
 
 #define GEN_KEY_SCRIPT                              "/home/netconf/.ssh/generate-ssh-keys.sh"
@@ -54,7 +55,7 @@ int netconf_configure(void) {
 
     //check if was already ran
     sr_val_t *val = 0;
-    rc = sr_get_item(session_running, "/ietf-keystore:keystore", 0, &val);
+    rc = sr_get_item(session_running, IETF_KEYSTORE_SCHEMA_XPATH, 0, &val);
     if(rc != SR_ERR_OK) {
         log_error("sr_get_item failed\n");
         return NTS_ERR_FAILED;
@@ -99,7 +100,7 @@ int netconf_configure(void) {
     log_add_verbose(1, "Configuring connection endpoints...");
     rc = configure_endpoints_connections(session_running);
     if(rc != 0) {
-        log_error("could not configure endpoint connections forNETCONF Server\n");
+        log_error("could not configure endpoint connections for NETCONF Server\n");
         return NTS_ERR_FAILED;
     }
     log_add(1, LOG_COLOR_BOLD_GREEN"done\n"LOG_COLOR_RESET);
@@ -121,9 +122,9 @@ static int load_ssh_keys(sr_session_ctx_t *session) {
     }
 
     struct lys_module *module;
-    module = (struct lys_module *)ly_ctx_get_module(session_context, "ietf-keystore", 0, 0);
+    module = (struct lys_module *)ly_ctx_get_module(session_context, IETF_KEYSTORE_MODULE, 0, 0);
     if(module == 0) {
-        log_error("could not get module %s from context\n", "ietf-keystore");
+        log_error("could not get module %s from context\n", IETF_KEYSTORE_MODULE);
         return NTS_ERR_FAILED;
     }
     
@@ -134,7 +135,7 @@ static int load_ssh_keys(sr_session_ctx_t *session) {
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-keystore:keystore/asymmetric-keys/asymmetric-key[name='%s']/algorithm", KS_KEY_NAME);
+    sprintf(xpath, IETF_KEYSTORE_ASYMETRIC_KEY_SCHEMA_XPATH"/algorithm", KS_KEY_NAME);
     rcl = lyd_new_path(keystore_node, 0, xpath, "rsa2048", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
@@ -148,7 +149,7 @@ static int load_ssh_keys(sr_session_ctx_t *session) {
     }
     log_add_verbose(2, "Private Key that was built: \n%s\n", private_key);
 
-    sprintf(xpath, "/ietf-keystore:keystore/asymmetric-keys/asymmetric-key[name='%s']/private-key", KS_KEY_NAME);
+    sprintf(xpath, IETF_KEYSTORE_ASYMETRIC_KEY_SCHEMA_XPATH"/private-key", KS_KEY_NAME);
     rcl = lyd_new_path(keystore_node, 0, xpath, private_key, 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
@@ -164,7 +165,7 @@ static int load_ssh_keys(sr_session_ctx_t *session) {
     }
     log_add_verbose(2, "Public Key that was built: \n%s\n", public_key);
 
-    sprintf(xpath, "/ietf-keystore:keystore/asymmetric-keys/asymmetric-key[name='%s']/public-key", KS_KEY_NAME);
+    sprintf(xpath, IETF_KEYSTORE_ASYMETRIC_KEY_SCHEMA_XPATH"/public-key", KS_KEY_NAME);
     rcl = lyd_new_path(keystore_node, 0, xpath, public_key, 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
@@ -180,7 +181,7 @@ static int load_ssh_keys(sr_session_ctx_t *session) {
     }
     log_add_verbose(2, "Certificate that was built: \n%s\n", certificate);
 
-    sprintf(xpath, "/ietf-keystore:keystore/asymmetric-keys/asymmetric-key[name='%s']/certificates/certificate[name='%s']/cert", KS_KEY_NAME, KS_CERT_NAME);
+    sprintf(xpath, IETF_KEYSTORE_ASYMETRIC_KEY_SCHEMA_XPATH"/certificates/certificate[name='%s']/cert", KS_KEY_NAME, KS_CERT_NAME);
     rcl = lyd_new_path(keystore_node, 0, xpath, certificate, 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
@@ -195,7 +196,7 @@ static int load_ssh_keys(sr_session_ctx_t *session) {
         return NTS_ERR_FAILED;
     }
 
-    rc = sr_validate(session, "ietf-keystore", 0);
+    rc = sr_validate(session, IETF_KEYSTORE_MODULE, 0);
     if(rc != SR_ERR_OK) {
         struct ly_err_item *err = ly_err_first(session_context);
         log_error("sr_validate issues on STARTUP: %s\n", err->msg);
@@ -219,9 +220,9 @@ static int load_trusted_certificates(sr_session_ctx_t *session) {
 
     struct lyd_node *trusted_certificate_node = 0;
     struct lys_module *module;
-    module = (struct lys_module *)ly_ctx_get_module(session_context, "ietf-truststore", 0, 0);
+    module = (struct lys_module *)ly_ctx_get_module(session_context, IETF_TRUSTSTORE_MODULE, 0, 0);
     if(module == 0) {
-        log_error("could not get module %s from context\n", "ietf-truststore");
+        log_error("could not get module %s from context\n", IETF_TRUSTSTORE_MODULE);
         return NTS_ERR_FAILED;
     }
 
@@ -231,20 +232,16 @@ static int load_trusted_certificates(sr_session_ctx_t *session) {
         return NTS_ERR_FAILED;
     }
 
-    char xpath[500];
-
-    sprintf(xpath, "/ietf-truststore:truststore/certificates[name='clientcerts']/certificate[name='clientcert']/cert");
     char *client_cert = read_key(CLIENT_CERT_PATH);
-    rcl = lyd_new_path(trusted_certificate_node, 0, xpath, client_cert, 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(trusted_certificate_node, 0, IETF_TRUSTSTORE_CERT_PATH_SCHEMA_XPATH, client_cert, 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         return NTS_ERR_FAILED;
     }
     free(client_cert);
 
-    sprintf(xpath, "/ietf-truststore:truststore/certificates[name='cacerts']/certificate[name='cacert']/cert");
     char *ca_cert = read_key(CA_CERT_PATH);
-    rcl = lyd_new_path(trusted_certificate_node, 0, xpath, ca_cert, 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(trusted_certificate_node, 0, IETF_TRUSTSTORE_CA_CERT_PATH_SCHEMA_XPATH, ca_cert, 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not created yang path\n");
         return NTS_ERR_FAILED;
@@ -257,10 +254,10 @@ static int load_trusted_certificates(sr_session_ctx_t *session) {
         return NTS_ERR_FAILED;
     }
 
-    rc = sr_validate(session, "ietf-truststore", 0);
+    rc = sr_validate(session, IETF_TRUSTSTORE_MODULE, 0);
     if(rc != SR_ERR_OK) {
         struct ly_err_item *err = ly_err_first(session_context);
-        log_error("sr_validate issues on STARTUP: %s\n", err->msg);
+        log_error("sr_validate issues: %s\n", err->msg);
         return NTS_ERR_FAILED;
     }
 
@@ -278,12 +275,11 @@ static int configure_nacm(sr_session_ctx_t *session) {
 
     int rc = NTS_ERR_OK;
     struct lyd_node *rcl = 0;
-    char xpath[100];
 
     struct lys_module *module = 0;
-    module = (struct lys_module *) ly_ctx_get_module(session_context, "ietf-netconf-acm", 0, 0);
+    module = (struct lys_module *) ly_ctx_get_module(session_context, IETF_NETCONF_ACM_MODULE, 0, 0);
     if(module == 0) {
-        log_error("could not get module %s from context\n", "ietf-netconf-acm");
+        log_error("could not get module %s from context\n", IETF_NETCONF_ACM_MODULE);
         return NTS_ERR_FAILED;
     }
 
@@ -294,58 +290,50 @@ static int configure_nacm(sr_session_ctx_t *session) {
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-acm:nacm/enable-nacm");
-    rcl = lyd_new_path(nacm_node, 0, xpath, "true", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(nacm_node, 0, IETF_NETCONF_ACM_ENABLE_NACM_SCHEMA_XPATH, "true", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not create yang path\n");
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-acm:nacm/groups/group[name='sudo']/user-name");
     // we hardcoded here the username to be used
-    rcl = lyd_new_path(nacm_node, 0, xpath, "netconf", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(nacm_node, 0, IETF_NETCONF_ACM_GROUPS_SCHEMA_XPATH"/group[name='sudo']/user-name", "netconf", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not create yang path\n");
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-acm:nacm/rule-list[name='sudo-rules']/group");
-    rcl = lyd_new_path(nacm_node, 0, xpath, "sudo", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(nacm_node, 0, IETF_NETCONF_ACM_RULE_LIST_SCHEMA_XPATH"[name='sudo-rules']/group", "sudo", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not create yang path\n");
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-acm:nacm/rule-list[name='sudo-rules']/rule[name='allow-all-sudo']/module-name");
-    rcl = lyd_new_path(nacm_node, 0, xpath, "*", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(nacm_node, 0, IETF_NETCONF_ACM_RULE_LIST_SCHEMA_XPATH"[name='sudo-rules']/rule[name='allow-all-sudo']/module-name", "*", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not create yang path\n");
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-acm:nacm/rule-list[name='sudo-rules']/rule[name='allow-all-sudo']/path");
-    rcl = lyd_new_path(nacm_node, 0, xpath, "/", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(nacm_node, 0, IETF_NETCONF_ACM_RULE_LIST_SCHEMA_XPATH"[name='sudo-rules']/rule[name='allow-all-sudo']/path", "/", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not create yang path\n");
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-acm:nacm/rule-list[name='sudo-rules']/rule[name='allow-all-sudo']/access-operations");
-    rcl = lyd_new_path(nacm_node, 0, xpath, "*", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(nacm_node, 0, IETF_NETCONF_ACM_RULE_LIST_SCHEMA_XPATH"[name='sudo-rules']/rule[name='allow-all-sudo']/access-operations", "*", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not create yang path\n");
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-acm:nacm/rule-list[name='sudo-rules']/rule[name='allow-all-sudo']/action");
-    rcl = lyd_new_path(nacm_node, 0, xpath, "permit", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(nacm_node, 0, IETF_NETCONF_ACM_RULE_LIST_SCHEMA_XPATH"[name='sudo-rules']/rule[name='allow-all-sudo']/action", "permit", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not create yang path\n");
         return NTS_ERR_FAILED;
     }
 
-    sprintf(xpath, "/ietf-netconf-acm:nacm/rule-list[name='sudo-rules']/rule[name='allow-all-sudo']/comment");
-    rcl = lyd_new_path(nacm_node, 0, xpath, "Corresponds all the rules under the sudo group as defined in O-RAN.WG4.MP.0-v05.00", 0, LYD_PATH_OPT_NOPARENTRET);
+    rcl = lyd_new_path(nacm_node, 0, IETF_NETCONF_ACM_RULE_LIST_SCHEMA_XPATH"[name='sudo-rules']/rule[name='allow-all-sudo']/comment", "Corresponds all the rules under the sudo group as defined in O-RAN.WG4.MP.0-v05.00", 0, LYD_PATH_OPT_NOPARENTRET);
     if(rcl == 0) {
         log_error("could not create yang path\n");
         return NTS_ERR_FAILED;
@@ -357,10 +345,10 @@ static int configure_nacm(sr_session_ctx_t *session) {
         return NTS_ERR_FAILED;
     }
 
-    rc = sr_validate(session, "ietf-netconf-acm", 0);
+    rc = sr_validate(session, IETF_NETCONF_ACM_MODULE, 0);
     if(rc != SR_ERR_OK) {
         struct ly_err_item *err = ly_err_first(session_context);
-        log_error("sr_validate issues on STARTUP: %s\n", err->msg);
+        log_error("sr_validate issues: %s\n", err->msg);
         return NTS_ERR_FAILED;
     }
 
@@ -403,7 +391,7 @@ static int create_ssh_listen_endpoints(struct lyd_node *netconf_node, int ssh_co
         char endpoint_name[100];
         sprintf(endpoint_name, "mng-ssh-%d", i);
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/tcp-server-parameters/local-address", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_SSH_TCP_SERVER_PARAM_SCHEMA_XPATH"/local-address", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, local_ip, 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
@@ -412,70 +400,70 @@ static int create_ssh_listen_endpoints(struct lyd_node *netconf_node, int ssh_co
 
         char local_port[10];
         sprintf(local_port, "%d", nc_config_netconf_port++);
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/tcp-server-parameters/local-port", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_SSH_TCP_SERVER_PARAM_SCHEMA_XPATH"/local-port", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, local_port, 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/tcp-server-parameters/keepalives/idle-time", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_SSH_TCP_SERVER_PARAM_SCHEMA_XPATH"/keepalives/idle-time", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "1", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/tcp-server-parameters/keepalives/max-probes", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_SSH_TCP_SERVER_PARAM_SCHEMA_XPATH"/keepalives/max-probes", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "10", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/tcp-server-parameters/keepalives/probe-interval", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_SSH_TCP_SERVER_PARAM_SCHEMA_XPATH"/keepalives/probe-interval", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "5", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/ssh-server-parameters/server-identity/host-key[name='default-key']/public-key/keystore-reference", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_SSH_SERVER_PARAM_SCHEMA_XPATH"/server-identity/host-key[name='default-key']/public-key/keystore-reference", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, KS_KEY_NAME, 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/ssh-server-parameters/client-authentication/supported-authentication-methods/publickey", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_SSH_SERVER_PARAM_SCHEMA_XPATH"/client-authentication/supported-authentication-methods/publickey", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/ssh-server-parameters/client-authentication/supported-authentication-methods/passsword", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_SSH_SERVER_PARAM_SCHEMA_XPATH"/client-authentication/supported-authentication-methods/passsword", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/ssh-server-parameters/client-authentication/supported-authentication-methods/other", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_SSH_SERVER_PARAM_SCHEMA_XPATH"/client-authentication/supported-authentication-methods/other", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "interactive", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/ssh-server-parameters/client-authentication/users/user[name='netconf']/authorized-key[name='%s']/algorithm", endpoint_name, KS_KEY_NAME);
+        sprintf(xpath, IETF_NETCONF_SERVER_SSH_SERVER_PARAM_SCHEMA_XPATH"/client-authentication/users/user[name='netconf']/authorized-key[name='%s']/algorithm", endpoint_name, KS_KEY_NAME);
         rcl = lyd_new_path(netconf_node, 0, xpath, "ssh-rsa", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/ssh-server-parameters/client-authentication/users/user[name='netconf']/authorized-key[name='%s']/key-data", endpoint_name, KS_KEY_NAME);
+        sprintf(xpath, IETF_NETCONF_SERVER_SSH_SERVER_PARAM_SCHEMA_XPATH"/client-authentication/users/user[name='netconf']/authorized-key[name='%s']/key-data", endpoint_name, KS_KEY_NAME);
         rcl = lyd_new_path(netconf_node, 0, xpath, ssh_key_string, 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
@@ -518,91 +506,91 @@ static int create_tls_listen_endpoints(struct lyd_node *netconf_node, int tls_co
             sprintf(local_port, "%d", nc_config_netconf_port++);
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tcp-server-parameters/local-address", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_TCP_SERVER_PARAM_SCHEMA_XPATH"/local-address", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, local_ip, 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tcp-server-parameters/local-port", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_TCP_SERVER_PARAM_SCHEMA_XPATH"/local-port", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, local_port, 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tcp-server-parameters/keepalives/idle-time", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_TCP_SERVER_PARAM_SCHEMA_XPATH"/keepalives/idle-time", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "1", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tcp-server-parameters/keepalives/max-probes", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_TCP_SERVER_PARAM_SCHEMA_XPATH"/keepalives/max-probes", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "10", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tcp-server-parameters/keepalives/probe-interval", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_TCP_SERVER_PARAM_SCHEMA_XPATH"/keepalives/probe-interval", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "5", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tls-server-parameters/server-identity/keystore-reference/asymmetric-key", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_SERVER_PARAM_SCHEMA_XPATH"/server-identity/keystore-reference/asymmetric-key", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, KS_KEY_NAME, 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tls-server-parameters/server-identity/keystore-reference/certificate", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_SERVER_PARAM_SCHEMA_XPATH"/server-identity/keystore-reference/certificate", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, KS_CERT_NAME, 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tls-server-parameters/client-authentication/required", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_SERVER_PARAM_SCHEMA_XPATH"/client-authentication/required", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tls-server-parameters/client-authentication/ca-certs", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_SERVER_PARAM_SCHEMA_XPATH"/client-authentication/ca-certs", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "cacerts", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tls-server-parameters/client-authentication/client-certs", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_SERVER_PARAM_SCHEMA_XPATH"/client-authentication/client-certs", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "clientcerts", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tls-server-parameters/client-authentication/cert-maps/cert-to-name[id='1']/fingerprint", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_SERVER_PARAM_SCHEMA_XPATH"/client-authentication/cert-maps/cert-to-name[id='1']/fingerprint", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "02:E9:38:1F:F6:8B:62:DE:0A:0B:C5:03:81:A8:03:49:A0:00:7F:8B:F3", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tls-server-parameters/client-authentication/cert-maps/cert-to-name[id='1']/map-type", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_SERVER_PARAM_SCHEMA_XPATH"/client-authentication/cert-maps/cert-to-name[id='1']/map-type", endpoint_name);
         rcl = lyd_new_path(netconf_node, session_context, xpath, "ietf-x509-cert-to-name:specified", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
             return NTS_ERR_FAILED;
         }
 
-        sprintf(xpath, "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tls-server-parameters/client-authentication/cert-maps/cert-to-name[id='1']/name", endpoint_name);
+        sprintf(xpath, IETF_NETCONF_SERVER_TLS_SERVER_PARAM_SCHEMA_XPATH"/client-authentication/cert-maps/cert-to-name[id='1']/name", endpoint_name);
         rcl = lyd_new_path(netconf_node, 0, xpath, "netconf", 0, LYD_PATH_OPT_NOPARENTRET);
         if(rcl == 0) {
             log_error("could not created yang path\n");
@@ -619,15 +607,15 @@ static int configure_endpoints_connections(sr_session_ctx_t *session) {
     int rc = NTS_ERR_OK;
 
     struct lys_module *module = 0;
-    module = (struct lys_module *)ly_ctx_get_module(session_context, "ietf-netconf-server", 0, 0);
+    module = (struct lys_module *)ly_ctx_get_module(session_context, IETF_NETCONF_SERVER_MODULE, 0, 0);
     if(module == 0) {
-        log_error("could not get module %s from context\n", "ietf-netconf-server");
+        log_error("could not get module %s from context\n", IETF_NETCONF_SERVER_MODULE);
         return NTS_ERR_FAILED;
     }
 
 
     struct lyd_node *netconf_node = 0;
-    netconf_node = lyd_new_path(NULL, session_context, "/ietf-netconf-server:netconf-server", 0, 0, 0);
+    netconf_node = lyd_new_path(NULL, session_context, IETF_NETCONF_SERVER_SCHEMA_XPATH, 0, 0, 0);
     if(netconf_node == 0) {
         log_error("could not create a new lyd_node\n");
         return NTS_ERR_FAILED;
@@ -668,7 +656,7 @@ static int configure_endpoints_connections(sr_session_ctx_t *session) {
         return NTS_ERR_FAILED;
     }
 
-    rc = sr_validate(session, "ietf-netconf-server", 0);
+    rc = sr_validate(session, IETF_NETCONF_SERVER_MODULE, 0);
     if(rc != SR_ERR_OK) {
         struct ly_err_item *err = ly_err_first(session_context);
         log_error("sr_validate issues on STARTUP: %s\n", err->msg);
