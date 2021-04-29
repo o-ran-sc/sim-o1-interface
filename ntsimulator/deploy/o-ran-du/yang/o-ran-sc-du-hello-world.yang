@@ -28,6 +28,12 @@ module o-ran-sc-du-hello-world {
      See the License for the specific language governing permissions and
      limitations under the License.";
 
+  revision 2021-04-08 {
+    description
+      "Updates based on the RSAC call 2021-04-08.";
+    reference
+      "https://wiki.o-ran-sc.org/pages/viewpage.action?pageId=20878423";
+  }
   revision 2021-03-06 {
     description
       "initial revision";
@@ -90,9 +96,76 @@ module o-ran-sc-du-hello-world {
       description
         "It is proposed to use the network unique identifier of the remote
          network function.
-         Note: After discussion the string was not restricted by a 'length' 
+         Note: After discussion the string was not restricted by a 'length'
          statement of a 'pattern' statement. Please avoid leading and ending
          spaces and consecutive spaces and any character outside of UTF-8-";
+    }
+    leaf operational-state {
+      type enumeration {
+        enum DISABLED {
+          description
+            "The resource is not functional.";
+        }
+        enum ENABLED {
+          description
+            "The resource is functional.";
+        }
+      }
+      config false;
+      description
+        "Operational state of a connection. Indicates
+         whether the resource is functional (ENABLED) or not (DISABLED).";
+      reference
+        "3GPP TS 28.625 and ITU-T X.731";
+    }
+    leaf administrative-state {
+      type enumeration {
+        enum LOCKED {
+          description
+            "LOCKED refers to a situation which is NOT considered as
+             ‘normal operation'. Therefore, the O-DU will shut down the
+             connection to the related O-RU, when the value is set to LOCKED.";
+        }
+        enum UNLOCKED {
+          description
+            "UNLOCKED refers to a situation which is considered as
+             'normal operation'. Therefore, the O-DU will establish the
+             connection to the related O-RU, when the value is set to UNLOCKED.";
+        }
+        enum SHUTTING_DOWN {
+          description
+            "This value should not be used. At least the system
+             behavior is not defined.";
+        }
+      }
+      default "LOCKED";
+      description
+        "Administrative state of a connection.";
+      reference
+        "3GPP TS 28.625 and ITU-T X.731";
+    }
+    leaf cell-state {
+      type enumeration {
+        enum IDLE {
+          description
+            "Indicates whether the O-RU is not in use.";
+        }
+        enum INACTIVE {
+          description
+            "Indicates whether the O-RU is in use but not
+             configured to carry traffic.";
+        }
+        enum ACTIVE {
+          description
+            "Indicates whether the O-RU is in use and
+             configured to carry traffic.";
+        }
+      }
+      config false;
+      description
+        "Cell state of the O-RU instance.";
+      reference
+        "3GPP TS 28.625";
     }
     leaf status {
       type connection-status;
@@ -165,6 +238,7 @@ module o-ran-sc-du-hello-world {
   // Remote procedure calls - actions on root level
 
   rpc connect {
+    status deprecated;
     description
       "An action to establish the connection to a remote network function.";
     input {
@@ -182,6 +256,7 @@ module o-ran-sc-du-hello-world {
   }
 
   rpc disconnect {
+    status deprecated;
     description
       "An action to destroy the connection to a remote network function.";
     input {
