@@ -1,11 +1,14 @@
 <network-function xmlns="urn:o-ran-sc:yang:o-ran-sc-du-hello-world">
     <du-to-ru-connection>
       <name>O-RU-1</name>
+      <administrative-state>LOCKED</administrative-state>
     </du-to-ru-connection>
     <du-to-ru-connection>
       <name>O-RU-2</name>
+      <administrative-state>UNLOCKED</administrative-state>
     </du-to-ru-connection>
     <du-to-ru-connection>
       <name>O-RU-3</name>
+      <administrative-state>LOCKED</administrative-state>
     </du-to-ru-connection>
   </network-function>
