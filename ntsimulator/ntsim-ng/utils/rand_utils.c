@@ -880,13 +880,15 @@ static rand_range_t rand_range(const char *range, const LY_DATA_TYPE type) {
 }
 
 static char *rand_date_and_time(void) {
-    time_t t = rand_uint32() / 2;
+    time_t now = time(0);
+    time_t start_date = 1577836800; //2020-01-01T00:00:00Z
+    
+    time_t t = start_date + rand_uint32() % (now - start_date);
     struct tm lt;
     (void)localtime_r(&t, &lt);
 
     char *ret = (char *)malloc(21);
     if(!ret) {
-        log_error("bad malloc\n");
         return 0;
     }
     strftime(ret, 21, "%Y-%m-%dT%H:%M:%SZ", &lt);

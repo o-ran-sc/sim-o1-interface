@@ -47,11 +47,41 @@ typedef struct {
 static void supervisor_spawn(supervisor_control_block_t *scb);
 static void supervisor_free_scb(int count, supervisor_control_block_t *scb);
 static void supervisor_on_signal(int signo);
+static void supervisor_on_sigusr(int signo);
 
 static volatile sig_atomic_t supervisor_got_signal_stop = 0;
+static volatile sig_atomic_t supervisor_got_signal_reload = 0;
 static bool nts_manual;
 
-int supervisor_run(void) {
+int supervisor_run(int argc, char **argv) {
+supervisor_start:
+    if(file_exists("/opt/dev/deploy/.env")) {
+        FILE * fp;
+        char * line = 0;
+        size_t len = 0;
+        ssize_t read;
+
+        fp = fopen("/opt/dev/deploy/.env", "r");
+        if(fp) {
+            log_add_verbose(1, "[supervisor] found /opt/dev/deploy/.env\n");
+
+            while ((read = getline(&line, &len, fp)) != -1) {
+                if(line[strlen(line) - 1] == '\n') {
+                    line[strlen(line) - 1] = 0;
+                }
+
+                log_add_verbose(1, "[supervisor] adding .env var: %s\n", line);
+                putenv(strdup(line));
+            }
+
+            fclose(fp);
+            free(line);
+        }
+    }
+
+    supervisor_got_signal_reload = 0;
+    supervisor_got_signal_stop = 0;
+
     int scb_count = framework_config.supervisor.rules_count;
     supervisor_control_block_t *scb = (supervisor_control_block_t*)malloc(sizeof(supervisor_control_block_t) * framework_config.supervisor.rules_count);
     if(scb == 0) {
@@ -81,6 +111,7 @@ int supervisor_run(void) {
     signal(SIGINT, supervisor_on_signal);
     signal(SIGTERM, supervisor_on_signal);
     signal(SIGQUIT, supervisor_on_signal);
+    signal(SIGUSR1, supervisor_on_sigusr);
 
     for(int i = 0; i < scb_count; i++) {
         supervisor_spawn(&scb[i]);
@@ -144,6 +175,18 @@ int supervisor_run(void) {
 
     supervisor_free_scb(scb_count, scb);
     framework_free();
+
+    if(supervisor_got_signal_reload) {
+        if(framework_init(argc, argv) != NTS_ERR_OK) {
+            log_error(LOG_COLOR_BOLD_RED"framework_init() error\n");
+            framework_free();
+            return EXIT_FAILURE;
+        }
+
+        log_add_verbose(1, "[supervisor] SIGUSR1 received, restarting everything... (this is a *new* logfile)\n");
+
+        goto supervisor_start;
+    }
 
     return NTS_ERR_OK;
 }
@@ -213,4 +256,9 @@ static void supervisor_free_scb(int count, supervisor_control_block_t *scb) {
 
 static void supervisor_on_signal(int signo) {
     supervisor_got_signal_stop = signo;
+}
+
+static void supervisor_on_sigusr(int signo) {
+    supervisor_got_signal_stop = SIGTERM;
+    supervisor_got_signal_reload = 1;
 }

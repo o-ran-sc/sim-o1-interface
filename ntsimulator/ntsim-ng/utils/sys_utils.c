@@ -468,3 +468,19 @@ char *read_key(const char *filename) {
 
     return key_string;
 }
+
+void vsftp_daemon_init(void) {
+    system("/usr/sbin/vsftpd &");
+}
+
+void vsftp_daemon_deinit(void) {
+    system("killall -9 vsftpd");
+}
+
+void sftp_daemon_init(void) {
+    system("/usr/sbin/sshd -D &");
+}
+
+void sftp_daemon_deinit(void) {
+    system("killall -9 sshd");
+}

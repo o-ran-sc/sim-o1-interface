@@ -35,6 +35,7 @@
 #include "core/app/supervisor.h"
 #include "core/app/manager.h"
 #include "core/app/network_function.h"
+#include "core/app/blank.h"
 #include "core/datastore/schema.h"
 #include "core/datastore/generate.h"
 #include "core/datastore/populate.h"
@@ -104,7 +105,7 @@ int main(int argc, char **argv) {
 
         case NTS_MODE_SUPERVISOR:
             //run in supervisor mode
-            if(supervisor_run() != NTS_ERR_OK) {
+            if(supervisor_run(argc, argv) != NTS_ERR_OK) {
                 log_error("supervisor_run() failed\n");
                 return_code = EXIT_FAILURE;
             }
@@ -128,6 +129,15 @@ int main(int argc, char **argv) {
             }
 
             goto main_clean;
+            break;
+
+        case NTS_MODE_BLANK:
+            if(blank_run() != NTS_ERR_OK) {
+                log_error("blank_run() failed\n");
+                return_code = EXIT_FAILURE;
+            }
+
+            goto main_clean_framework;
             break;
 
         case NTS_MODE_GENERATE_DATA:
@@ -175,7 +185,7 @@ int main(int argc, char **argv) {
     }
 
 main_clean:
-    log_add_verbose(1, LOG_COLOR_BOLD_RED"\nstopping now...\n"LOG_COLOR_RESET);
+    log_add_verbose(1, LOG_COLOR_BOLD_RED"stopping now...\n"LOG_COLOR_RESET);
     nc_client_destroy();
 main_clean_context:
     context_free();

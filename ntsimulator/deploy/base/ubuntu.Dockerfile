@@ -137,7 +137,9 @@ COPY ./deploy/base/build_ntsim-ng.sh /opt/dev/ntsim-ng/build_ntsim-ng.sh
 RUN \
     cd /opt/dev/ntsim-ng && \
     sed -i '/argp/d' build_ntsim-ng.sh && \
-    ./build_ntsim-ng.sh
+    ./build_ntsim-ng.sh && \
+    rm -rf source && \
+    rm -f build_ntsim-ng.sh
 
 # copy SSH related scripts and keys
 COPY ./deploy/base/ca.key /home/netconf/.ssh/ca.key
@@ -158,10 +160,11 @@ RUN apt-get update
 
 ARG BUILD_WITH_DEBUG
 ENV BUILD_WITH_DEBUG=${BUILD_WITH_DEBUG}
-RUN if [ -n "${BUILD_WITH_DEBUG}" ]; then DEBIAN_FRONTEND="noninteractive" apt-get install -y gdb valgrind ; fi
+RUN if [ -n "${BUILD_WITH_DEBUG}" ]; then DEBIAN_FRONTEND="noninteractive" apt-get install -y gdb valgrind nano mc ; fi
 
 RUN apt-get install -y --no-install-recommends \
     psmisc \
+    unzip \
     openssl \
     openssh-client \
     vsftpd \
@@ -197,13 +200,14 @@ COPY --from=builder /opt/dev/ntsim-ng /opt/dev/ntsim-ng
 # copy SSH related scripts and keys
 COPY --from=builder /home/netconf/.ssh /home/netconf/.ssh
 
-### FTP configuration
+### FTP and SFTP configuration
 RUN \
     mkdir /ftp && \
+    chown -R netconf:netconf /ftp && \
     mkdir /var/run/vsftpd && \
     mkdir /var/run/vsftpd/empty  && \
     mkdir /run/sshd && \
-    echo "Match User netconf\n    ChrootDirectory /ftp\n    X11Forwarding no\n    AllowTcpForwarding no\n    ForceCommand internal-sftp" >> /etc/ssh/sshd_config
+    echo "Match User netconf\n    ChrootDirectory /\n    X11Forwarding no\n    AllowTcpForwarding no\n    ForceCommand internal-sftp -d /ftp" >> /etc/ssh/sshd_config
 
 COPY ./deploy/base/vsftpd.conf /etc/vsftpd.conf
 COPY ./deploy/base/vsftpd.userlist /etc/vsftpd.userlist

@@ -1,0 +1,9 @@
+{
+    "supervisor-rules": {
+        "ntsim-blank-network-function": {
+            "path": "/opt/dev/ntsim-ng/ntsim-ng",
+            "args": ["-w/opt/dev/ntsim-ng", "-b"],
+            "nomanual": true
+        }
+    }
+}
