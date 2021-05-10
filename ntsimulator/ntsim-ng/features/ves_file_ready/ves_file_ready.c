@@ -35,8 +35,6 @@
 static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data);
 static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *file_location, int port);
 static cJSON* ves_create_file_ready_fields(const char* file_location);
-static void ves_file_ready_vsftp_daemon_init(void);
-static void ves_file_ready_vsftp_daemon_deinit(void);
 
 static sr_subscription_ctx_t *ves_file_ready_subscription = 0;
 
@@ -55,7 +53,8 @@ int ves_file_ready_feature_start(sr_session_ctx_t *current_session) {
             return NTS_ERR_FAILED;
         }
 
-        ves_file_ready_vsftp_daemon_init();
+        sftp_daemon_init();
+        vsftp_daemon_init();
     }
 
     return NTS_ERR_OK;
@@ -71,19 +70,12 @@ int ves_file_ready_feature_stop(void) {
             return NTS_ERR_FAILED;
         }
 
-        ves_file_ready_vsftp_daemon_deinit();
+        vsftp_daemon_deinit();
+        sftp_daemon_deinit();
         ves_file_ready_subscription = 0;
     }
 
     return NTS_ERR_OK;
-}
-
-static void ves_file_ready_vsftp_daemon_init(void) {
-    system("/usr/sbin/vsftpd &");
-}
-
-static void ves_file_ready_vsftp_daemon_deinit(void) {
-    system("killall -9 vsftpd");
 }
 
 static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data) {

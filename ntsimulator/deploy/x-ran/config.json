@@ -13,14 +13,6 @@
             "stderr": "log/netopeer-stderr.log"
         },
     
-        "sshd": {
-            "path": "/usr/sbin/sshd",
-            "args": ["-D"],
-            "autorestart": true,
-            "stdout": "log/sshd-stdout.log",
-            "stderr": "log/sshd-stderr.log"
-        },
-    
         "ntsim-network-function": {
             "path": "/opt/dev/ntsim-ng/ntsim-ng",
             "args": ["-w/opt/dev/ntsim-ng", "-f"],

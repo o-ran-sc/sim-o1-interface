@@ -45,6 +45,7 @@ static struct argp_option options[] = {
     { "supervisor", 's', 0, 0, "Run as supervisor; manager/network-function is chosen via config.json"},
     { "manager", 'm', 0, 0, "Run the daemon as manager." },
     { "network-function", 'f', 0, 0, "Run the daemon as network function." },
+    { "blank", 'b', 0, 0, "Run the deamon as a blank network function." },
     { "generate", 'g', 0, 0, "Generate population data without commiting." },
     { "test-mode", 't', 0, 0, "Test mode." },
     
@@ -69,7 +70,92 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state);
 int framework_init(int argc, char **argv) {
     //environment vars
     framework_environment.nts.version = (getenv(ENV_VAR_NTS_BUILD_VERSION) && strlen(getenv(ENV_VAR_NTS_BUILD_VERSION))) ? strdup(getenv(ENV_VAR_NTS_BUILD_VERSION)) : strdup(NTS_VERSION_FALLBACK"!");
-    framework_environment.nts.build_time = (getenv(ENV_VAR_NTS_BUILD_TIME) && strlen(getenv(ENV_VAR_NTS_BUILD_TIME))) ? strdup(getenv(ENV_VAR_NTS_BUILD_TIME)) : strdup("N/A");
+    if(getenv(ENV_VAR_NTS_BUILD_TIME) && strlen(getenv(ENV_VAR_NTS_BUILD_TIME))) {
+        framework_environment.nts.build_time = strdup(getenv(ENV_VAR_NTS_BUILD_TIME));
+    }
+    else {
+        if(__DATE__[0] == '?') {
+            framework_environment.nts.build_time = strdup("1970-01-01T00:00:00Z");
+        }
+        else {
+            //01234567890
+            //May  4 2021
+            int year = 0;
+            int month = 1;
+            int day = 0;
+            
+            year = (__DATE__[10] - '0') + (__DATE__[9] - '0')*10 + (__DATE__[8] - '0')*100 + (__DATE__[7] - '0')*1000;
+            day = (__DATE__[5] - '0');
+            if(__DATE__[4] != ' ') {
+                day += (__DATE__[4] - '0')*10;
+            }
+            
+            switch(__DATE__[0]) {
+                case 'J':
+                    switch(__DATE__[1]) {
+                        case 'a':
+                            month = 1;
+                            break;
+                        
+                        case 'u':
+                            if(__DATE__[2] == 'n') {
+                                month = 6;
+                            }
+                            else {
+                                month = 7;
+                            }
+                            break;
+                    }
+                    break;
+                    
+                case 'F':
+                    month = 2;
+                    break;
+                    
+                case 'M':
+                    switch(__DATE__[2]) {
+                        case 'r':
+                            month = 3;
+                            break;
+                            
+                        case 'y':
+                            month = 5;
+                            break;
+                    }
+                    break;
+                
+                case 'A':
+                    switch(__DATE__[1]) {
+                        case 'p':
+                            month = 4;
+                            break;
+                            
+                        case 'u':
+                            month = 8;
+                            break;
+                    }
+                    break;
+                    
+                case 'S':
+                    month = 9;
+                    break;
+                    
+                case 'O':
+                    month = 10;
+                    break;
+                    
+                case 'N':
+                    month = 11;
+                    break;
+                    
+                case 'D':
+                    month = 12;
+                    break;
+            }
+            
+            asprintf(&framework_environment.nts.build_time, "%04d-%02d-%02dT%sZ", year, month, day, __TIME__);
+        }
+    }
 
     //set argp_version
     char *version = 0;
@@ -114,6 +200,11 @@ int framework_init(int argc, char **argv) {
         case NTS_MODE_CONTAINER_INIT:
             log_file = "log/log-install.txt";
             stderr_file = "log/stderr-install.txt";
+            break;
+
+        case NTS_MODE_BLANK:
+            log_file = "log/log-blank.txt";
+            stderr_file = "log/stderr-blank.txt";
             break;
 
         case NTS_MODE_SUPERVISOR:
@@ -363,18 +454,25 @@ static int framework_config_init(void) {
     framework_config.datastore_populate.preg_running = 0;
 
     //config init
-    if(!dir_exists("config")) {
-        log_add_verbose(2, "[framework-config] config/ folder wasn't found; created.\n");
-        mkdir("config", 0777);
+    char *config_file = "config/config.json";
+    if(file_exists("/opt/dev/config/config.json")) {
+        config_file = "/opt/dev/config/config.json";
+        log_add_verbose(1, LOG_COLOR_BOLD_MAGENTA"config.json is loaded from external volume!\n"LOG_COLOR_RESET);
+    }
+    else {
+        if(!dir_exists("config")) {
+            log_add_verbose(2, "[framework-config] config/ folder wasn't found; created.\n");
+            mkdir("config", 0777);
+        }
+
+        if(!file_exists("config/config.json")) {
+            log_add_verbose(2, "[framework-config] config.json file missing; created.\n");
+            file_touch("config/config.json", "{}");
+        }
     }
 
-    if(!file_exists("config/config.json")) {
-        log_add_verbose(2, "[framework-config] config.json file missing; created.\n");
-        file_touch("config/config.json", "{}");
-    }    
-
-    log_add_verbose(2, "[framework-config] parsing config.json\n");
-    char *config_contents = file_read_content("config/config.json");
+    log_add_verbose(2, "[framework-config] parsing config.json from %s\n", config_file);
+    char *config_contents = file_read_content(config_file);
     cJSON *json = cJSON_Parse(config_contents);
     free(config_contents);
     if(!json) {
@@ -806,6 +904,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 
         case 'f':
             iter_arguments->nts_mode = NTS_MODE_NETWORK_FUNCTION;
+            break;
+
+        case 'b':
+            iter_arguments->nts_mode = NTS_MODE_BLANK;
             break;
 
         case 'g':

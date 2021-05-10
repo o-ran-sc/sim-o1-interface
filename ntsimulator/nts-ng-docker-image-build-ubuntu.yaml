@@ -78,3 +78,14 @@ services:
       labels:
        - "description=nts-ng"
       dockerfile: local.Dockerfile
+
+  ###################################################
+  ####### Blank image
+  ###################################################
+  nts-ng-blank_version_tag:
+    image: ${DOCKER_REPO}nts-ng-blank:${NTS_BUILD_VERSION}
+    build:
+      context: ./deploy/blank
+      labels:
+       - "description=nts-ng"
+      dockerfile: local.Dockerfile

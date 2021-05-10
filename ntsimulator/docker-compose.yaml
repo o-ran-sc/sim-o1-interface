@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   ntsim-ng:
-    image: "${DOCKER_REPO}ntsim-ng-manager:${NTS_BUILD_VERSION}"
+    image: "${DOCKER_REPO}nts-ng-manager:${NTS_BUILD_VERSION}"
     container_name: nts-ng-manager
     stop_grace_period: 5m
     ports:
@@ -43,10 +43,11 @@ services:
     image: "${DOCKER_REPO}nts-ng-o-ran-ru-fh:${NTS_BUILD_VERSION}"
     cap_add:
       - SYS_ADMIN
+      - NET_ADMIN
     stop_grace_period: 5m
     hostname: "O-RAN-O-RU-1"
     ports:
-     - "::18300:830"
+     - ":::18300:830"
     environment:
       IPv6_ENABLED: ${IPv6_ENABLED}
       SSH_CONNECTIONS: ${SSH_CONNECTIONS}
@@ -76,17 +77,18 @@ services:
       VES_ENDPOINT_USERNAME: ${VES_ENDPOINT_USERNAME}
       VES_ENDPOINT_PASSWORD: ${VES_ENDPOINT_PASSWORD}
 
-    networks:
-      app_net:
+    # networks:
+    #   app_net:
 
   ntsim-ng-o-du:
     image: "${DOCKER_REPO}nts-ng-o-ran-du:${NTS_BUILD_VERSION}"
     cap_add:
       - SYS_ADMIN
+      - NET_ADMIN
     stop_grace_period: 5m
     hostname: "O-RAN-O-DU-1"
     ports:
-     - "::18301:830"
+     - ":::18301:830"
     environment:
       IPv6_ENABLED: ${IPv6_ENABLED}
       SSH_CONNECTIONS: ${SSH_CONNECTIONS}
@@ -100,7 +102,6 @@ services:
       NTS_HOST_NETCONF_TLS_BASE_PORT: ${NTS_HOST_NETCONF_TLS_BASE_PORT}
       NTS_HOST_TRANSFER_FTP_BASE_PORT: ${NTS_HOST_TRANSFER_FTP_BASE_PORT}
       NTS_HOST_TRANSFER_SFTP_BASE_PORT: ${NTS_HOST_TRANSFER_SFTP_BASE_PORT}
-
       
       SDN_CONTROLLER_PROTOCOL: ${SDN_CONTROLLER_PROTOCOL}
       SDN_CONTROLLER_IP: ${SDN_CONTROLLER_IP}
@@ -116,17 +117,17 @@ services:
       VES_ENDPOINT_AUTH_METHOD: ${VES_ENDPOINT_AUTH_METHOD}
       VES_ENDPOINT_USERNAME: ${VES_ENDPOINT_USERNAME}
       VES_ENDPOINT_PASSWORD: ${VES_ENDPOINT_PASSWORD}
-    networks:
-      app_net:
+    # networks:
+    #   app_net:
   
-networks:
-  app_net:
-    driver: bridge
-    ipam:
-      driver: default
+# networks:
+#   app_net:
+#     driver: bridge
+#     ipam:
+#       driver: default
 
 # We can attach to any other docker network, like in the example below        
-# networks:
-#   default:
-#     external:
-#       name: smo_integration
+networks:
+  default:
+    external:
+      name: smo_integration

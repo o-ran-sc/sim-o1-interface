@@ -47,3 +47,8 @@ uint8_t *b64_decode(const char *data, size_t input_length, size_t *output_length
 char *str_replace(const char *orig, const char *rep, const char *with);
 
 char *read_key(const char *filename);
+
+void vsftp_daemon_init(void);
+void vsftp_daemon_deinit(void);
+void sftp_daemon_init(void);
+void sftp_daemon_deinit(void);

@@ -70,93 +70,73 @@
         "random-generation-enabled": true,
 
         "pre-generated-operational-data": [
-            "../deploy/data/ietf-hardware-operational.json"
+            "../deploy/data/ietf-hardware-operational.json",
+            "../deploy/data/ietf-interfaces-operational.xml"
         ],
         "pre-generated-running-data": [
-            "../deploy/data/ietf-hardware-running.json"
+            "../deploy/data/ietf-hardware-running.json",
+            "../deploy/data/ietf-interfaces-running.xml"
         ]
     },
 
     "fault-rules" : {
-        "yang-notif-template" : "<alarm-notif xmlns=\"urn:o-ran:fm:1.0\"><fault-id>$$uint16_counter$$</fault-id><fault-source>%%object%%</fault-source><affected-objects><name>%%affected-object%%</name></affected-objects><fault-severity>%%fault-severity%%</fault-severity><is-cleared>%%cleared%%</is-cleared><fault-text>%%text%%</fault-text><event-time>%%date-time%%</event-time></alarm-notif>",
+        "yang-notif-template" : "<alarm-notif xmlns=\"urn:o-ran:fm:1.0\"><fault-id>%%fault-id%%</fault-id><fault-source>%%object%%</fault-source><affected-objects><name>%%affected-object%%</name></affected-objects><fault-severity>%%fault-severity%%</fault-severity><is-cleared>%%cleared%%</is-cleared><fault-text>%%text%%</fault-text><event-time>%%date-time%%</event-time></alarm-notif>",
         "choosing-method" : "linear",
         "faults" : [
             {
-                "condition" : "CPRI Port Down",
-                "object"    : "Slot-0-Port-A",
+                "condition" : "Interface Fault",
+                "object"    : "interface-1",
                 "severity"  : "MAJOR",
                 "date-time" : "$$time$$",
-                "specific-problem" : "CPRI Port Down",
-
+                "specific-problem" : "Interface Fault",
+                
+                "fault-id": "30",
                 "fault-severity" : "MAJOR",
-                "affected-object" : "%%object%%",
+                "affected-object" : "$$hostname$$",
                 "cleared" : "false",
-                "text" : "CPRI Port Down"
+                "text" : "Interface Fault"
             },
 
             {
-                "condition" : "CPRI Port Down",
-                "object"    : "Slot-0-Port-A",
+                "condition" : "Interface Fault",
+                "object"    : "interface-1",
                 "severity"  : "NORMAL",
                 "date-time" : "$$time$$",
-                "specific-problem" : "CPRI Port Down",
+                "specific-problem" : "Interface Fault",
 
+                "fault-id": "30",
                 "fault-severity" : "MAJOR",
-                "affected-object" : "%%object%%",
+                "affected-object" : "$$hostname$$",
                 "cleared" : "true",
-                "text" : "CPRI Port Down"
+                "text" : "Interface Fault"
             },
 
             {
-                "condition" : "CPRI Port Down",
-                "object"    : "Slot-0-Port-C",
+                "condition" : "C/U-plane logical Connection faulty",
+                "object"    : "interface-1",
                 "severity"  : "MAJOR",
                 "date-time" : "$$time$$",
-                "specific-problem" : "CPRI Port Down",
+                "specific-problem" : "C/U-plane logical Connection faulty",
 
+                "fault-id": "28",
                 "fault-severity" : "MAJOR",
-                "affected-object" : "%%object%%",
+                "affected-object" : "$$hostname$$",
                 "cleared" : "false",
-                "text" : "CPRI Port Down"
+                "text" : "C/U-plane logical Connection faulty"
             },
 
             {
-                "condition" : "CPRI Port Down",
-                "object"    : "Slot-0-Port-C",
+                "condition" : "C/U-plane logical Connection faulty",
+                "object"    : "interface-1",
                 "severity"  : "NORMAL",
                 "date-time" : "$$time$$",
-                "specific-problem" : "CPRI Port Down",
+                "specific-problem" : "C/U-plane logical Connection faulty",
 
+                "fault-id": "28",
                 "fault-severity" : "MAJOR",
-                "affected-object" : "%%object%%",
+                "affected-object" : "$$hostname$$",
                 "cleared" : "true",
-                "text" : "CPRI Port Down"
-            },
-
-            {
-                "condition" : "CPRI Port Down",
-                "object"    : "Slot-2-Port-B",
-                "severity"  : "MAJOR",
-                "date-time" : "$$time$$",
-                "specific-problem" : "CPRI Port Down",
-
-                "fault-severity" : "MAJOR",
-                "affected-object" : "%%object%%",
-                "cleared" : "false",
-                "text" : "CPRI Port Down"
-            },
-
-            {
-                "condition" : "CPRI Port Down",
-                "object"    : "Slot-2-Port-B",
-                "severity"  : "NORMAL",
-                "date-time" : "$$time$$",
-                "specific-problem" : "CPRI Port Down",
-
-                "fault-severity" : "MAJOR",
-                "affected-object" : "%%object%%",
-                "cleared" : "true",
-                "text" : "CPRI Port Down"
+                "text" : "C/U-plane logical Connection faulty"
             }
         ]
     }

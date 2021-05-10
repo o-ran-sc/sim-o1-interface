@@ -692,7 +692,6 @@ static int faults_update_config(sr_session_ctx_t *session) {
     }
 
     faults_fault_list_clear();
-    faults_counters_clear();
     if(data == 0) {
         return NTS_ERR_OK;
     }

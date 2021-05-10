@@ -17,15 +17,15 @@
 #### DEVICE ####
 ################
 
-FROM nexus3.o-ran-sc.org:10004/o-ran-sc/nts-ng-base:latest
+FROM o-ran-sc/nts-ng-base:latest
 LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@highstreet-technologies.com"
 
 # ntsim-ng configuration and deployment
-COPY ./yang /opt/dev/deploy/yang
 COPY ./config.json /opt/dev/ntsim-ng/config/config.json
 
-# ntsim-ng init docker
+# init with bare data for network-function to work (blank image will wait for new YANG models to be installed)
 RUN /opt/dev/ntsim-ng/ntsim-ng --container-init -w /opt/dev/ntsim-ng
+RUN rm -rf /opt/dev/deploy
 
 # finishing container build
 ARG BUILD_DATE
@@ -35,7 +35,7 @@ LABEL build-date=$BUILD_DATE
 EXPOSE 830-929
 EXPOSE 21-22
 
-ENV NTS_FUNCTION_TYPE=NTS_FUNCTION_TYPE_MANAGER
+ENV NTS_FUNCTION_TYPE=NTS_FUNCTION_TYPE_BLANK
 
 # run
 WORKDIR /opt/dev/workspace

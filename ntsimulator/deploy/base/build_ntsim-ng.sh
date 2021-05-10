@@ -33,6 +33,7 @@ files=(
     "core/app/manager_actions.c"
     "core/app/manager_sysrepo.c"
     "core/app/network_function.c"
+    "core/app/blank.c"
     "core/datastore/schema.c"
     "core/datastore/generate.c"
     "core/datastore/populate.c"

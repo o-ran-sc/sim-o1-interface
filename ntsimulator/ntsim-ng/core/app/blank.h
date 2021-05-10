@@ -17,4 +17,4 @@
 
 #pragma once
 
-int supervisor_run(int argc, char **argv);
+int blank_run(void);
