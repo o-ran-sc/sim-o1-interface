@@ -630,15 +630,17 @@ static int configure_endpoints_connections(sr_session_ctx_t *session) {
         ssh_connections = framework_environment.settings.ssh_connections;
     }
 
-    if(ssh_connections == 0) {
-        log_error("ssh_connections must be at least 1\n");
+    if(ssh_connections + framework_environment.settings.tls_connections == 0) {
+        log_error("ssh_connections + tls_connections must be at least 1\n");
         return NTS_ERR_FAILED;
     }
 
-    rc = create_ssh_listen_endpoints(netconf_node, ssh_connections);
-    if(rc != NTS_ERR_OK) {
-        log_error("could not create %d SSH Listen endpoints on the NETCONF Server\n", ssh_connections);
-        return NTS_ERR_FAILED;
+    if (ssh_connections > 0) {
+        rc = create_ssh_listen_endpoints(netconf_node, ssh_connections);
+        if(rc != NTS_ERR_OK) {
+            log_error("could not create %d SSH Listen endpoints on the NETCONF Server\n", ssh_connections);
+            return NTS_ERR_FAILED;
+        }
     }
 
     // create the TLS endpoints in ietf-netconf-server
