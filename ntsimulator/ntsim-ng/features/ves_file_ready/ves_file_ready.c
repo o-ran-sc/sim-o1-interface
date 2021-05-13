@@ -81,9 +81,18 @@ int ves_file_ready_feature_stop(void) {
 static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data) {
     int ssh_base_port = 0;
     int tls_base_port = 0;
-    nts_mount_point_addressing_method_t mp = nts_mount_point_addressing_method_get(session);
+    sr_session_ctx_t *current_session = 0;
+
+    int rc = sr_session_start(session_connection, SR_DS_RUNNING, &current_session);
+    if(rc != SR_ERR_OK) {
+        log_error("could not start sysrepo session\n");
+        return NTS_ERR_FAILED;
+    }
+
+    nts_mount_point_addressing_method_t mp = nts_mount_point_addressing_method_get(current_session);
     if(mp == UNKNOWN_MAPPING) {
         log_error("mount-point-addressing-method failed\n");
+        sr_session_stop(current_session);
         return NTS_ERR_FAILED;
     }
     else if(mp == DOCKER_MAPPING) {
@@ -99,7 +108,7 @@ static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *pa
 
     if((framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections) > 1) {
         for(int port = ssh_base_port; port < ssh_base_port + framework_environment.settings.ssh_connections; port++) {
-            int rc = ves_file_ready_send_message(session, input[0].data.string_val, port);
+            int rc = ves_file_ready_send_message(current_session, input[0].data.string_val, port);
             if(rc != NTS_ERR_OK) {
                 log_error("ves_file_ready_send_message failed\n");
                 failed++;
@@ -107,7 +116,7 @@ static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *pa
         }
 
         for(int port = tls_base_port; port < tls_base_port + framework_environment.settings.tls_connections; port++) {
-            int rc = ves_file_ready_send_message(session, input[0].data.string_val, port);
+            int rc = ves_file_ready_send_message(current_session, input[0].data.string_val, port);
             if(rc != NTS_ERR_OK) {
                 log_error("ves_file_ready_send_message failed\n");
                 failed++;
@@ -115,16 +124,21 @@ static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *pa
         }
     }
     else {
-        int rc = ves_file_ready_send_message(session, input[0].data.string_val, 0);
+        int rc = ves_file_ready_send_message(current_session, input[0].data.string_val, 0);
         if(rc != NTS_ERR_OK) {
             log_error("ves_file_ready_send_message failed\n");
             failed++;
         }
     }
     
+    rc = sr_session_stop(current_session);
+    if(rc != SR_ERR_OK) {
+        log_error("could not stop sysrepo session\n");
+        return NTS_ERR_FAILED;
+    }
 
     *output_cnt = 1;
-    int rc = sr_new_values(*output_cnt, output);
+    rc = sr_new_values(*output_cnt, output);
     if(SR_ERR_OK != rc) {
         return rc;
     }

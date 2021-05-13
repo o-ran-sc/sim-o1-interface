@@ -446,12 +446,6 @@ static int docker_add_port(cJSON *portBindings, uint16_t docker_port, uint16_t h
         return NTS_ERR_FAILED;
     }
 
-    if(cJSON_AddStringToObject(hostPort, "HostIp", "0.0.0.0") == 0) {   //or, future, bind to container->host_ip
-        log_error("could not create JSON object: HostIpString\n");
-        cJSON_Delete(hostPort);
-        return NTS_ERR_FAILED;
-    }
-
     if(cJSON_AddItemToArray(port, hostPort) == 0) {
         log_error("cJSON_AddItemToArray failed\n");
         cJSON_Delete(hostPort);

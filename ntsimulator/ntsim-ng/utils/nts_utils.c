@@ -178,7 +178,7 @@ nts_mount_point_addressing_method_t nts_mount_point_addressing_method_get(sr_ses
     }
 
     sr_val_t *value = 0;
-    rc = sr_get_item(session_running, NTS_NF_NETWORK_FUNCTION_MPAM_SCHEMA_XPATH, 0, &value);
+    rc = sr_get_item(current_session, NTS_NF_NETWORK_FUNCTION_MPAM_SCHEMA_XPATH, 0, &value);
     if(rc == SR_ERR_OK) {
         if(strcmp(value->data.enum_val, "host-mapping") == 0) {
             ret = HOST_MAPPING;

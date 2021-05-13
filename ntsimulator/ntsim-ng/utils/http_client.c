@@ -160,8 +160,8 @@ int http_socket_request(const char *url, const char *sock_fname, const char *met
     }
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 15L);     //seconds timeout for a connection
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);            //seconds timeout for an operation
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 30);     //seconds timeout for a connection
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);            //seconds timeout for an operation
     curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, 1L);
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
 
