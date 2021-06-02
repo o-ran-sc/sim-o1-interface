@@ -42,11 +42,11 @@ WORKDIR /opt/dev
 RUN \
     git config --global advice.detachedHead false && \
     git clone --single-branch --branch v1.7.14 https://github.com/DaveGamble/cJSON.git && \
-    git clone --single-branch --branch libyang1 https://github.com/CESNET/libyang.git && \
-    git clone --single-branch --branch libyang1 https://github.com/sysrepo/sysrepo.git && \
+    git clone --single-branch --branch v1.0.240 https://github.com/CESNET/libyang.git && \
+    git clone --single-branch --branch v1.4.140 https://github.com/sysrepo/sysrepo.git && \
     git clone --single-branch --branch libssh-0.9.2 https://git.libssh.org/projects/libssh.git && \
-    git clone --single-branch --branch v1.1.43 https://github.com/CESNET/libnetconf2.git && \
-    git clone --single-branch --branch v1.1.70 https://github.com/CESNET/netopeer2.git && \
+    git clone --single-branch --branch v1.1.46 https://github.com/CESNET/libnetconf2.git && \
+    git clone --single-branch --branch v1.1.76 https://github.com/CESNET/netopeer2.git && \
     git clone --single-branch --branch curl-7_72_0 https://github.com/curl/curl.git
 
 # build and install cJSON
