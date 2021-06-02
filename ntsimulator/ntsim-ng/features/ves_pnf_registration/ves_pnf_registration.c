@@ -87,7 +87,7 @@ int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session) {
         if (framework_environment.settings.ip_v4 != 0) {
             strcpy(nf_ip_v4_address, framework_environment.settings.ip_v4);
         }
-        if (framework_environment.settings.ip_v6) {
+        if (framework_environment.settings.ip_v6 && framework_environment.settings.ip_v6_enabled) {
             strcpy(nf_ip_v6_address, framework_environment.settings.ip_v6);
         }
 

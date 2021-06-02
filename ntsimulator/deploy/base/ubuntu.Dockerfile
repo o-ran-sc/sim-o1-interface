@@ -20,9 +20,7 @@
 FROM ubuntu:20.04 as builder
 LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@highstreet-technologies.com"
 
-RUN apt-get clean
-RUN apt-get update
-RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y \
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     # basic tools
     tzdata build-essential git cmake pkg-config \
     # libyang dependencies
@@ -44,8 +42,8 @@ WORKDIR /opt/dev
 RUN \
     git config --global advice.detachedHead false && \
     git clone --single-branch --branch v1.7.14 https://github.com/DaveGamble/cJSON.git && \
-    git clone --single-branch --branch v1.0.225 https://github.com/CESNET/libyang.git && \
-    git clone --single-branch --branch v1.4.122 https://github.com/sysrepo/sysrepo.git && \
+    git clone --single-branch --branch libyang1 https://github.com/CESNET/libyang.git && \
+    git clone --single-branch --branch libyang1 https://github.com/sysrepo/sysrepo.git && \
     git clone --single-branch --branch libssh-0.9.2 https://git.libssh.org/projects/libssh.git && \
     git clone --single-branch --branch v1.1.43 https://github.com/CESNET/libnetconf2.git && \
     git clone --single-branch --branch v1.1.70 https://github.com/CESNET/netopeer2.git && \
@@ -155,22 +153,20 @@ COPY ./deploy/base/generate-ssh-keys.sh /home/netconf/.ssh/generate-ssh-keys.sh
 
 FROM ubuntu:20.04
 LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@highstreet-technologies.com"
-RUN apt-get clean
-RUN apt-get update
 
-ARG BUILD_WITH_DEBUG
-ENV BUILD_WITH_DEBUG=${BUILD_WITH_DEBUG}
-RUN if [ -n "${BUILD_WITH_DEBUG}" ]; then DEBIAN_FRONTEND="noninteractive" apt-get install -y gdb valgrind nano mc ; fi
-
-RUN apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     psmisc \
     unzip \
     openssl \
     openssh-client \
     vsftpd \
     openssh-server \
-    && rm -rf /var/lib/apt/lists/* \
-    && unset BUILD_WITH_DEBUG
+    && rm -rf /var/lib/apt/lists/*
+    
+
+ARG BUILD_WITH_DEBUG
+ENV BUILD_WITH_DEBUG=${BUILD_WITH_DEBUG}
+RUN if [ -n "${BUILD_WITH_DEBUG}" ]; then DEBIAN_FRONTEND="noninteractive" apt-get install -y gdb valgrind nano mc && unset BUILD_WITH_DEBUG; fi
 
 # add netconf user and configure access
 RUN \
