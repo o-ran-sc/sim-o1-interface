@@ -21,6 +21,12 @@ module nts-network-function {
   description
     "This module contains YANG definitions for the Network Topology Simulator - Network Functions";
 
+  revision 2021-05-17 {
+    description
+      "Added support for network emulation.";
+    reference
+      "O-RAN-SC SIM project";
+  }
   revision 2021-03-26 {
     description
       "Added info container, and expanted feature control mechanism and status.";
@@ -182,6 +188,139 @@ module nts-network-function {
       uses ntsc:faults-g;
       uses ntsc:netconf-config-g;
       uses ntsc:ves-config-g;
+    }
+    container network-emulation {
+      description
+        "Container which encompasses the details of the network emulation.";
+      leaf limit {
+        type uint16 {
+          range "16 .. max";
+        }
+        units "packets";
+        default "1000";
+        description
+          "Maximum number of packets the qdisc may hold queued at a time.";
+      }
+      container delay {
+        description
+          "Adds the chosen delay to the packets outgoing to chosen network interface.";
+        leaf time {
+          type uint16;
+          units "miliseconds (ms)";
+          description
+            "Delay time between packets.";
+        }
+        leaf jitter {
+          type uint16;
+          units "miliseconds (ms)";
+          description
+            "Delay jitter.";
+        }
+        leaf correlation {
+          type uint8 {
+            range "0 .. 100";
+          }
+          units "percentage";
+          description
+            "Delay correlation.";
+        }
+        leaf distribution {
+          type enumeration {
+            enum uniform {
+              description
+                "Uniform delay distribution.";
+            }
+            enum normal {
+              description
+                "Normal delay distribution.";
+            }
+            enum pareto {
+              description
+                "Pareto delay distribution.";
+            }
+            enum paretonormal {
+              description
+                "Paretonormal delay distribution.";
+            }
+          }
+          description
+            "Delay distribution.";
+        }
+      }
+      leaf loss {
+        type uint8 {
+          range "0 .. 100";
+        }
+        units "percentage";
+        description
+          "Adds an independent loss probability to the packets outgoing from the chosen network interface.";
+      }
+      container corruption {
+        description
+          "Allows the emulation of random noise introducing an error in a random position for a chosen percent of packets.";
+        leaf percentage {
+          type uint8 {
+            range "0 .. 100";
+          }
+          units "percentage";
+          description
+            "Corruption percentage.";
+        }
+        leaf correlation {
+          type uint8 {
+            range "0 .. 100";
+          }
+          units "percentage";
+          description
+            "Corruption correlation.";
+        }
+      }
+      container duplication {
+        description
+          "Using this option the chosen percent of packets is duplicated before queuing them.";
+        leaf percentage {
+          type uint8 {
+            range "0 .. 100";
+          }
+          units "percentage";
+          description
+            "Duplication percentage.";
+        }
+        leaf correlation {
+          type uint8 {
+            range "0 .. 100";
+          }
+          units "percentage";
+          description
+            "Duplication correlation.";
+        }
+      }
+      container reordering {
+        description
+          "Used together with delay; a percentage of packets are sent immediately (with defined correlation) while the others are delayed (by specified delay).";
+        leaf percentage {
+          type uint8 {
+            range "0 .. 100";
+          }
+          units "percentage";
+          description
+            "Reordering percentage.";
+        }
+        leaf correlation {
+          type uint8 {
+            range "0 .. 100";
+          }
+          units "percentage";
+          description
+            "Reordering correlation.";
+        }
+      }
+      leaf rate {
+        type uint16;
+        units "kbits";
+        description
+          "Delay packets based on packet size.";
+      }
     }
     container sdn-controller {
       description

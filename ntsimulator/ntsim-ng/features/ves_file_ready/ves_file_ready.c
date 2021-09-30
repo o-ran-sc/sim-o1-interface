@@ -130,7 +130,7 @@ static int ves_file_ready_invoke_pm_cb(sr_session_ctx_t *session, const char *pa
             failed++;
         }
     }
-    
+
     rc = sr_session_stop(current_session);
     if(rc != SR_ERR_OK) {
         log_error("could not stop sysrepo session\n");

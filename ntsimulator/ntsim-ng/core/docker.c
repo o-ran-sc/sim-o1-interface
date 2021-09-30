@@ -555,9 +555,33 @@ static int docker_container_create(const char *image, docker_container_t *contai
         return NTS_ERR_FAILED;
     }
 
+    cJSON *capAdd = cJSON_CreateArray();
+    if(capAdd == 0) {
+        log_error("could not create JSON array: CapAdd\n");
+        cJSON_Delete(postDataJson);
+        return NTS_ERR_FAILED;
+    }
+    if(cJSON_AddItemToObject(hostConfig, "CapAdd", capAdd) == 0) {
+        log_error("cJSON_AddItemToObject failed\n");
+        cJSON_Delete(postDataJson);
+        return NTS_ERR_FAILED;
+    }
+    cJSON *net_admin = cJSON_CreateString("NET_ADMIN");
+    if(net_admin == 0) {
+        log_error("could not create JSON string\n");
+        cJSON_Delete(postDataJson);
+        return NTS_ERR_FAILED;
+    }
+    if(cJSON_AddItemToArray(capAdd, net_admin) == 0) {
+        log_error("cJSON_AddItemToArray failed\n");
+        cJSON_Delete(postDataJson);
+        return NTS_ERR_FAILED;
+    }
+    
+
     cJSON *portBindings = cJSON_CreateObject();
     if(portBindings == 0) {
-        printf("could not create JSON object: PortBindings");
+        log_error("could not create JSON object: PortBindings\n");
         cJSON_Delete(postDataJson);
         return NTS_ERR_FAILED;
     }

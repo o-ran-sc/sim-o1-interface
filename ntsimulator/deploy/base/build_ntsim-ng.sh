@@ -49,6 +49,7 @@ files=(
     "utils/http_client.c"
     "utils/nts_utils.c"
     "utils/nc_client.c"
+    "utils/network_emulation.c"
     "features/ves_pnf_registration/ves_pnf_registration.c"
     "features/ves_heartbeat/ves_heartbeat.c"
     "features/ves_file_ready/ves_file_ready.c"

@@ -161,9 +161,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-client \
     vsftpd \
     openssh-server \
+    iproute2 \
     && rm -rf /var/lib/apt/lists/*
     
-
 ARG BUILD_WITH_DEBUG
 ENV BUILD_WITH_DEBUG=${BUILD_WITH_DEBUG}
 RUN if [ -n "${BUILD_WITH_DEBUG}" ]; then DEBIAN_FRONTEND="noninteractive" apt-get install -y gdb valgrind nano mc && unset BUILD_WITH_DEBUG; fi

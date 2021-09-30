@@ -182,41 +182,42 @@ int datastore_generate_data(const char *running_filename, const char *operationa
         }
     }
 
-    char **xpaths = 0;
-    int instance_count = datastore_schema_get_xpaths(&xpaths);
-    if(instance_count < 0) {
-        log_error("datastore_schema_get_xpaths failed\n");
-        return NTS_ERR_FAILED;
-    }
+    if(framework_config.datastore_populate.random_generation_enabled) {
+        char **xpaths = 0;
+        int instance_count = datastore_schema_get_xpaths(&xpaths);
+        if(instance_count < 0) {
+            log_error("datastore_schema_get_xpaths failed\n");
+            return NTS_ERR_FAILED;
+        }
 
-    //exclude pre-populated modules
-    struct lyd_node *elem;
-    LY_TREE_FOR(job.operational, elem) {
-        for(int i = 0; i < instance_count; i++) {
-            if(strstr(xpaths[i], elem->schema->module->name) == (xpaths[i] + 1)) {  //xpaths[i] is "/module:container"
-                free(xpaths[i]);
+        //exclude pre-populated modules
+        struct lyd_node *elem;
+        LY_TREE_FOR(job.operational, elem) {
+            for(int i = 0; i < instance_count; i++) {
+                if(strstr(xpaths[i], elem->schema->module->name) == (xpaths[i] + 1)) {  //xpaths[i] is "/module:container"
+                    free(xpaths[i]);
 
-                instance_count--;
-                for(int j = i; j < instance_count; j++) {
-                    xpaths[j] = xpaths[j + 1];
+                    instance_count--;
+                    for(int j = i; j < instance_count; j++) {
+                        xpaths[j] = xpaths[j + 1];
+                    }
+
+                    break;
                 }
-
-                break;
             }
         }
-    }
 
-    generate_instance_t *instance = (generate_instance_t *)malloc(sizeof(generate_instance_t) * instance_count);
-    if(!instance) {
-        log_error("bad malloc\n");
-        for(int i = 0; i < instance_count; i++) {
-            free(xpaths[i]);
+        generate_instance_t *instance = (generate_instance_t *)malloc(sizeof(generate_instance_t) * instance_count);
+        if(!instance) {
+            log_error("bad malloc\n");
+            for(int i = 0; i < instance_count; i++) {
+                free(xpaths[i]);
+            }
+            free(xpaths);
+            return NTS_ERR_FAILED;
         }
-        free(xpaths);
-        return NTS_ERR_FAILED;
-    }
     
-    if(framework_config.datastore_populate.random_generation_enabled) {
+
         //RANDOM generate everything
         for(int i = 0; i < instance_count; i++) {
             log_add_verbose(1, "generating "LOG_COLOR_BOLD_YELLOW"%s"LOG_COLOR_RESET" data...\n", xpaths[i]);
@@ -309,6 +310,20 @@ int datastore_generate_data(const char *running_filename, const char *operationa
             log_error("generate_validate failed\n");
             return rc;
         }
+
+        for(int i = 0; i < instance_count; i++) {
+            log_add(1, "%d ", i);
+
+            free(instance[i].modules);
+            free(instance[i].xpath);
+
+            free(xpaths[i]);
+        }
+        free(xpaths);
+        free(job.late_resolve_instance);
+        free(job.late_resolve_schema);
+        free(job.late_resolve_parent_o);
+        free(job.late_resolve_parent_r);
     }
 
     //export generated data
@@ -321,19 +336,7 @@ int datastore_generate_data(const char *running_filename, const char *operationa
 
     //cleanup
     log_add_verbose(1, LOG_COLOR_BOLD_YELLOW"datastore_generate_data() cleaning up... "LOG_COLOR_RESET);
-    for(int i = 0; i < instance_count; i++) {
-        log_add(1, "%d ", i);
-
-        free(instance[i].modules);
-        free(instance[i].xpath);
-
-        free(xpaths[i]);
-    }
-    free(xpaths);
-    free(job.late_resolve_instance);
-    free(job.late_resolve_schema);
-    free(job.late_resolve_parent_o);
-    free(job.late_resolve_parent_r);
+    
 
     lyd_free_withsiblings(job.operational);
     lyd_free_withsiblings(job.running);
@@ -347,8 +350,12 @@ int datastore_generate_data(const char *running_filename, const char *operationa
 int datastore_generate_external(void) {
     char cmd[512];
     sprintf(cmd, "%s --generate", framework_arguments.argv[0]);
-    system(cmd);
-    return NTS_ERR_OK;
+    if(system(cmd) == 0) {
+        return NTS_ERR_OK;
+    }
+    else {
+        return NTS_ERR_FAILED;
+    }
 }
 
 

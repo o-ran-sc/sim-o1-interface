@@ -56,8 +56,7 @@ static int network_function_feature_control_cb(sr_session_ctx_t *session, const 
 static int network_function_faults_clear_cb(sr_session_ctx_t *session, const char *path, const sr_val_t *input, const size_t input_cnt, sr_event_t event, uint32_t request_id, sr_val_t **output, size_t *output_cnt, void *private_data);
 static int network_function_faults_change_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, sr_event_t event, uint32_t request_id, void *private_data);
 static int network_function_faults_count_get_items_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data);
-
-static int network_function_started_features_get_items_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data);
+static int network_function_info_get_items_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data);
 
 static int network_function_change_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, sr_event_t event, uint32_t request_id, void *private_data);
 
@@ -131,13 +130,13 @@ int network_function_run(void) {
     rc = sr_module_change_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, NTS_NF_FAULT_GENERATION_SCHEMA_XPATH, network_function_faults_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("could not subscribe to faults");
-        return 0;
+        return NTS_ERR_FAILED;
     }
 
     rc = sr_oper_get_items_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, NTS_NF_FAULT_COUNT_LIST_SCHEMA_XPATH, network_function_faults_count_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("could not subscribe to oper faults: %s\n", sr_strerror(rc));
-        return 0;
+        return NTS_ERR_FAILED;
     }
 
     rc = sr_rpc_subscribe(session_running, NTS_NF_RPC_FAULTS_CLEAR_SCHEMA_XPATH, network_function_faults_clear_cb, 0, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
@@ -146,23 +145,22 @@ int network_function_run(void) {
         return NTS_ERR_FAILED;
     }
 
-    rc = sr_oper_get_items_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, NTS_NF_INFO_STARTED_FEATURES_SCHEMA_XPATH, network_function_started_features_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE, &session_subscription);
+    rc = sr_oper_get_items_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, NTS_NF_INFO_SCHEMA_XPATH, network_function_info_get_items_cb, NULL, SR_SUBSCR_CTX_REUSE | SR_SUBSCR_OPER_MERGE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("could not subscribe to oper started-features: %s\n", sr_strerror(rc));
-        return 0;
+        return NTS_ERR_FAILED;
     }
-    
 
     //subscribe to any changes on the main
-    rc = sr_module_change_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, NTS_NF_NETWORK_FUNCTION_SCHEMA_XPATH, network_function_change_cb, NULL, 0, SR_SUBSCR_CTX_REUSE | SR_SUBSCR_UPDATE, &session_subscription);
+    rc = sr_module_change_subscribe(session_running, NTS_NETWORK_FUNCTION_MODULE, NTS_NF_NETWORK_FUNCTION_SCHEMA_XPATH, network_function_change_cb, NULL, 1, SR_SUBSCR_CTX_REUSE | SR_SUBSCR_UPDATE, &session_subscription);
     if(rc != SR_ERR_OK) {
-        log_error("could not subscribe to simulation changes\n");
+        log_error("could not subscribe to simulation changes: %s\n", sr_strerror(rc));
         return NTS_ERR_FAILED;
     }
 
     rc = faults_init();
     if(rc != NTS_ERR_OK) {
-        log_error("faults_init error\n", sr_strerror(rc));
+        log_error("faults_init error\n");
         return NTS_ERR_FAILED;
     }
 
@@ -636,41 +634,47 @@ static int network_function_faults_count_get_items_cb(sr_session_ctx_t *session,
     return SR_ERR_OK;
 }
 
-static int network_function_started_features_get_items_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data) {
-    char value[1024];
-    value[0] = 0;
+static int network_function_info_get_items_cb(sr_session_ctx_t *session, const char *module_name, const char *xpath, const char *request_xpath, uint32_t request_id, struct lyd_node **parent, void *private_data) {
+    char started_features[1024];
+    started_features[0] = 0;
 
     if(ves_file_ready_feature_get_status()) {
-        strcat(value, "ves-file-ready ");
+        strcat(started_features, "ves-file-ready ");
     }
     
     if(ves_pnf_registration_feature_get_status()) {
-        strcat(value, "ves-pnf-registration ");
+        strcat(started_features, "ves-pnf-registration ");
     }
 
     if(ves_heartbeat_feature_get_status()) {
-        strcat(value, "ves-heartbeat ");
+        strcat(started_features, "ves-heartbeat ");
     }
     
     if(manual_notification_feature_get_status()) {
-        strcat(value, "manual-notification-generation ");
+        strcat(started_features, "manual-notification-generation ");
     }
 
     if(netconf_call_home_feature_get_status()) {
-        strcat(value, "netconf-call-home ");
+        strcat(started_features, "netconf-call-home ");
     }
     
     if(web_cut_through_feature_get_status()) {
-        strcat(value, "web-cut-through ");
+        strcat(started_features, "web-cut-through ");
     }
     
-    if(strlen(value)) {
-        value[strlen(value) - 1] = 0;
+    if(strlen(started_features)) {
+        started_features[strlen(started_features) - 1] = 0;
     }
 
-    *parent = lyd_new_path(NULL, sr_get_context(sr_session_get_connection(session)), NTS_NF_INFO_STARTED_FEATURES_SCHEMA_XPATH, value, 0, 0);
+    *parent = lyd_new_path(NULL, sr_get_context(sr_session_get_connection(session)), NTS_NF_INFO_SCHEMA_XPATH, 0, 0, 0);
     if(*parent == 0) {
         log_error("lyd_new_path failed\n");
+        return SR_ERR_OPERATION_FAILED;
+    }
+
+    struct lyd_node *n = lyd_new_leaf(*parent, (*parent)->schema->module, "started-features", started_features);
+    if(n == 0) {
+        log_error("lyd_new_leaf failed\n");
         return SR_ERR_OPERATION_FAILED;
     }
 

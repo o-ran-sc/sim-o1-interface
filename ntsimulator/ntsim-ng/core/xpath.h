@@ -26,9 +26,7 @@
 #define NTS_MANAGER_VES_ENDPOINT_CONFIG_XPATH                   "/nts-manager:simulation/ves-endpoint"
 
 #define NTS_NETWORK_FUNCTION_MODULE                             "nts-network-function"
-#define NTS_NF_INFO_BUILD_TIME_XPATH                            "/nts-network-function:info/build-time"
-#define NTS_NF_INFO_STARTED_FEATURES_SCHEMA_XPATH               "/nts-network-function:info/started-features"
-#define NTS_NF_INFO_VERSION_XPATH                               "/nts-network-function:info/version"
+#define NTS_NF_INFO_SCHEMA_XPATH                                "/nts-network-function:info"
 #define NTS_NF_NETWORK_FUNCTION_SCHEMA_XPATH                    "/nts-network-function:simulation/network-function"
 #define NTS_NF_NETWORK_FUNCTION_FTYPE_SCHEMA_XPATH              "/nts-network-function:simulation/network-function/function-type"
 #define NTS_NF_NETWORK_FUNCTION_MPAM_SCHEMA_XPATH               "/nts-network-function:simulation/network-function/mount-point-addressing-method"
@@ -41,6 +39,7 @@
 #define NTS_NF_VES_FAULTS_ENABLED_SCHEMA_XPATH                  "/nts-network-function:simulation/network-function/ves/faults-enabled"
 #define NTS_NF_VES_HEARTBEAT_SCHEMA_XPATH                       "/nts-network-function:simulation/network-function/ves/heartbeat-period"
 #define NTS_NF_VES_PNF_REGISTRATION_SCHEMA_XPATH                "/nts-network-function:simulation/network-function/ves/pnf-registration"
+#define NTS_NF_NETWORK_EMULATION_SCHEMA_XPATH                   "/nts-network-function:simulation/network-emulation"
 #define NTS_NF_VES_ENDPOINT_CONFIG_XPATH                        "/nts-network-function:simulation/ves-endpoint"
 #define NTS_NF_SDN_CONTROLLER_CONFIG_XPATH                      "/nts-network-function:simulation/sdn-controller"
 
@@ -49,6 +48,7 @@
 #define NTS_NF_RPC_FAULTS_CLEAR_SCHEMA_XPATH                    "/nts-network-function:clear-fault-counters"
 #define NTS_NF_RPC_MANUAL_NOTIF_SCHEMA_XPATH                    "/nts-network-function:invoke-notification"
 #define NTS_NF_RPC_FILE_READY_SCHEMA_XPATH                      "/nts-network-function:invoke-ves-pm-file-ready"
+#define NTS_NF_RPC_SET_NETWORK_LATENCY_SCHEMA_XPATH             "/nts-network-function:set-network-latency"
 
 #define IETF_KEYSTORE_MODULE                                    "ietf-keystore"
 #define IETF_KEYSTORE_SCHEMA_XPATH                              "/ietf-keystore:keystore"
