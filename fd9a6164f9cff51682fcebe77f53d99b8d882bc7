@@ -16,6 +16,23 @@
       "message": "recheck",
       "revId": "fd9a6164f9cff51682fcebe77f53d99b8d882bc7",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "6b3a8e14_59f0e21e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000124
+      },
+      "writtenOn": "2021-10-05T14:46:42Z",
+      "side": 1,
+      "message": "Verify will be fixed after merge - base updated.",
+      "revId": "fd9a6164f9cff51682fcebe77f53d99b8d882bc7",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
