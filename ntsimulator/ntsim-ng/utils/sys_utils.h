@@ -26,7 +26,9 @@
 #define STANDARD_SFTP_PORT      22
 
 #define KS_KEY_NAME                                 "melacon_server_key"
+#define KS_CERT_NAME                                "melacon_server_cert"
 #define SERVER_PUBLIC_SSH_KEY_PATH                  "/home/netconf/.ssh/melacon.server.key.pub"
+#define SERVER_CERT_PATH                            "/home/netconf/.ssh/melacon.server.crt"
 
 //filesystem functions
 bool dir_exists(const char *path);

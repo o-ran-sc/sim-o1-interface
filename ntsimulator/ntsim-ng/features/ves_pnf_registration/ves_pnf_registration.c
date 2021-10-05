@@ -25,13 +25,15 @@
 #include "utils/nts_utils.h"
 #include <stdio.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "core/session.h"
 #include "core/framework.h"
 #include "core/xpath.h"
 
 static int ves_pnf_sequence_number = 0;
-
+static pthread_t ves_pnf_registration_thread;
+static void* ves_pnf_registration_thread_routine(void *arg);
 static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const char *nf_ip_v4_address, const char *nf_ip_v6_address, int nf_port, nts_mount_point_addressing_method_t mp, bool is_tls);
 static cJSON* ves_create_pnf_registration_fields(const char *nf_ip_v4_address, const char *nf_ip_v6_address, int nf_port, bool is_tls);
 
@@ -49,19 +51,18 @@ int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session) {
     sr_val_t *value = 0;
     int rc = NTS_ERR_OK;
     bool pnf_registration_enabled = false;
-    rc = sr_get_item(current_session, NTS_NF_VES_PNF_REGISTRATION_SCHEMA_XPATH, 0, &value);
-    if(rc == SR_ERR_OK) {
-        pnf_registration_enabled = value->data.bool_val;
-        sr_free_val(value);
-    }
-    else if(rc != SR_ERR_NOT_FOUND) {
-        log_error("sr_get_item failed\n");
-        return NTS_ERR_FAILED;
+    if(strlen(framework_environment.nts.nf_standalone_start_features)) {
+        pnf_registration_enabled = true;
     }
     else {
-        // if value is not set yet, feature enable means we want to start pnf-registration
-        if(strlen(framework_environment.nts.nf_standalone_start_features)) {
-            pnf_registration_enabled = true;
+        rc = sr_get_item(current_session, NTS_NF_VES_PNF_REGISTRATION_SCHEMA_XPATH, 0, &value);
+        if(rc == SR_ERR_OK) {
+            pnf_registration_enabled = value->data.bool_val;
+            sr_free_val(value);
+        }
+        else if(rc != SR_ERR_NOT_FOUND) {
+            log_error("sr_get_item failed\n");
+            return NTS_ERR_FAILED;
         }
     }
 
@@ -69,6 +70,17 @@ int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session) {
         log_add_verbose(2, "PNF registration is disabled\n");
         return NTS_ERR_OK;
     }
+
+    if(pthread_create(&ves_pnf_registration_thread, 0, ves_pnf_registration_thread_routine, current_session)) {
+        log_error("could not create thread for heartbeat\n");
+        return NTS_ERR_FAILED;
+    }
+
+    return NTS_ERR_OK;
+}
+
+static void* ves_pnf_registration_thread_routine(void *arg) {
+    sr_session_ctx_t *current_session = arg;
 
     int ssh_base_port = 0;
     int tls_base_port = 0;
@@ -81,7 +93,7 @@ int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session) {
     nts_mount_point_addressing_method_t mp = nts_mount_point_addressing_method_get(current_session);
     if(mp == UNKNOWN_MAPPING) {
         log_error("mount-point-addressing-method failed\n");
-        return NTS_ERR_FAILED;
+        return (void*)NTS_ERR_FAILED;
     }
     else if(mp == DOCKER_MAPPING) {
         if (framework_environment.settings.ip_v4 != 0) {
@@ -106,40 +118,73 @@ int ves_pnf_registration_feature_start(sr_session_ctx_t *current_session) {
         tls_base_port = framework_environment.host.tls_base_port;
     }
 
+    uint32_t total_regs = 0;
+    struct regs_s {
+        bool sent;
+        uint16_t port;
+        bool is_tls;
+    } *regs;
+
+    regs = (struct regs_s *)malloc(sizeof(struct regs_s) * (1 + framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections));
+    if(regs == 0) {
+        log_error("malloc failed\n");
+        return (void*)NTS_ERR_FAILED;
+    }
+
+
     if((framework_environment.settings.ssh_connections + framework_environment.settings.tls_connections) > 1) {
         for(int port = ssh_base_port; port < ssh_base_port + framework_environment.settings.ssh_connections; port++) {
-            int rc = ves_pnf_registration_send(current_session, nf_ip_v4_address, nf_ip_v6_address, port, mp, false);
-            if(rc != NTS_ERR_OK) {
-                log_error("could not send pnfRegistration message for IPv4=%s and IPv6=%s and port=%d and protocol SSH\n", nf_ip_v4_address, nf_ip_v6_address, port);
-            }
+            regs[total_regs].sent = false;
+            regs[total_regs].port = port;
+            regs[total_regs].is_tls = false;
+            total_regs++;
         }
 
         for(int port = tls_base_port; port < tls_base_port + framework_environment.settings.tls_connections; port++) {
-            int rc = ves_pnf_registration_send(current_session, nf_ip_v4_address, nf_ip_v6_address, port, mp, true);
-            if(rc != NTS_ERR_OK) {
-                log_error("could not send pnfRegistration message for IPv4=%s and IPv6=%s and port=%d and protocol TLS\n", nf_ip_v4_address, nf_ip_v6_address, port);
-            }
+            regs[total_regs].sent = false;
+            regs[total_regs].port = port;
+            regs[total_regs].is_tls = true;
+            total_regs++;
         }
     }
     else {
         bool tls;
-        int port;
         if(framework_environment.settings.tls_connections == 0) {
             tls = false;
-            port = ssh_base_port;
         }
         else {
             tls = true;
-            port = tls_base_port;
         }
 
-        int rc = ves_pnf_registration_send(current_session, nf_ip_v4_address, nf_ip_v6_address, 0, mp, tls);
-        if(rc != NTS_ERR_OK) {
-            log_error("could not send pnfRegistration message for IPv4=%s and IPv6=%s\n", nf_ip_v4_address, nf_ip_v6_address, port);
-        }
+        regs[total_regs].sent = false;
+        regs[total_regs].port = 0;
+        regs[total_regs].is_tls = tls;
+        total_regs++;
     }
 
-    log_add_verbose(2, "PNF registration enabled\n");
+    uint32_t remaining = total_regs;
+    while(remaining) {
+        for(int i = 0; i < total_regs; i++) {
+            if(regs[i].sent == false) {
+                uint16_t port = regs[i].port;
+                bool is_tls = regs[i].is_tls;
+                int rc = ves_pnf_registration_send(current_session, nf_ip_v4_address, nf_ip_v6_address, port, mp, is_tls);
+                if(rc == NTS_ERR_OK) {
+                    remaining--;
+                    regs[i].sent = true;
+                }
+                else {
+                    log_error("pnfRegistration failed for ipv4=%s ipv6=%s port=%d is_tls=%d\n", nf_ip_v4_address, nf_ip_v6_address, port, is_tls);
+                }
+            }
+        }
+        if(remaining) {
+            log_error("pnfRegistration could not register all ports; retrying in 5 seconds...\n");
+            sleep(5);
+        }
+    }
+    free(regs);
+    log_add_verbose(2, "PNF registration finished\n");
     ves_pnf_registration_status = 1;
 
     return NTS_ERR_OK;

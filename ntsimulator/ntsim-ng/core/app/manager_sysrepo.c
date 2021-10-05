@@ -309,7 +309,7 @@ int manager_sr_populate_networking(struct lyd_node *parent, const manager_networ
             return NTS_ERR_FAILED;
         }
 
-        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "NTS_PROTOCOL_TYPE_NETCONF_SSH") == 0) {
+        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "nts-common:NTS_PROTOCOL_TYPE_NETCONF_SSH") == 0) {
             log_error("lyd_new_leaf failed\n");
             return NTS_ERR_FAILED;
         }
@@ -327,7 +327,7 @@ int manager_sr_populate_networking(struct lyd_node *parent, const manager_networ
             return NTS_ERR_FAILED;
         }
 
-        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "NTS_PROTOCOL_TYPE_NETCONF_SSH") == 0) {
+        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "nts-common:NTS_PROTOCOL_TYPE_NETCONF_SSH") == 0) {
             log_error("lyd_new_leaf failed\n");
             return NTS_ERR_FAILED;
         }
@@ -349,7 +349,7 @@ int manager_sr_populate_networking(struct lyd_node *parent, const manager_networ
             return NTS_ERR_FAILED;
         }
 
-        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "NTS_PROTOCOL_TYPE_NETCONF_TLS") == 0) {
+        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "nts-common:NTS_PROTOCOL_TYPE_NETCONF_TLS") == 0) {
             log_error("lyd_new_leaf failed\n");
             return NTS_ERR_FAILED;
         }
@@ -367,7 +367,7 @@ int manager_sr_populate_networking(struct lyd_node *parent, const manager_networ
             return NTS_ERR_FAILED;
         }
 
-        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "NTS_PROTOCOL_TYPE_NETCONF_TLS") == 0) {
+        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "nts-common:NTS_PROTOCOL_TYPE_NETCONF_TLS") == 0) {
             log_error("lyd_new_leaf failed\n");
             return NTS_ERR_FAILED;
         }
@@ -389,7 +389,7 @@ int manager_sr_populate_networking(struct lyd_node *parent, const manager_networ
             return NTS_ERR_FAILED;
         }
 
-        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "NTS_PROTOCOL_TYPE_FTP") == 0) {
+        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "nts-common:NTS_PROTOCOL_TYPE_FTP") == 0) {
             log_error("lyd_new_leaf failed\n");
             return NTS_ERR_FAILED;
         }
@@ -407,7 +407,7 @@ int manager_sr_populate_networking(struct lyd_node *parent, const manager_networ
             return NTS_ERR_FAILED;
         }
 
-        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "NTS_PROTOCOL_TYPE_FTP") == 0) {
+        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "nts-common:NTS_PROTOCOL_TYPE_FTP") == 0) {
             log_error("lyd_new_leaf failed\n");
             return NTS_ERR_FAILED;
         }
@@ -429,7 +429,7 @@ int manager_sr_populate_networking(struct lyd_node *parent, const manager_networ
             return NTS_ERR_FAILED;
         }
 
-        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "NTS_PROTOCOL_TYPE_SFTP") == 0) {
+        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "nts-common:NTS_PROTOCOL_TYPE_SFTP") == 0) {
             log_error("lyd_new_leaf failed\n");
             return NTS_ERR_FAILED;
         }
@@ -447,7 +447,7 @@ int manager_sr_populate_networking(struct lyd_node *parent, const manager_networ
             return NTS_ERR_FAILED;
         }
 
-        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "NTS_PROTOCOL_TYPE_SFTP") == 0) {
+        if(lyd_new_leaf(ports, ports->schema->module, "protocol", "nts-common:NTS_PROTOCOL_TYPE_SFTP") == 0) {
             log_error("lyd_new_leaf failed\n");
             return NTS_ERR_FAILED;
         }

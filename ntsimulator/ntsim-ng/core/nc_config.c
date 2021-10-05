@@ -33,10 +33,8 @@
 #include "core/framework.h"
 
 #define GEN_KEY_SCRIPT                              "/home/netconf/.ssh/generate-ssh-keys.sh"
-#define KS_CERT_NAME                                "melacon_server_cert"
 #define SERVER_PRIVATE_KEY_PATH                     "/home/netconf/.ssh/melacon.server.key"
 #define SERVER_PUBLIC_KEY_PATH                      "/home/netconf/.ssh/melacon.server.key.pub.pem"
-#define SERVER_CERT_PATH                            "/home/netconf/.ssh/melacon.server.crt"
 #define CA_CERT_PATH                                "/home/netconf/.ssh/ca.pem"
 
 static int nc_config_netconf_port = STANDARD_NETCONF_PORT;
@@ -635,12 +633,10 @@ static int configure_endpoints_connections(sr_session_ctx_t *session) {
         return NTS_ERR_FAILED;
     }
 
-    if (ssh_connections > 0) {
-        rc = create_ssh_listen_endpoints(netconf_node, ssh_connections);
-        if(rc != NTS_ERR_OK) {
-            log_error("could not create %d SSH Listen endpoints on the NETCONF Server\n", ssh_connections);
-            return NTS_ERR_FAILED;
-        }
+    rc = create_ssh_listen_endpoints(netconf_node, ssh_connections);
+    if(rc != NTS_ERR_OK) {
+        log_error("could not create %d SSH Listen endpoints on the NETCONF Server\n", ssh_connections);
+        return NTS_ERR_FAILED;
     }
 
     // create the TLS endpoints in ietf-netconf-server

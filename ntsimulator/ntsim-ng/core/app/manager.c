@@ -203,19 +203,21 @@ static int manager_change_cb(sr_session_ctx_t *session, const char *module_name,
                 char *leaf_path  = strdup(strstr(new_value->xpath, "']/") + 3);
                 if(strcmp(leaf_path, "started-instances") == 0) {
                     new_oper->started_instances = new_value->data.uint16_val;
-                    rc = sr_set_item(session, old_value->xpath, old_value, 0);
-                    if(rc != SR_ERR_OK) {
-                        log_error("sr_set_item failed\n");
-                        return SR_ERR_VALIDATION_FAILED;
-                    }
+                    // checkAL sysrepo v1.4.140 workaround
+                    // rc = sr_set_item(session, old_value->xpath, old_value, 0);
+                    // if(rc != SR_ERR_OK) {
+                    //     log_error("sr_set_item failed\n");
+                    //     return SR_ERR_VALIDATION_FAILED;
+                    // }
                 }
                 else if(strcmp(leaf_path, "mounted-instances") == 0) {
                     new_oper->mounted_instances = new_value->data.uint16_val;
-                    rc = sr_set_item(session, old_value->xpath, old_value, 0);
-                    if(rc != SR_ERR_OK) {
-                        log_error("sr_set_item failed\n");
-                        return SR_ERR_VALIDATION_FAILED;
-                    }
+                    // checkAL sysrepo v1.4.140 workaround
+                    // rc = sr_set_item(session, old_value->xpath, old_value, 0);
+                    // if(rc != SR_ERR_OK) {
+                    //     log_error("sr_set_item failed\n");
+                    //     return SR_ERR_VALIDATION_FAILED;
+                    // }
                 }
                 else if(strcmp(leaf_path, "docker-instance-name") == 0) {
                     new_oper->docker_instance_name = strdup(nv);

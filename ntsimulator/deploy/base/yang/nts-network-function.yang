@@ -3,6 +3,9 @@ module nts-network-function {
   namespace "urn:o-ran-sc:params:xml:ns:yang:nts:network:function";
   prefix ntsnf;
 
+  import ietf-inet-types {
+    prefix inet;
+  }
   import nts-common {
     prefix ntsc;
   }
@@ -21,6 +24,24 @@ module nts-network-function {
   description
     "This module contains YANG definitions for the Network Topology Simulator - Network Functions";
 
+  revision 2021-06-18 {
+    description
+      "Added test-list for NETCONF hardware delay emulation.";
+    reference
+      "O-RAN-SC SIM project";
+  }
+  revision 2021-06-14 {
+    description
+      "Added total loss network emulation RPC and NETCONF write-delay emulation.";
+    reference
+      "O-RAN-SC SIM project";
+  }
+  revision 2021-06-08 {
+    description
+      "Added more info and NETCONF latency emulation.";
+    reference
+      "O-RAN-SC SIM project";
+  }
   revision 2021-05-17 {
     description
       "Added support for network emulation.";
@@ -153,6 +174,22 @@ module nts-network-function {
     }
   }
 
+  rpc emulate-total-loss {
+    description
+      "Operation to emulate 100% loss in network packets. Operation will resume after specified timeout.";
+    input {
+      leaf timeout {
+        type uint32;
+        units "miliseconds (ms)";
+        description
+          "Period after which loss will stop being 100%.";
+      }
+    }
+    output {
+      uses ntsc:rpc-status-g;
+    }
+  }
+
   container info {
     config false;
     description
@@ -171,6 +208,40 @@ module nts-network-function {
       type ntsc:feature-type;
       description
         "A bit-wise list with currently started features.";
+    }
+    leaf ssh-connections {
+      type uint8;
+      config false;
+      description
+        "The number of SSH Endpoints the network function instance exposes.";
+    }
+    leaf tls-connections {
+      type uint8;
+      config false;
+      description
+        "The number of TLS Endpoints the network function instance exposes.";
+    }
+    leaf hostname {
+      type string;
+      description
+        "Current network function hostname.";
+    }
+    list docker-ports {
+      key "port";
+      description
+        "The ports which are exposed inside the docker container implementing this network function instance.";
+      leaf port {
+        type inet:port-number;
+        description
+          "Port number.";
+      }
+      leaf protocol {
+        type identityref {
+          base ntsc:NTS_PROTOCOL_TYPE_BASE;
+        }
+        description
+          "Protocol attached to current port.";
+      }
     }
   }
   container simulation {
@@ -320,6 +391,54 @@ module nts-network-function {
         units "kbits";
         description
           "Delay packets based on packet size.";
+      }
+    }
+    container hardware-emulation {
+      description
+        "Container which encompasses the details of hardware emulation.";
+      container netconf-delay {
+        description
+          "Emulates delay on an operational leaf.";
+        leaf delay {
+          type uint32;
+          units "miliseconds (ms)";
+          default "0";
+          description
+            "Delay time to be set for get operation on test leaf.";
+        }
+        leaf get-test {
+          type uint32;
+          units "miliseconds (ms)";
+          config false;
+          description
+            "Read to test. Value represents emulated delay.";
+        }
+        leaf edit-test {
+          type uint32;
+          units "miliseconds (ms)";
+          description
+            "Writing non-null value will emulate a write-delay.";
+        }
+        list get-test-list {
+          config false;
+          description
+            "Read to test. Returned values are saved from edit-test-list.";
+          leaf value {
+            type string;
+            description
+              "Values from edit-test-list.";
+          }
+        }
+        list edit-test-list {
+          key "value";
+          description
+            "Write to test.";
+          leaf value {
+            type string;
+            description
+              "Unique values for testing.";
+          }
+        }
       }
     }
     container sdn-controller {

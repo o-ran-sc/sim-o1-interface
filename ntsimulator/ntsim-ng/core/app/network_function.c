@@ -99,14 +99,14 @@ int network_function_run(void) {
     }
 
     //ietf-netconf-monitoring schemas populate with modules and submodules (overwrite default Netopeer2 behaviour)
-    rc = sr_oper_get_items_subscribe(session_running, IETF_NETCONF_MONITORING_MODULE, IETF_NETCONF_MONITORING_STATE_SCHEMAS_SCHEMA_XPATH, netconf_monitoring_state_schemas_cb, 0, SR_SUBSCR_DEFAULT, &session_subscription);
+    rc = sr_oper_get_items_subscribe(session_running, IETF_NETCONF_MONITORING_MODULE, IETF_NETCONF_MONITORING_STATE_SCHEMAS_SCHEMA_XPATH, netconf_monitoring_state_schemas_cb, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("error from sr_oper_get_items_subscribe: %s\n", sr_strerror(rc));
         return 0;
     }
 
     //nc-notifications overwrite
-    rc = sr_oper_get_items_subscribe(session_running, NC_NOTIFICATIONS_MODULE, NC_NOTIFICATIONS_STREAMS_SCHEMA_XPATH, notifications_streams_cb, 0, SR_SUBSCR_DEFAULT, &session_subscription);
+    rc = sr_oper_get_items_subscribe(session_running, NC_NOTIFICATIONS_MODULE, NC_NOTIFICATIONS_STREAMS_SCHEMA_XPATH, notifications_streams_cb, 0, SR_SUBSCR_CTX_REUSE, &session_subscription);
     if(rc != SR_ERR_OK) {
         log_error("error from sr_oper_get_items_subscribe: %s\n", sr_strerror(rc));
         return 0;

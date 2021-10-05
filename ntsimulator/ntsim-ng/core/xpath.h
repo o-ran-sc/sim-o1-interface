@@ -40,6 +40,8 @@
 #define NTS_NF_VES_HEARTBEAT_SCHEMA_XPATH                       "/nts-network-function:simulation/network-function/ves/heartbeat-period"
 #define NTS_NF_VES_PNF_REGISTRATION_SCHEMA_XPATH                "/nts-network-function:simulation/network-function/ves/pnf-registration"
 #define NTS_NF_NETWORK_EMULATION_SCHEMA_XPATH                   "/nts-network-function:simulation/network-emulation"
+#define NTS_NF_HARDWARE_EMULATION_SCHEMA_XPATH                  "/nts-network-function:simulation/hardware-emulation"
+#define NTS_NF_HE_NETCONF_DELAY_SCHEMA_XPATH                    "/nts-network-function:simulation/hardware-emulation/netconf-delay"
 #define NTS_NF_VES_ENDPOINT_CONFIG_XPATH                        "/nts-network-function:simulation/ves-endpoint"
 #define NTS_NF_SDN_CONTROLLER_CONFIG_XPATH                      "/nts-network-function:simulation/sdn-controller"
 
@@ -48,7 +50,7 @@
 #define NTS_NF_RPC_FAULTS_CLEAR_SCHEMA_XPATH                    "/nts-network-function:clear-fault-counters"
 #define NTS_NF_RPC_MANUAL_NOTIF_SCHEMA_XPATH                    "/nts-network-function:invoke-notification"
 #define NTS_NF_RPC_FILE_READY_SCHEMA_XPATH                      "/nts-network-function:invoke-ves-pm-file-ready"
-#define NTS_NF_RPC_SET_NETWORK_LATENCY_SCHEMA_XPATH             "/nts-network-function:set-network-latency"
+#define NTS_NF_RPC_EMULATE_TOTAL_LOSS_SCHEMA_XPATH              "/nts-network-function:emulate-total-loss"
 
 #define IETF_KEYSTORE_MODULE                                    "ietf-keystore"
 #define IETF_KEYSTORE_SCHEMA_XPATH                              "/ietf-keystore:keystore"
@@ -71,6 +73,9 @@
 #define IETF_NETCONF_SERVER_CH_SSH_TCP_CLIENT_SCHEMA_XPATH      "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-ssh']/ssh/tcp-client-parameters"
 #define IETF_NETCONF_SERVER_CH_SSH_SERVER_PARAMS_SCEHMA_XPATH   "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-ssh']/ssh/ssh-server-parameters"
 #define IETF_NETCONF_SERVER_CH_CONN_PERSISTENT_SCHEMA_XPATH     "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/connection-type/persistent"
+#define IETF_NETCONF_SERVER_CH_TLS_TCP_CLIENT_SCHEMA_XPATH      "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-tls']/tls/tcp-client-parameters"
+#define IETF_NETCONF_SERVER_CH_TLS_SERVER_PARAMS_SCEHMA_XPATH   "/ietf-netconf-server:netconf-server/call-home/netconf-client[name='default-client']/endpoints/endpoint[name='callhome-tls']/tls/tls-server-parameters"
+
 #define IETF_NETCONF_SERVER_SSH_TCP_SERVER_PARAM_SCHEMA_XPATH   "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/tcp-server-parameters"
 #define IETF_NETCONF_SERVER_SSH_SERVER_PARAM_SCHEMA_XPATH       "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/ssh/ssh-server-parameters"
 #define IETF_NETCONF_SERVER_TLS_TCP_SERVER_PARAM_SCHEMA_XPATH   "/ietf-netconf-server:netconf-server/listen/endpoint[name='%s']/tls/tcp-server-parameters"

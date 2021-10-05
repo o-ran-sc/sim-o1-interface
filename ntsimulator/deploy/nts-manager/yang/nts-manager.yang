@@ -21,6 +21,12 @@ module nts-manager {
   description
     "This module contains YANG definitions for the Network Topology Simulator - Manager.";
 
+  revision 2021-06-08 {
+    description
+      "Moved NTS_PROTOCOL_TYPE_BASE identities to nts-common.";
+    reference
+      "O-RAN-SC SIM project";
+  }
   revision 2021-03-26 {
     description
       "Added NTS_PROTOCOL_TYPE_BASE identities and changed instance/networking container; also added multi-base port support.";
@@ -50,47 +56,6 @@ module nts-manager {
       "Initial revision for the Network Topology Simulator - Next Generation";
     reference
       "O-RAN-SC SIM project";
-  }
-
-  identity NTS_PROTOCOL_TYPE_BASE {
-    description
-      "Base identity for protocol.";
-  }
-
-  identity NTS_PROTOCOL_TYPE_NETCONF_SSH {
-    base NTS_PROTOCOL_TYPE_BASE;
-    description
-      "Identity for NETCONF SSH protocol.";
-  }
-
-  identity NTS_PROTOCOL_TYPE_NETCONF_TLS {
-    base NTS_PROTOCOL_TYPE_BASE;
-    description
-      "Identity for NETCONF TLS protocol.";
-  }
-
-  identity NTS_PROTOCOL_TYPE_FTP {
-    base NTS_PROTOCOL_TYPE_BASE;
-    description
-      "Identity for FTP protocol.";
-  }
-
-  identity NTS_PROTOCOL_TYPE_SFTP {
-    base NTS_PROTOCOL_TYPE_BASE;
-    description
-      "Identity for SFTP protocol.";
-  }
-
-  identity NTS_PROTOCOL_TYPE_HTTP {
-    base NTS_PROTOCOL_TYPE_BASE;
-    description
-      "Identity for HTTP protocol.";
-  }
-
-  identity NTS_PROTOCOL_TYPE_HTTPS {
-    base NTS_PROTOCOL_TYPE_BASE;
-    description
-      "Identity for HTTPS protocol.";
   }
 
   typedef percent {
@@ -134,7 +99,7 @@ module nts-manager {
         }
         leaf protocol {
           type identityref {
-            base NTS_PROTOCOL_TYPE_BASE;
+            base ntsc:NTS_PROTOCOL_TYPE_BASE;
           }
           description
             "Protocol attached to current port.";
@@ -156,7 +121,7 @@ module nts-manager {
         }
         leaf protocol {
           type identityref {
-            base NTS_PROTOCOL_TYPE_BASE;
+            base ntsc:NTS_PROTOCOL_TYPE_BASE;
           }
           description
             "Protocol attached to current port.";

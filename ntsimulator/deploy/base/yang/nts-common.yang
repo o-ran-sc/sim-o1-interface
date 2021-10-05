@@ -18,6 +18,12 @@ module nts-common {
   description
     "This module contains common yang definitions YANG definitions for the Network Topology Simulator.";
 
+  revision 2021-06-08 {
+    description
+      "Moved NTS_PROTOCOL_TYPE_BASE identities from nts-manager.";
+    reference
+      "O-RAN-SC SIM project";
+  }
   revision 2021-03-26 {
     description
       "Added controller-protocol.";
@@ -53,6 +59,47 @@ module nts-common {
       "Initial revision for the Network Topology Simulator - Next Generation common types.";
     reference
       "O-RAN-SC SIM project";
+  }
+
+  identity NTS_PROTOCOL_TYPE_BASE {
+    description
+      "Base identity for protocol.";
+  }
+
+  identity NTS_PROTOCOL_TYPE_NETCONF_SSH {
+    base NTS_PROTOCOL_TYPE_BASE;
+    description
+      "Identity for NETCONF SSH protocol.";
+  }
+
+  identity NTS_PROTOCOL_TYPE_NETCONF_TLS {
+    base NTS_PROTOCOL_TYPE_BASE;
+    description
+      "Identity for NETCONF TLS protocol.";
+  }
+
+  identity NTS_PROTOCOL_TYPE_FTP {
+    base NTS_PROTOCOL_TYPE_BASE;
+    description
+      "Identity for FTP protocol.";
+  }
+
+  identity NTS_PROTOCOL_TYPE_SFTP {
+    base NTS_PROTOCOL_TYPE_BASE;
+    description
+      "Identity for SFTP protocol.";
+  }
+
+  identity NTS_PROTOCOL_TYPE_HTTP {
+    base NTS_PROTOCOL_TYPE_BASE;
+    description
+      "Identity for HTTP protocol.";
+  }
+
+  identity NTS_PROTOCOL_TYPE_HTTPS {
+    base NTS_PROTOCOL_TYPE_BASE;
+    description
+      "Identity for HTTPS protocol.";
   }
 
   feature faults-status {
@@ -281,7 +328,7 @@ module nts-common {
         "The protocol used for communication with the SDN Controller.";
     }
     leaf controller-ip {
-      type inet:ip-address;
+      type inet:host;
       description
         "The IP address of the SDN Controller.";
     }
@@ -326,7 +373,7 @@ module nts-common {
         "The protocol (HTTP / HTTPS) to be used to address the VES Collector.";
     }
     leaf ves-endpoint-ip {
-      type inet:ip-address;
+      type inet:host;
       description
         "The IP address of the VES Collector.";
     }
