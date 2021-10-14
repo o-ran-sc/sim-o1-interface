@@ -310,6 +310,7 @@ static int framework_env_init(void) {
     framework_environment.sdn_controller.callhome_port = get_int_from_string_with_default(getenv(ENV_VAR_SDN_CONTROLLER_CALLHOME_PORT), 6666);
     framework_environment.sdn_controller.username = getenv(ENV_VAR_SDN_CONTROLLER_USERNAME) ? strdup(getenv(ENV_VAR_SDN_CONTROLLER_USERNAME)) : strdup("admin");
     framework_environment.sdn_controller.password = getenv(ENV_VAR_SDN_CONTROLLER_PASSWORD) ? strdup(getenv(ENV_VAR_SDN_CONTROLLER_PASSWORD)) : strdup("admin");
+    framework_environment.sdn_controller.port_absent = (getenv(ENV_VAR_SDN_CONTROLLER_PORT) == 0) ? true : false;
 
     framework_environment.ves_endpoint.common_header_version = getenv(ENV_VAR_VES_COMMON_HEADER_VERSION) ? strdup(getenv(ENV_VAR_VES_COMMON_HEADER_VERSION)) : strdup("7.2");
     framework_environment.ves_endpoint.protocol = getenv(ENV_VAR_VES_ENDPOINT_PROTOCOL) ? strdup(getenv(ENV_VAR_VES_ENDPOINT_PROTOCOL)) : strdup("https");
@@ -319,6 +320,7 @@ static int framework_env_init(void) {
     framework_environment.ves_endpoint.username = getenv(ENV_VAR_VES_ENDPOINT_USERNAME) ? strdup(getenv(ENV_VAR_VES_ENDPOINT_USERNAME)) : strdup("admin");
     framework_environment.ves_endpoint.password = getenv(ENV_VAR_VES_ENDPOINT_PASSWORD) ? strdup(getenv(ENV_VAR_VES_ENDPOINT_PASSWORD)) : strdup("admin");
     framework_environment.ves_endpoint.certificate = getenv(ENV_VAR_VES_ENDPOINT_CERTIFICATE) ? strdup(getenv(ENV_VAR_VES_ENDPOINT_CERTIFICATE)) : strdup("");
+    framework_environment.ves_endpoint.port_absent = (getenv(ENV_VAR_VES_ENDPOINT_PORT) == 0) ? true : false;
 
     log_add_verbose(2, "[framework-env] nts.manual = %d\n", framework_environment.nts.manual);
     log_add_verbose(2, "[framework-env] nts.version = %s\n", framework_environment.nts.version);
@@ -412,6 +414,7 @@ static int framework_env_init(void) {
     log_add_verbose(2, "[framework-env] sdn_controller.callhome_port = %d\n", framework_environment.sdn_controller.callhome_port);
     log_add_verbose(2, "[framework-env] sdn_controller.username = %s\n", framework_environment.sdn_controller.username);
     log_add_verbose(2, "[framework-env] sdn_controller.password = %s\n", framework_environment.sdn_controller.password);
+    log_add_verbose(2, "[framework-env] sdn_controller.port_absent = %d\n", framework_environment.sdn_controller.port_absent);
 
     log_add_verbose(2, "[framework-env] ves_endpoint.common_header_version = %s\n", framework_environment.ves_endpoint.common_header_version);
     log_add_verbose(2, "[framework-env] ves_endpoint.protocol = %s\n", framework_environment.ves_endpoint.protocol);
@@ -421,6 +424,7 @@ static int framework_env_init(void) {
     log_add_verbose(2, "[framework-env] ves_endpoint.username = %s\n", framework_environment.ves_endpoint.username);
     log_add_verbose(2, "[framework-env] ves_endpoint.password = %s\n", framework_environment.ves_endpoint.password);
     log_add_verbose(2, "[framework-env] ves_endpoint.certificate = %s\n", framework_environment.ves_endpoint.certificate);
+    log_add_verbose(2, "[framework-env] ves_endpoint.port_absent = %d\n", framework_environment.ves_endpoint.port_absent);
 
     log_add_verbose(2, "[framework-env] finished\n");
     return NTS_ERR_OK;

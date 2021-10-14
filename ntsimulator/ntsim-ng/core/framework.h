@@ -127,6 +127,7 @@ typedef struct {
         uint16_t callhome_port;
         char *username;
         char *password;
+        bool port_absent;
     } sdn_controller;
 
     struct {
@@ -139,6 +140,7 @@ typedef struct {
         char *username;
         char *password;
         char *certificate;
+        bool port_absent;
     } ves_endpoint;
 } framework_environment_t;
 

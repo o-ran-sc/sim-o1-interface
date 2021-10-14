@@ -293,7 +293,15 @@ ves_details_t *ves_endpoint_details_get(sr_session_ctx_t *current_session) {
         asprintf(&ret->url, "%s://[%s]:%d/eventListener/v7", ret->protocol, ret->ip, ret->port);
     }
     else {
-        asprintf(&ret->url, "%s://%s:%d/eventListener/v7", ret->protocol, ret->ip, ret->port);
+        if (framework_environment.ves_endpoint.port_absent == true) {
+            // hostname addressing with port missing
+            asprintf(&ret->url, "%s://%s/eventListener/v7", ret->protocol, ret->ip);
+        }
+        else {
+            // normal addressing with IP and Port
+            asprintf(&ret->url, "%s://%s:%d/eventListener/v7", ret->protocol, ret->ip, ret->port);
+        }
+        
     }
     
     if((ret->protocol == 0) || (ret->ip == 0) || (ret->auth_method == 0) || (ret->username == 0) || (ret->password == 0) || (ret->url == 0)) {
@@ -419,7 +427,14 @@ controller_details_t *controller_details_get(sr_session_ctx_t *current_session) 
         asprintf(&ret->base_url, "%s://[%s]:%d", ret->protocol, ret->ip, ret->port);
     }
     else {
-        asprintf(&ret->base_url, "%s://%s:%d", ret->protocol, ret->ip, ret->port);
+        if (framework_environment.sdn_controller.port_absent == true) {
+            // hostname without port addressing
+            asprintf(&ret->base_url, "%s://%s", ret->protocol, ret->ip);
+        }
+        else {
+            // normal IP and Port addressing
+            asprintf(&ret->base_url, "%s://%s:%d", ret->protocol, ret->ip, ret->port);
+        }
     }
 
     if((ret->protocol == 0) || (ret->ip == 0) || (ret->auth_method == 0) || (ret->username == 0) || (ret->password == 0) || (ret->base_url == 0)) {
