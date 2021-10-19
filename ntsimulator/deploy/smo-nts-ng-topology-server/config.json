@@ -1,0 +1,65 @@
+{
+    "container-rules": {
+        "excluded-modules": [
+            "tapi-connectivity",
+            "tapi-equipment",
+            "tapi-eth",
+            "tapi-notification",
+            "tapi-oam",
+            "tapi-odu",
+            "tapi-path-computation",
+            "tapi-photonic-media",
+            "tapi-streaming",
+            "tapi-virtual-network"
+        ],
+        "excluded-features": []
+    },
+
+    "supervisor-rules": {
+        "netopeer": {
+            "path": "/usr/local/bin/netopeer2-server",
+            "args": ["-d", "-v2"],
+            "autorestart": true,
+            "stdout": "log/netopeer-stdout.log",
+            "stderr": "log/netopeer-stderr.log"
+        },
+
+        "ntsim-network-function": {
+            "path": "/opt/dev/ntsim-ng/ntsim-ng",
+            "args": ["-w/opt/dev/ntsim-ng", "-f"],
+            "nomanual": false
+        }
+    },
+
+    "datastore-random-generation-rules" : {
+        "excluded-modules": [
+            "sysrepo",
+            "sysrepo-monitoring",
+            "ietf-yang-library",
+            "ietf-netconf-acm",
+            "ietf-netconf-monitoring",
+            "nc-notifications",
+            "ietf-keystore",
+            "ietf-truststore",
+            "ietf-system",
+            "ietf-netconf-server",
+            "nts-network-function"
+        ],
+
+        "debug-max-string-size" : 50,
+        
+        "default-list-instances": 1,
+        "custom-list-instances" : []
+    },
+
+    "datastore-populate-rules": {
+        "random-generation-enabled": false,
+
+        "pre-generated-operational-data": [
+            
+        ],
+        "pre-generated-running-data": [
+            
+        ]
+    }
+}

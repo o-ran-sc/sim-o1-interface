@@ -1,0 +1,312 @@
+module o-ran-common-identity-refs {
+  yang-version 1.1;
+  namespace "urn:o-ran:wg1identityref:1.0";
+  prefix o-ran-iref;
+
+  import iana-hardware {
+    prefix ianahw;
+  }
+
+  organization
+    "O-RAN Alliance";
+  contact
+    "www.o-ran.org";
+  description
+    "This module defines a set of re-usable identity references, that can be
+     re-used across O-RAN working groups.
+
+     Copyright 2021 the O-RAN Alliance.
+
+     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 'AS IS'
+     AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+     IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+     ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+     LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+     CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+     SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+     INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+     CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+     POSSIBILITY OF SUCH DAMAGE.
+
+     Redistribution and use in source and binary forms, with or without
+     modification, are permitted provided that the following conditions are met:
+
+     * Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the above disclaimer.
+     * Redistributions in binary form must reproduce the above copyright notice,
+     this list of conditions and the above disclaimer in the documentation
+     and/or other materials provided with the distribution.
+     * Neither the Members of the O-RAN Alliance nor the names of its
+     contributors may be used to endorse or promote products derived from
+     this software without specific prior written permission.";
+
+  revision 2021-10-12 {
+    description
+      "O-RAN SC: added SMO and UE functions";
+    reference
+      "O-RAN SC SIM project.";
+  }
+
+  revision 2021-07-16 {
+    description
+      "version 1.0.1
+
+       1) Updates according to change requests:
+         CR#xyz
+         CR#xyz";
+    reference
+      "O-RAN-WG2.IM.0-v02.00";
+  }
+  revision 2020-11-01 {
+    description
+      "version 1.0.0
+
+       1) initial version.";
+    reference
+      "ORAN-WG1.IM.0-v01.00";
+  }
+
+  // O-RAN functional identity types
+
+  identity o-ran-function-base {
+    description
+      "Base identity from which all O-RAN defined functions are derived.
+       This identity is abstract and MUST NOT be used as a value.";
+    reference
+      "O-RAN.WG1.O-RAN-Architecture-Description
+       Chapter: 1.3.1	Definitions";
+  }
+
+  identity o-ru-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to an O-RAN Radio Unit Function.";
+  }
+
+  identity o-du-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to an O-RAN Distributed Unit Function.";
+  }
+
+  identity o-cu-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to all O-RAN Central Unit Functions.
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  identity o-cu-up-function {
+    base o-cu-function;
+    description
+      "An identity corresponding to an O-RAN Central Unit User Plane Function.";
+  }
+
+  identity o-cu-cp-function {
+    base o-cu-function;
+    description
+      "An identity corresponding to an O-RAN Central Unit Control Plane 
+       Function.";
+  }
+
+  identity o-enb-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to an O-RAN E-UTRAN Node B Function.
+       E-UTRAN: evolved UMTS Terrestrial Radio Access";
+  }
+
+  identity near-rt-ric-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to an O-RAN Near real-time RAN intelligent
+       controller Function.";
+  }
+
+  identity user-equipment-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to an UE Function.";
+  }
+  
+  identity smo-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to an O-RAN SMO Function.";
+  }
+
+  identity managed-application-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to an O-RAN managed application function
+       (also called 'xApp').";
+  }
+
+  // TODO to be aligned with OAM Architecture
+  //      2021-07-21: email to Lyndon send - CR required 
+
+  identity fronthaul-gateway-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to an O-RAN Fronthaul Gateway Function.";
+  }
+
+  identity fronthaul-multiplexer-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to an O-RAN Fronthaul Multiplexer Function.";
+  }
+  
+  identity transport-node-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to a Transport Node Function 
+       (such as  Transponders, Muxponders, ROADM, Wavelength Selected Switch, 
+       Optical Amplifier, Optical Terminal, Optical Repeater, Optical Filter, 
+       Optical Multiplexer, Microwave Terminal, Carrier Ethernet Routers, ... .";
+  }
+
+  identity o-cloud-ims-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to an Infrastructure Management Service 
+       Function.";
+  }
+
+  identity o-cloud-dms-function {
+    base o-ran-function-base;
+    description
+      "An identity corresponding to a Deployment Management Service Function.";
+  }
+
+  // O-RAN radio technology identity types
+
+  identity o-ran-radio-technology-base {
+    description
+      "Base identity for O-RAN defined radio technology types.
+
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  identity new-radio-technology {
+    base o-ran-radio-technology-base;
+    description
+      "An identity corresponding to new radio technology.
+
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  identity lte-technology {
+    base o-ran-radio-technology-base;
+    description
+      "An identity corresponding to lte technology.
+
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  identity nb-iot {
+    base lte-technology;
+    description
+      "An identity corresponding to nb-iot technology.
+
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  // O-RAN Transport technology identity types
+
+  identity o-ran-transport-technology-base {
+    description
+      "Base identity from which all O-RAN defined transport technology identities are derived.
+
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  // O-RAN Fronthaul transport identity types
+
+  identity o-ran-fronthaul-transport-base {
+    description
+      "Base identity from which all O-RAN defined fronthaul transports are derived.
+
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  identity ethernet-fronthaul-transport {
+    base o-ran-fronthaul-transport-base;
+    description
+      "an identity corresponding to fronthaul transport using ethernet based flows.
+
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  // Hardware component identity types
+
+  identity o-ran-module {
+    base ianahw:module;
+    description
+      "Any O-RAN module that represents a self-contained sub-system.
+
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  identity o-ran-hardware-class {
+    base ianahw:hardware-class;
+    description
+      "This identity corresponding to a generic O-RAN hardware class.
+
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  identity fpga {
+    base o-ran-hardware-class;
+    description
+      "Represent an FPGA.
+
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  // O-RAN management interface identifiers
+
+  identity management-interface-id {
+    description
+      "Base identity for entity types. A unique identification of the
+       management interface.
+       This identity is abstract and MUST NOT be used for entries.";
+  }
+
+  identity o1 {
+    base management-interface-id;
+    description
+      "An identity for the operation and maintenance management interface
+       for network functions as defined by the O-RAN-Alliance WG10 as extension
+       to 3GPP NG NRM.";
+    reference
+      "O-RAN OAM Interface Specification by WG10";
+  }
+
+  identity o2 {
+    base management-interface-id;
+    description
+      "An identity for the operation and maintenance management interface
+       for a cloud infrastructure service and a could deployment service
+       (O-Cloud) as defined by O-RAN-Alliance WG 6.";
+    reference
+      "O-RAN xxx by WG6
+       TODO update!";
+  }
+
+  identity open-fronthaul-management-plane {
+    base management-interface-id;
+    description
+      "An identity for the operation and maintenance management interface for
+       O-RU functions as defined by O-RAN-Alliance WG 4.";
+    reference
+      "O-RAN Management Plane Specification by WG4";
+  }
+
+  identity transport-management-interface {
+    base management-interface-id;
+    description
+      "An identity for a yang based management interface for transport nodes.";
+  }
+}
