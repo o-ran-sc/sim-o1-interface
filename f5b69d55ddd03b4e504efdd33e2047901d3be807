@@ -16,6 +16,23 @@
       "message": "Nothing to verify yet, build/verify jobs still to be added.",
       "revId": "f5b69d55ddd03b4e504efdd33e2047901d3be807",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "2f59b8a2_6ac4b7e0",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000124
+      },
+      "writtenOn": "2021-10-20T08:47:13Z",
+      "side": 1,
+      "message": "remerge",
+      "revId": "f5b69d55ddd03b4e504efdd33e2047901d3be807",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
   ]
 }
