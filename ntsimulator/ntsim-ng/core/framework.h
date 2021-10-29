@@ -49,6 +49,7 @@
 #define ENV_VAR_SDN_CONTROLLER_PROTOCOL                 "SDN_CONTROLLER_PROTOCOL"
 #define ENV_VAR_SDN_CONTROLLER_IP                       "SDN_CONTROLLER_IP"
 #define ENV_VAR_SDN_CONTROLLER_PORT                     "SDN_CONTROLLER_PORT"
+#define ENV_VAR_SDN_CONTROLLER_CALLHOME_IP              "SDN_CONTROLLER_CALLHOME_IP"
 #define ENV_VAR_SDN_CONTROLLER_CALLHOME_PORT            "SDN_CONTROLLER_CALLHOME_PORT"
 #define ENV_VAR_SDN_CONTROLLER_USERNAME                 "SDN_CONTROLLER_USERNAME"
 #define ENV_VAR_SDN_CONTROLLER_PASSWORD                 "SDN_CONTROLLER_PASSWORD"
@@ -124,6 +125,7 @@ typedef struct {
         char *protocol;
         char *ip;
         uint16_t port;
+        char *callhome_ip;
         uint16_t callhome_port;
         char *username;
         char *password;

@@ -390,6 +390,7 @@ controller_details_t *controller_details_get(sr_session_ctx_t *current_session) 
     ret->protocol = 0;
     ret->ip = 0;
     ret->port = 0;
+    ret->nc_callhome_ip = 0;
     ret->nc_callhome_port = 0;
     ret->auth_method = 0;
     ret->username = 0;
@@ -409,6 +410,9 @@ controller_details_t *controller_details_get(sr_session_ctx_t *current_session) 
         }
         else if(strcmp(chd->schema->name, "controller-port") == 0) {
             ret->port = ((const struct lyd_node_leaf_list *)chd)->value.uint16;
+        }
+        else if(strcmp(chd->schema->name, "controller-netconf-call-home-ip") == 0) {
+            ret->nc_callhome_ip = strdup(val);
         }
         else if(strcmp(chd->schema->name, "controller-netconf-call-home-port") == 0) {
             ret->nc_callhome_port = ((const struct lyd_node_leaf_list *)chd)->value.uint16;
@@ -437,9 +441,10 @@ controller_details_t *controller_details_get(sr_session_ctx_t *current_session) 
         }
     }
 
-    if((ret->protocol == 0) || (ret->ip == 0) || (ret->auth_method == 0) || (ret->username == 0) || (ret->password == 0) || (ret->base_url == 0)) {
+    if((ret->protocol == 0) || (ret->ip == 0) || (ret->nc_callhome_ip == 0) || (ret->auth_method == 0) || (ret->username == 0) || (ret->password == 0) || (ret->base_url == 0)) {
         free(ret->protocol);
         free(ret->ip);
+        free(ret->nc_callhome_ip);
         free(ret->auth_method);
         free(ret->username);
         free(ret->password);
@@ -456,6 +461,7 @@ void controller_details_free(controller_details_t *instance) {
 
     free(instance->protocol);
     free(instance->ip);
+    free(instance->nc_callhome_ip);
     free(instance->base_url);
     free(instance->auth_method);
     free(instance->username);
@@ -589,6 +595,19 @@ int nts_utils_populate_info(sr_session_ctx_t *current_session, const char *funct
     if(rc != SR_ERR_OK) {
         log_error("sr_set_item_str failed\n");
         return NTS_ERR_FAILED;
+    }
+
+    if(strlen(framework_environment.sdn_controller.callhome_ip)) {
+        if(manager) {
+            rc = sr_set_item_str(current_session, NTS_MANAGER_SDN_CONTROLLER_CONFIG_XPATH"/controller-netconf-call-home-ip", (const char*)framework_environment.sdn_controller.callhome_ip, 0, 0);
+        }
+        else {
+            rc = sr_set_item_str(current_session, NTS_NF_SDN_CONTROLLER_CONFIG_XPATH"/controller-netconf-call-home-ip", (const char*)framework_environment.sdn_controller.callhome_ip, 0, 0);
+        }
+        if(rc != SR_ERR_OK) {
+            log_error("sr_set_item_str failed\n");
+            return NTS_ERR_FAILED;
+        }
     }
 
     sprintf(int_to_str, "%d", framework_environment.sdn_controller.callhome_port);

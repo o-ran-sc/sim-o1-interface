@@ -18,6 +18,12 @@ module nts-common {
   description
     "This module contains common yang definitions YANG definitions for the Network Topology Simulator.";
 
+  revision 2021-10-29 {
+    description
+      "Added separete SDN Controller IP address for NETCONF Call Home.";
+    reference
+      "O-RAN-SC SIM project";
+  }
   revision 2021-06-08 {
     description
       "Moved NTS_PROTOCOL_TYPE_BASE identities from nts-manager.";
@@ -336,6 +342,11 @@ module nts-common {
       type inet:port-number;
       description
         "The port exposed by the SDN Controller.";
+    }
+    leaf controller-netconf-call-home-ip {
+      type inet:host;
+      description
+        "The IP address of the SDN Controller for the NETCONF Call Home connection.";
     }
     leaf controller-netconf-call-home-port {
       type inet:port-number;

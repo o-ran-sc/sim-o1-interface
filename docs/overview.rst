@@ -88,6 +88,7 @@ The purpose of the NTS Manager is to ease the utilization of the NTS framework. 
         |  +--rw controller-protocol?                 enumeration
         |  +--rw controller-ip?                       inet:ip-address
         |  +--rw controller-port?                     inet:port-number
+        |  +--rw controller-netconf-call-home-ip?     inet:ip-address
         |  +--rw controller-netconf-call-home-port?   inet:port-number
         |  +--rw controller-username?                 string
         |  +--rw controller-password?                 string
@@ -140,6 +141,7 @@ Under **simulation** there are 3 configuration containers and a couple of statis
     - **controller-protocol** - SDN controller protocol (http/https)
     - **controller-ip** - the IP address of the ODL based SDN controller where the simulated devices can be mounted. Both IPv4 and IPv6 are supported
     - **controller-port** - the port of the ODL based SDN controller
+    - **controller-netconf-call-home-ip** - the IP address of the ODL based SDN controller where the simulated devices can Call Home via the NETCONF Call Home feature.
     - **controller-netconf-call-home-port** - the NETCONF Call Home port of the ODL based SDN controller
     - **controller-username** - the username to be used when connecting to the ODL based SDN controller
     - **controller-password** - the password to be used when connecting to the ODL based SDN controller
@@ -252,6 +254,7 @@ The NTS network function represents the actual simulated device.
         +--rw sdn-controller
         |  +--rw controller-ip?                       inet:ip-address
         |  +--rw controller-port?                     inet:port-number
+        |  +--rw controller-netconf-call-home-ip?     inet:ip-address
         |  +--rw controller-netconf-call-home-port?   inet:port-number
         |  +--rw controller-username?                 string
         |  +--rw controller-password?                 string
@@ -517,6 +520,7 @@ Below all the available enviroment variables are listed. Please note that if a v
 - **SDN_CONTROLLER_PROTOCOL** - protocol used for communication with the SDN controller (http or https, defaults to https)
 - **SDN_CONTROLLER_IP** - SDN controller IP address
 - **SDN_CONTROLLER_PORT** - SDN controller port
+- **SDN_CONTROLLER_CALLHOME_IP** - SDN controller IP address for NETCONF call-home
 - **SDN_CONTROLLER_CALLHOME_PORT** - SDN controller port for NETCONF call-home
 - **SDN_CONTROLLER_USERNAME** - SDN controller username
 - **SDN_CONTROLLER_PASSWORD** - SDN controller password

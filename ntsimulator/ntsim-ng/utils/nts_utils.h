@@ -41,6 +41,7 @@ typedef struct {
 typedef struct {   
     char *ip;
     uint16_t port;
+    char *nc_callhome_ip;
     uint16_t nc_callhome_port;
     char *username;
     char *password;

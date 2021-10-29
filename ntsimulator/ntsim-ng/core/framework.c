@@ -307,6 +307,7 @@ static int framework_env_init(void) {
     framework_environment.sdn_controller.protocol = getenv(ENV_VAR_SDN_CONTROLLER_IP) ? strdup(getenv(ENV_VAR_SDN_CONTROLLER_PROTOCOL)) : strdup("https");
     framework_environment.sdn_controller.ip = getenv(ENV_VAR_SDN_CONTROLLER_IP) ? strdup(getenv(ENV_VAR_SDN_CONTROLLER_IP)) : strdup("127.0.0.1");
     framework_environment.sdn_controller.port = get_int_from_string_with_default(getenv(ENV_VAR_SDN_CONTROLLER_PORT), 8181);
+    framework_environment.sdn_controller.callhome_ip = getenv(ENV_VAR_SDN_CONTROLLER_CALLHOME_IP) ? strdup(getenv(ENV_VAR_SDN_CONTROLLER_CALLHOME_IP)) : strdup("127.0.0.1");
     framework_environment.sdn_controller.callhome_port = get_int_from_string_with_default(getenv(ENV_VAR_SDN_CONTROLLER_CALLHOME_PORT), 6666);
     framework_environment.sdn_controller.username = getenv(ENV_VAR_SDN_CONTROLLER_USERNAME) ? strdup(getenv(ENV_VAR_SDN_CONTROLLER_USERNAME)) : strdup("admin");
     framework_environment.sdn_controller.password = getenv(ENV_VAR_SDN_CONTROLLER_PASSWORD) ? strdup(getenv(ENV_VAR_SDN_CONTROLLER_PASSWORD)) : strdup("admin");
@@ -411,6 +412,7 @@ static int framework_env_init(void) {
     log_add_verbose(2, "[framework-env] sdn_controller.protocol = %s\n", framework_environment.sdn_controller.protocol);
     log_add_verbose(2, "[framework-env] sdn_controller.ip = %s\n", framework_environment.sdn_controller.ip);
     log_add_verbose(2, "[framework-env] sdn_controller.port = %d\n", framework_environment.sdn_controller.port);
+    log_add_verbose(2, "[framework-env] sdn_controller.callhome_ip = %s\n", framework_environment.sdn_controller.callhome_ip);
     log_add_verbose(2, "[framework-env] sdn_controller.callhome_port = %d\n", framework_environment.sdn_controller.callhome_port);
     log_add_verbose(2, "[framework-env] sdn_controller.username = %s\n", framework_environment.sdn_controller.username);
     log_add_verbose(2, "[framework-env] sdn_controller.password = %s\n", framework_environment.sdn_controller.password);
@@ -815,6 +817,7 @@ void framework_free(void) {
     free(framework_environment.host.ip);
     free(framework_environment.sdn_controller.protocol);
     free(framework_environment.sdn_controller.ip);
+    free(framework_environment.sdn_controller.callhome_ip);
     free(framework_environment.sdn_controller.username);
     free(framework_environment.sdn_controller.password);
     free(framework_environment.ves_endpoint.common_header_version);

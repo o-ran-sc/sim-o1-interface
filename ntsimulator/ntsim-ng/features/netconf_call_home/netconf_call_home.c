@@ -137,7 +137,7 @@ static int create_ssh_callhome_endpoint(sr_session_ctx_t *current_session, struc
         return NTS_ERR_FAILED;
     }
 
-    char *controller_ip = strdup(controller->ip);
+    char *controller_ip = strdup(controller->nc_callhome_ip);
     uint16_t controller_callhome_port = controller->nc_callhome_port;
     controller_details_free(controller);
 
@@ -236,7 +236,7 @@ static int create_tls_callhome_endpoint(sr_session_ctx_t *current_session, struc
         return NTS_ERR_FAILED;
     }
 
-    char *controller_ip = strdup(controller->ip);
+    char *controller_ip = strdup(controller->nc_callhome_ip);
     uint16_t controller_callhome_port = controller->nc_callhome_port;
     controller_details_free(controller);
 
