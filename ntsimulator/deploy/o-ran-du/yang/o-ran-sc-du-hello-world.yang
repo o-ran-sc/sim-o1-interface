@@ -3,16 +3,38 @@ module o-ran-sc-du-hello-world {
   namespace "urn:o-ran-sc:yang:o-ran-sc-du-hello-world";
   prefix duhw;
 
+  import nts-common {
+    prefix ntsc;
+  }
+
   organization
     "O-RAN Software Community";
   contact
     "www.o-ran-sc.org";
   description
     "This module contains the O-RAN Software Community Distributed Unit
-     API description. This schema was created to support the
-     O-RAN-SC D-Release RSAC use case.
-     This standalone model is the absolute minimum and therefore
-     called 'hello-world'.
+     API description. This API data model describes ...
+     
+     * Cell and Radio Resource Management (RRM) parameters defined by 3GPP in7
+       the context of the O-RAN Software Community E-Release and its
+       'Slice Resource Quota Provisioning and Assurance' use case.
+
+     * VES Subscription parameters according to OPNFV and ONAP.
+
+     * Performance Management parameters per Cell and for the measurement types
+       * average user-equipment throughput-downlink
+       * average user-equipment throughput uplink
+       as defined in 3GPP TS 28.552.
+
+     The module is inspired by 3GPP TS 28.541 5G Network Resource Model (NRM).
+     The intent is to reduce the implementation efforts. It is not intended
+     to fragment the industry.
+
+     Due the reduction of the model in terms of scope and completeness this
+     module cannot and must not be used in production environments.
+     The main purpose is to show case the implemented functions by
+     O-RAN-SC O-DU project. The module name 'hello-world' highlights
+     this fact.
 
      Copyright 2021 the O-RAN Software Community.
 
@@ -27,7 +49,42 @@ module o-ran-sc-du-hello-world {
      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
      See the License for the specific language governing permissions and
      limitations under the License.";
+  reference
+    "3GPP TS 28.541 5G Network Resource Model (NRM)
+     OPNFV VES - https://wiki.opnfv.org/display/ves";
 
+  revision 2021-11-23 {
+    description
+      "Bug fixes.";
+    reference
+      "https://jira.o-ran-sc.org/browse/OAM-237";
+  }
+  revision 2021-10-29 {
+    description
+      "Performance management added.";
+    reference
+      "3GPP TS 28.552
+       https://jira.o-ran-sc.org/browse/OAM-232";
+  }
+  revision 2021-10-20 {
+    description
+      "Subscription management added.";
+    reference
+      "https://jira.o-ran-sc.org/browse/OAM-233";
+  }
+  revision 2021-10-02 {
+    description
+      "Updates based on the RSAC use case descriptions of O-RAN-SC E-Release.";
+    reference
+      "https://jira.o-ran-sc.org/browse/OAM-230";
+  }
+  revision 2021-10-01 {
+    description
+      "Updates based on the RSAC use case descriptions of O-RAN-SC E-Release.";
+    reference
+      "https://jira.o-ran-sc.org/browse/OAM-229
+       https://wiki.o-ran-sc.org/download/attachments/35881433/RSY-2021.08.04-OSC-Slice_Discovery%20and%20Registration_v01.pptx?api=v2";
+  }
   revision 2021-04-08 {
     description
       "Updates based on the RSAC call 2021-04-08.";
@@ -41,7 +98,138 @@ module o-ran-sc-du-hello-world {
       "https://wiki.o-ran-sc.org/pages/viewpage.action?pageId=20878423";
   }
 
-  // TypeDefinitions
+  // Features
+
+  feature distributed-unit {
+    description
+      "This feature indicates that the network-function implements
+       an O-RAN distributed function.";
+    reference
+      "O-RAN.WG1.O-RAN-Architecture-Description-v04.00 - 4.3.5 O-DU";
+  }
+
+  feature subscription-management {
+    description
+      "This feature indicates that the network-function implements
+       a subscription-function for sending notifications to a consumer.";
+  }
+
+  feature snssai-subcounter {
+    description
+      "This feature indicates that the network-function implements
+       a performance measurement functions for single-network-slice-
+       selection-assistance-info (S-NSSAI).";
+    reference
+      "3GPP TS 28.552";
+  }
+
+  feature performance-measurement {
+    description
+      "This feature indicates that the network-function implements
+       a performance measurement function.";
+    reference
+      "3GPP TS 28.623
+       3GPP TS 28.622";
+  }
+
+  // Identities
+
+  identity performance-measurement-type-id {
+    description
+      "Base identity for performance measurement types. 
+       A unique identification of the measurement, not including the resource. 
+       Different resources can share measurement types.
+
+       A string-based qualifier can be used in addition to the
+       identity in order to have different measurement types based on
+       information not known at design-time.
+       Standards and vendors can define sub-identities to clearly
+       identify specific measurement types.
+
+       This identity is abstract and MUST NOT be used for measurements.";
+  }
+
+  identity user-equipment-average-throughput-downlink {
+    base performance-measurement-type-id;
+    description
+      "The identifier for a measurement value which indicates the average 
+       downlink-throughput for all user-equipment.";
+    reference
+      "3GPP TS 28.552";
+  }
+
+  identity user-equipment-average-throughput-uplink {
+    base performance-measurement-type-id;
+    description
+      "The identifier for a measurement value which indicates the average 
+       downlink-throughput for all user-equipment.";
+    reference
+      "3GPP TS 28.552";
+  }
+
+  // Type definitions
+
+  typedef administrative-state {
+    type enumeration {
+      enum locked {
+        value 0;
+        description
+          "The resource is administratively prohibited from performing
+           services for its users.";
+      }
+      enum unlocked {
+        value 1;
+        description
+          "The resource is administratively permitted to perform
+           services for its users. This is independent of its inherent
+           operability.";
+      }
+      enum shutting-down {
+        value 2;
+        description
+          "Use of the resource is administratively permitted to
+           existing instances of use only. While the system remains in
+           the shutting down state the manager or the managed element
+           may at any time cause the resource to transition to the
+           locked state.";
+      }
+    }
+    description
+      "The administration of managed objects operates independently of the
+       operability and usage of managed objects and is described by the
+       administrative state attribute, which has three values. These are values
+       are called locked, unlocked and shutting down.";
+    reference
+      "3GPP TS 28.625 and ITU-T X.731 / ISO/IEC 10164-2";
+  }
+
+  typedef cell-state {
+    type enumeration {
+      enum idle {
+        description
+          "The cell resources are not in use.";
+      }
+      enum inactive {
+        description
+          "The cell resources shall not serve UEs.";
+        reference
+          "3GPP TS 38.401";
+      }
+      enum active {
+        description
+          "The cell resources shall be able to serve UEs.";
+        reference
+          "3GPP TS 38.401";
+      }
+    }
+    description
+      "The cell state indicates the usage state of the cell instance.
+       It describes whether the cell is not currently in use (idle),
+       or currently in use but not configured to carry traffic (inactive)
+       or is currently in use and is configured to carry traffic (active).";
+    reference
+      "3GPP TS 28.541";
+  }
 
   typedef connection-status {
     type enumeration {
@@ -77,6 +265,46 @@ module o-ran-sc-du-hello-world {
       "A non extensible enumeration representing a connection status.";
   }
 
+  typedef distinguished-name {
+    type string {
+      pattern '([a-zA-Z][a-zA-Z0-9-]*=(\\( |#|\\|>|<|;|"|\+|,|[a-fA-F0-9]{2})|[^\\><;"+,# ])'
+            + '((\\( |#|\\|>|<|;|"|\+|,|[a-fA-F0-9]{2})|[^\\><;"+,])*'
+            + '(\\( |#|\\|>|<|;|"|\+|,|[a-fA-F0-9]{2})|[^\\><;"+, ]))?'
+            + '[,\+])*[a-zA-Z][a-zA-Z0-9-]*=(\\( |#|\\|>|<|;|"|\+|,|[a-fA-F0-9]{2})|[^\\><;"+,# ])'
+            + '((\\( |#|\\|>|<|;|"|\+|,|[a-fA-F0-9]{2})'
+            + '|[^\\><;"+,])*(\\( |#|\\|>|<|;|"|\+|,|[a-fA-F0-9]{2})|[^\\><;"+, ]))?';
+    }
+    description
+      "The type definition for distinguished names according to RFC 4512.";
+    reference
+      "RFC 4512 Lightweight Directory Access Protocol (LDAP):
+                Directory Information Models
+       https://datatracker.ietf.org/doc/html/rfc4512#section-2.3.2";
+  }
+
+  typedef mobile-country-code-type {
+    type string {
+      pattern '[02-79][0-9][0-9]';
+    }
+    description
+      "The mobile country code consists of three decimal digits,
+       The first digit of the mobile country code identifies the geographic
+       region (the digits 1 and 8 are not used):";
+    reference
+      "3GPP TS 23.003 subclause 2.2 and 12.1";
+  }
+
+  typedef mobile-network-code-type {
+    type string {
+      pattern '[0-9]{2,3}';
+    }
+    description
+      "The mobile network code consists of two or three
+       decimal digits (for example: MNC of 001 is not the same as MNC of 01)";
+    reference
+      "3GPP TS 23.003 subclause 2.2 and 12.1";
+  }
+
   typedef o-ru-reference {
     type leafref {
       path "/network-function/du-to-ru-connection/name";
@@ -85,9 +313,296 @@ module o-ran-sc-du-hello-world {
       "A reference to a remote network function representing an O-RU.";
   }
 
+  typedef operational-state {
+    type enumeration {
+      enum disabled {
+        value 0;
+        description
+          "The resource is totally inoperable.";
+        reference
+          "CCITT Rec. X.731 (1992 E) - ISO/IEC 10164-2 : 1993 (E)
+           Chapter 7.1.1.2 Disable";
+      }
+      enum enabled {
+        value 1;
+        description
+          "The resource is partially or fully operable.";
+        reference
+          "CCITT Rec. X.731 (1992 E) - ISO/IEC 10164-2 : 1993 (E)
+           Chapter 7.1.1.1 Enable";
+      }
+    }
+    description
+      "The operability of a resource is described by the operational state
+       attribute, which has two possible values: disabled and enabled.";
+    reference
+      "3GPP TS 28.625 and ITU-T X.731 / ISO/IEC 10164-2";
+  }
+
+  typedef performance-measurement-type-id {
+    type identityref {
+      base performance-measurement-type-id;
+    }
+    description
+      "Identifies an performance-measurement type. The description of the 
+       performance-measurement type id MUST indicate if the it is abstract or 
+       not. An abstract performance-measurement type is used as a base for other 
+       performance-measurement type ids and will not be used as a value for a 
+       performance-measurement or be present in an 
+       performance-measurement dictionary/inventory.";
+  }
+
+  typedef resource-type {
+    type enumeration {
+      enum prb {
+        description
+          "Physical Resource Block (PRB)
+           for a cell of a distributed unit.";
+      }
+      enum prb-ul {
+        description
+          "Physical Resource Block (PRB) uplink
+           for a cell of a distributed unit.";
+      }
+      enum prb-dl {
+        description
+          "Physical Resource Block (PRB) downlink
+           for a cell of a distributed unit.";
+      }
+      enum rrc {
+        description
+          "Radio Resource Control (RRC)
+           for a cell of a centralized unit.";
+      }
+      enum drb {
+        description
+          "Data radio bearer (DRB)
+           for a user plane function of a centralized unit.";
+      }
+    }
+    description
+      "A type describing the resource for radio-resource-management.";
+    reference
+      "3GPP TS 28.541 V17.34.0 (2021-0609)";
+  }
+
+  typedef tracking-area-code-type {
+    type uint32 {
+      range "0..16777215";
+    }
+    description
+      "The type definition for a Tracking Area Code.";
+    reference
+      "3GPP TS 23.003 clause 19.4.2.3";
+  }
+
   // Abstract object classes - groupings
 
+  grouping cell-grp {
+    description
+      "Represents the cell object class.";
+    reference
+      "3GPP TS 28.541
+       https://forge.3gpp.org/rep/sa5/MnS/blob/Rel17-draft/yang-models/_3gpp-nr-nrm-cell.yang
+       line 40";
+    leaf local-id {
+      type uint16 {
+        range "0..16383";
+      }
+      mandatory true;
+      description
+        "Identifies a cell within a o-ran-sc-du-function. Together with the
+         corresponding o-ran-sc-du-function identifier in forms the cell
+         identity.";
+      reference
+        "NCI in 3GPP TS 38.300";
+    }
+    leaf traffic-state {
+      type cell-state;
+      config false;
+      description
+        "Indicates whether the corresponding entity
+         - is not currently in use (idle), or
+         - currently in use but not configured to carry traffic (inactive), or
+         - currently in use and is configured to carry traffic (active).";
+    }
+    list public-land-mobile-networks {
+      key "mobile-country-code mobile-network-code slice-differentiator slice-service-type";
+      min-elements 1;
+      ordered-by user;
+      description
+        "The public-land-mobile-networks is a list of
+         public-land-mobile-network data type.
+         It defines which public-land-mobile-networks that can be served by
+         the cell, and which S-NSSAIs that can be supported by the cell for
+         corresponding public-land-mobile-network in case of network slicing
+         feature is supported. The public-land-mobile-network-id of the
+         first entry of the list is the public-land-mobile-network-id used to
+         construct the cell-global-identity.
+         If the public-land-mobile-network is associated with
+         a radio-resource-management-policy-ratio, then the settings of the
+         radio-resource-management-policy-ratio MUST be considered by
+         the distributed function implementation for this cell. ";
+      uses public-land-mobile-network;
+    }
+    leaf physical-cell-id {
+      type uint16 {
+        range "0..1007";
+      }
+      mandatory true;
+      description
+        "The Physical Cell Identity (PCI) of the cell.";
+      reference
+        "3GPP TS 36.211";
+    }
+    leaf tracking-area-code {
+      type tracking-area-code-type;
+      description
+        "The common 5GS Tracking Area Code for the public-land-mobile-networks.";
+      reference
+        "3GPP TS 23.003, 3GPP TS 38.473";
+    }
+    container absolute-radio-frequency-channel-number {
+      description
+        "This container groups parameters related to
+         absolute radio frequency channel number (ARFCN).";
+      leaf downlink {
+        type int32;
+        mandatory true;
+        description
+          "Absolute Radio Frequency Channel Number (ARFCN) for
+           downlink.";
+        reference
+          "3GPP TS 38.104";
+      }
+      leaf uplink {
+        type int32;
+        description
+          "Absolute Radio Frequency Channel Number (ARFCN) for
+           uplink.";
+        reference
+          "3GPP TS 38.104";
+      }
+      leaf supplementary-uplink {
+        type int32;
+        description
+          "Absolute Radio Frequency Channel Number (ARFCN) for
+           supplementary uplink.";
+        reference
+          "3GPP TS 38.104";
+      }
+    }
+    container base-station-channel-bandwidth {
+      description
+        "This container groups parameters related to
+         base station channel bandwidth.";
+      leaf downlink {
+        type uint32;
+        units "MHz";
+        description
+          "Base station channel bandwidth for downlink.";
+        reference
+          "3GPP TS 38.104";
+      }
+      leaf uplink {
+        type uint32;
+        units "MHz";
+        description
+          "Base station channel bandwidth for uplink.";
+        reference
+          "3GPP TS 38.104";
+      }
+      leaf supplementary-uplink {
+        type uint32;
+        units "MHz";
+        description
+          "Base station channel bandwidth for supplementary uplink.";
+        reference
+          "3GPP TS 38.104";
+      }
+    }
+    container synchronization-signal-block {
+      description
+        "This container groups parameters related to Synchronization Signal
+         Block (SSB).";
+      leaf frequency-channel-number {
+        type uint32 {
+          range "0..3279165";
+        }
+        mandatory true;
+        description
+          "Indicates cell defining Synchronization Signal Block (SSB) frequency
+           domain position.
+           Frequency (in terms of NR-ARFCN) of the cell defining SSB
+           transmission.
+           The frequency identifies the position of resource element RE=#0
+           (subcarrier #0) of resource block RB#10 of the SSB. The frequency
+           must be positioned on the global frequency raster, as defined in
+           3GPP TS 38.101-1, and within base station channel bandwidth down
+           link.";
+        reference
+          "3GPP TS 38.101-1";
+      }
+      leaf periodicity {
+        type uint8 {
+          range "5 | 10 | 20 | 40 | 80 | 160";
+        }
+        units "ms";
+        mandatory true;
+        description
+          "Indicates cell defined Synchronization Signal Block (SSB)
+           periodicity. The SSB periodicity is used for the rate matching
+           purpose.";
+      }
+      leaf subcarrier-spacing {
+        type uint8 {
+          range "15 | 30 | 120 | 240";
+        }
+        units "kHz";
+        mandatory true;
+        description
+          "Subcarrier spacing of Synchronization Signal Block (SSB).
+           Only the values 15 kHz or 30 kHz
+           (< 6 GHz), 120 kHz or 240 kHz (> 6 GHz) are applicable.";
+        reference
+          "3GPP TS 38.211";
+      }
+      leaf offset {
+        type uint8 {
+          range "0..159";
+        }
+        units "ms";
+        mandatory true;
+        description
+          "Indicates cell defining Synchronization Signal Block (SSB) time
+           domain position. Defined as the offset of the measurement window,
+           in which to receive Synchronization Signal/Physical Broadcast Channel
+           (SS/PBCH) blocks, where allowed values depend on the
+           Synchronization Signal Block periodicity.
+           Rule:
+             synchronization-signal-block-offset is lower than
+             synchronization-signal-block-periodicity).";
+      }
+      leaf duration {
+        type uint8 {
+          range "1..5";
+        }
+        units "ms";
+        mandatory true;
+        description
+          "Duration of the measurement window in which to receive
+           Synchronization Signal/Physical Broadcast Channel (SS/PBCH) blocks.";
+        reference
+          "3GPP TS 38.213";
+      }
+    }
+    uses performance-monitoring-point-grp {
+      if-feature performance-measurement;
+    }
+  }
+
   grouping connection-grp {
+    status deprecated;
     description
       "An abstract object class representing a connection or link to an
        external component.";
@@ -176,7 +691,63 @@ module o-ran-sc-du-hello-world {
     }
   }
 
+  grouping distributed-unit-function {
+    description
+      "A simplified and reduced object class for a DU function.";
+    uses top-grp;
+    // uses mf3gpp:ManagedFunctionContainedClasses;
+    list cell {
+      key "id";
+      description
+        "Represents the cell and its configuration management.";
+      reference
+        "3GPP TS 28.541
+         https://forge.3gpp.org/rep/sa5/MnS/blob/Rel17-draft/yang-models/_3gpp-nr-nrm-cell.yang
+         line 215";
+      uses top-grp;
+      uses cell-grp;
+    }
+    list radio-resource-management-policy-ratio {
+      key "id";
+      description
+        "The radio-resource-management-policy-ratio object class is one
+         realization of a radio-resource-management-policy object class.
+         This Radio Resource Management framework allows
+         adding new policies by inheriting from the
+         abstract radio-resource-management-policy object class.";
+      uses top-grp;
+      uses radio-resource-management-policy-ratio-grp;
+    }
+  }
+  
+  grouping network-function {
+    description
+      "Represents telecommunications equipment or
+       TMN entities within the telecommunications network providing support
+       and/or service to the subscriber.";
+    leaf distinguished-name-prefix {
+      type distinguished-name;
+      description
+        "Provides naming context that allows the Managed
+         Elements to be partitioned into logical domains.
+         A Distinguished Name(DN) is defined by 3GPP TS 32.300,
+         which splits the DN into a DN Prefix and Local DN";
+    }
+    leaf location-name {
+      type string {
+        length "0..1023";
+      }
+      config false;
+      description
+        "The physical location (e.g. an address) of an entity
+         represented by a (derivative of) ManagedElement_. It may contain no
+         information to support the case where the derivative of
+         ManagedElement needs to represent a distributed multi-location NE.";
+    }
+  }
+
   grouping network-function-grp {
+    status deprecated;
     description
       "An abstract object class grouping the O-RAN-SC-DU parameters with
        focus on RSAC D-release Closed-Loop use case.";
@@ -184,7 +755,224 @@ module o-ran-sc-du-hello-world {
       key "name";
       description
         "A list of connection objects to O-RAN-SC radio units.";
-      uses connection-grp;
+      uses connection-grp {
+        status deprecated;
+      }
+    }
+  }
+
+  grouping performance-measurement-job-grp {
+    description
+      "An abstract object class representing a performance-measurement-job";
+    leaf job-tag {
+      type string {
+        length "1..255";
+      }
+      description
+        "A job group identifier to combine several performance-measurement-jobs
+         to one logical job.";
+    }
+    leaf-list performance-metrics {
+      type instance-identifier {
+        require-instance false;
+      }
+      min-elements 1;
+      description
+        "Performance metrics (or performance measurement counter values)
+         include measurements defined in TS 28.552 and KPIs defined in TS 28.554
+         and enhanced by O-RAN working groups.
+         Performance metrics are identified with their xPath including their
+         identity.
+
+         Example for average downlink user equipment throughput per cell
+         /network-function/distributed-unit-functions[id='<id-value>']/cell[id='<id-value']/supported-measurements/performance-measurement-type[.='user-equipment-average-throughput-downlink']
+
+         Example for a specific slice-differentiator (here sd=12345) subcounter of average downlink user equipment throughput
+         /network-function/distributed-unit-functions[id='<id-value>']/cell[id='<id-value']/supported-measurements/performance-measurement-type[.='user-equipment-average-throughput-downlink']/supported-snssai-subcounter-instances/slice-differentiator[.=12345]";
+      reference
+        "3GPP TS 28.552
+         3GPP TS 28.554
+         O-RAN WG10 PM-Coordination-Team";
+    }
+    leaf granularity-period {
+      type uint32 {
+        range "1..max";
+      }
+      units "s";
+      mandatory true;
+      description
+        "The interval time in seconds between the start of a measurement and the
+         end of a measurement.
+         If the network-function does not support the intended 
+         granularity-period, then the network-function SHOULD use the supported
+         granularity-period which is lower than the configured/intended period.";
+      reference
+        "3GPP TS 28.552
+         3GPP TS 28.554
+         O-RAN WG10 PM-Coordination";
+    }
+    leaf-list object-reference {
+      type instance-identifier;
+      description
+        "A list of reference to objects, which SHOULD measure the referred
+         performance-metrics values.";
+    }
+    leaf stream-target {
+      if-feature subscription-management;
+      type leafref {
+        path "/network-function/subscription-streams/id";
+      }
+      mandatory true;
+      description
+        "A reference to the subscriber of the stream. ";
+    }
+  }
+
+  grouping performance-monitoring-point-grp {
+    description
+      "An abstract object class providing monitoring and control functions for
+       performance measurements. Such grouping should be used by the monitoring
+       object.";
+    list supported-measurements {
+      key "performance-measurement-type";
+      config false;
+      uses supported-measurement-grp;
+      description
+        "A list of performance measurements object providing the
+         measurement-types (counters) and its potential subcounters. The values
+         ar provided by the combination of the event subscription and
+         performance-measurement-job concepts.";
+    }
+  }
+
+  grouping public-land-mobile-network-id {
+    description
+      "The identity of a public land mobile network as complex type
+       constructed of two codes:
+       - mobile country code (MCC) and
+       - the mobile network code (MNC).";
+    reference
+      "3GPP TS 23.658
+       3GPP TS 32.101
+       3GPP TR 21.905";
+    leaf mobile-country-code {
+      type mobile-country-code-type;
+      mandatory true;
+      description
+        "The fist part of the public-land-mobile-network-id";
+    }
+    leaf mobile-network-code {
+      type mobile-network-code-type;
+      mandatory true;
+      description
+        "The second part of the public-land-mobile-network-id";
+    }
+  }
+
+  grouping public-land-mobile-network {
+    description
+      "The public-land-mobile-network data type define a S-NSSAI member
+       in a specific public-land-mobile-network-id, and it have two attributes
+       public-land-mobile-network-id and S-NSSAI (public-land-mobile-network-id,
+       S-NSSAI).
+       The public-land-mobile-network-id represents a data type that is
+       comprised of mcc mobile country code) and mnc (mobile network code),
+       (See TS 23.003 subclause 2.2 and 12.1) and S-NSSAI represents an
+       data type, that is comprised of an slice-service-type
+       (Slice/Service type) and an optional slice-differentiator field.";
+    uses public-land-mobile-network-id;
+    uses single-network-slice-selection-assistance-info;
+  }
+
+  grouping radio-resource-management-policy-grp {
+    description
+      "This object class represents the properties of an abstract
+       radio-resource-management-policy. The radio-resource-management-policy
+       object class needs to be subclassed to be instantiated.
+       It defines two attributes apart from those inherited from
+       Top object class:
+       - the resource-type attribute defines type of resource (PRB, RRC
+       connected users, DRB usage etc.) and
+       - the radio-resource-management-policy-members attribute
+       defines the radio-resource-management-policy-members that are subject
+       to this policy.
+       An Radio Resource Management resource (defined in resource-type
+       attribute) is located in cell or distributed-unit-function.
+       The radio-resource-management-policy-ratio object class is one
+       realization of a radio-resource-management-policy object class.
+       This Radio Resource Management framework allows adding new
+       policies by inheriting from the abstract radio-resource-management-policy
+       object class.";
+    leaf resource-type {
+      type resource-type;
+      mandatory true;
+      description
+        "The resource-type attribute defines type of resource that is
+         subject to policy.";
+    }
+    list radio-resource-management-policy-members {
+      key "mobile-country-code mobile-network-code slice-differentiator slice-service-type";
+      min-elements 1;
+      description
+        "It represents the list of radio-resource-management-policy-members
+         that the managed object is supporting.
+         A radio-resource-management-policy-member <<dataType>> include
+         the public-land-mobile-network-identifier <<dataType>> and
+         S-NSSAI <<dataType>>.";
+      uses public-land-mobile-network;
+    }
+  }
+
+  grouping radio-resource-management-policy-ratio-grp {
+    description
+      "Represents the radio-resource-management-policy-ratio concrete
+       object class.";
+    uses radio-resource-management-policy-grp;
+    leaf radio-resource-management-policy-max-ratio {
+      type uint8 {
+        range "0..100";
+      }
+      units "%";
+      default "100";
+      description
+        "This attribute specifies the maximum percentage of radio resources that
+         can be used by the associated
+         radio-resource-management-policy-members.
+         The maximum percentage of radio resource include at least one of
+         the shared resources, prioritized resources and dedicated resources.
+         The sum of the radio-resource-management-policy-max-ratio values
+         assigned to all radio-resource-management-policy-ratio(s)
+         name-contained by same ManagedEntity can be greater that 100.";
+    }
+    leaf radio-resource-management-policy-min-ratio {
+      type uint8 {
+        range "0..100";
+      }
+      units "percent";
+      default "0";
+      description
+        "This attribute specifies the minimum percentage of radio resources that
+         can be used by the associated
+         radio-resource-management-policy-members.
+         The minimum percentage of radio resources including at least one of
+         prioritized resources and dedicated resources. The sum of the
+         radio-resource-management-policy-min-ratio values assigned to all
+         radio-resource-management-policy-ratios
+         name-contained by same ManagedEntity shall be less or equal 100.";
+    }
+    leaf radio-resource-management-policy-dedicated-ratio {
+      type uint8 {
+        range "0..100";
+      }
+      units "percent";
+      default "0";
+      description
+        "This attribute specifies the percentage of radio resources that
+         dedicated used by the associated
+         radio-resource-management-policy-members.
+         The sum of the radio-resource-management-policy-dedicated-ratio values
+         assigned to all radio-resource-management-policy-ratios
+         name-contained by same ManagedEntity shall be less or equal 100.";
     }
   }
 
@@ -226,25 +1014,165 @@ module o-ran-sc-du-hello-world {
     }
   }
 
+  grouping single-network-slice-selection-assistance-info {
+    description
+      "Single Network Slice Selection Assistance Information (S-NSSAI)";
+    reference
+      "3GPP TS 23.003";
+    leaf slice-differentiator {
+      type uint32 {
+        range "0..16777215";
+      }
+      description
+        "Slice Differentiator can be used to identify and tag a slice.
+         If not needed, the value can be set to the value 16777215.";
+      reference
+        "3GPP TS 23.003";
+    }
+    leaf slice-service-type {
+      type uint8;
+      description
+        "Slice/Service Type as defined in 3GPP TS 23.501.";
+      reference
+        "3GPP TS 23.501";
+    }
+  }
+  
+  grouping supported-measurement-grp {
+    description
+      "An abstract object class for performance management. The object class
+       could be implemented by any kind of resource which can measure data
+       and expose the measured data for quality assurance.";
+    leaf performance-measurement-type {
+      type performance-measurement-type-id;
+      description
+        "A list of measurement types which are supported by this 
+         network-function for each slice.";
+    }
+    list supported-snssai-subcounter-instances {
+      if-feature "snssai-subcounter";
+      must "current()/../../../cell/id";
+      key "slice-differentiator slice-service-type";
+      uses single-network-slice-selection-assistance-info;
+      description
+        "A conditional list of S-NSSAIs used as an address to uniquely identify a 
+         measurement value. The 'must' statement ensures that this list only
+         exits, when the measurement-type is measured by an entity represented
+         as a 'cell' object. ";
+    }    
+  }
+
+  grouping top-grp {
+    description
+      "Ane abstract class supplying a naming attribute.";
+    reference
+      "3GPP TS 28.620";
+    leaf id {
+      type string;
+      mandatory true;
+      description
+        "Key leaf (namingAttribute) for a class/list.
+         Should be used as a key leaf for lists representing
+         stage 2 classes.";
+      reference
+        "3GPP TS 32.300 Name convention for managed objects";
+    }
+    leaf administrative-state {
+      type administrative-state;
+      default "locked";
+      description
+        "Administrative state of an object. Indicates the
+         permission to use or prohibition against the object, imposed
+         through the OAM services.";
+    }
+    leaf operational-state {
+      type operational-state;
+      config false;
+      mandatory true;
+      description
+        "Operational state of the object. Indicates
+         whether the associated resource is installed and partially or fully
+         operable (enabled) or the associated resource is not installed or
+         not operable (disabled).";
+    }
+    leaf user-label {
+      type string {
+        length "0..255";
+      }
+      description
+        "A user defined label of the object. There is no function associated to
+         the user label.
+         However, the network function stores the value persistently.";
+    }
+  }
+  
   // Data nodes
 
   container network-function {
+    presence "network-function";
     description
       "The root container for the configuration and operational data.
-       The object implements the 'network-function-grp'";
-    uses network-function-grp;
+       The object class would be called by 3GPP 'ManagedElement' and by
+       ONF 'ControlConstruct'.";
+    uses top-grp;
+    uses network-function;
+    list distributed-unit-functions {
+      if-feature "distributed-unit";
+      key "id";
+      description
+        "Represents the logical function distributed unit.";
+      reference
+        "3GPP TS 28.541";
+      uses distributed-unit-function;
+    }
+    list subscription-streams {
+      if-feature "subscription-management";
+      key "id";
+      description
+        "The list represents all streams to a consumer. To subscribe for 
+         events an entry in this list should be created. To unsubscribe the
+         corresponding entry must be deleted.";
+      uses top-grp;
+      uses ntsc:ves-endpoint-g;
+    }
+    list performance-measurement-jobs {
+      if-feature "performance-measurement";
+      key "id";
+      description
+        "This list represents a performance measurement jobs for this
+         network-function.
+         To activate the production of the specified performance measurement,
+         the SMO needs to create a performance-measurement-job instance.
+         To completely deactivate a running performance-measurement-job the
+         SMO deletes the corresponding the performance-measurement-job in
+         this list.
+         For temporary deactivation of the performance-measurement-job, the SMO
+         SHALL set the administrative state value to 'locked'. In this situation
+         the network-function must indicated that the
+         performance-measurement-job is not functional by setting the
+         operational-state to 'disabled'.
+         Once the administrative state value is set back to 'unlocked', the
+         performance-measurement-job SHOULD start is function again and indicate
+         this situation by setting the operational-state to 'enabled'.";
+      uses top-grp;
+      uses performance-measurement-job-grp;
+    }
+    uses network-function-grp {
+      status deprecated;
+    }
   }
 
   // Remote procedure calls - actions on root level
 
   rpc connect {
-    status deprecated;
+    status obsolete;
     description
       "An action to establish the connection to a remote network function.";
     input {
       leaf remote-network-function {
-        type o-ru-reference;
+        type o-ru-reference;        
         mandatory true;
+        status obsolete;
         description
           "An reference to a remote network function - an O-RU - to which
            a connection should be established.";
@@ -256,13 +1184,14 @@ module o-ran-sc-du-hello-world {
   }
 
   rpc disconnect {
-    status deprecated;
+    status obsolete;
     description
       "An action to destroy the connection to a remote network function.";
     input {
       leaf remote-network-function {
-        type o-ru-reference;
+        type o-ru-reference;        
         mandatory true;
+        status obsolete;
         description
           "An reference to a remote network function - an O-RU - to which
            the connection should be destroyed.";

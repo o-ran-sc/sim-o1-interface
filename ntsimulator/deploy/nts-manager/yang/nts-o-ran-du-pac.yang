@@ -1,0 +1,36 @@
+module nts-o-ran-du-pac {
+  yang-version 1.1;
+  namespace "urn:o-ran-sc:params:xml:ns:yang:nts:o-ran-du";
+  prefix nts-o-ran-du;
+
+  import nts-common {
+      prefix ntsc;
+  }
+
+  organization
+    "O-RAN-SC";
+  contact
+    " Web: <https://wiki.o-ran-sc.org/display/SIM/SIM>
+        Editors:  
+        Alex Stancu <mailto:alexandru.stancu@highstreet-technologies.com>
+        Adrian Lita <mailto:adrian.lita@highstreet-technologies.com>
+        Martin Skorupski <mailto:martin.skorupski@highstreet-technologies.com>";
+  description
+    "This module contains YANG definitions for the Network Topology Simulator - O-RAN extensions.";
+
+  revision 2021-11-19 {
+    description
+      "Initial revision for the Network Topology Simulator - Next Generation";
+    reference
+      "O-RAN implementation";
+  }
+
+  identity NTS_FUNCTION_TYPE_O_RAN_DU {
+    base ntsc:NTS_FUNCTION_TYPE_BASE;
+    description
+      "The simulated network function implements O-RAN DU YANG models.";
+    reference
+      "nts-ng-o-ran-du";
+  }
+
+} //end module
