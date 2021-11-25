@@ -201,7 +201,7 @@ nts_mount_point_addressing_method_t nts_mount_point_addressing_method_get(sr_ses
 }
 
 // checkAS authentication via certificate not supported yet
-ves_details_t *ves_endpoint_details_get(sr_session_ctx_t *current_session) {
+ves_details_t *ves_endpoint_details_get(sr_session_ctx_t *current_session, const char *custom_path) {
     assert_session();
 
     int rc;
@@ -218,11 +218,16 @@ ves_details_t *ves_endpoint_details_get(sr_session_ctx_t *current_session) {
     struct lyd_node *data = 0;
     char *xpath_to_get;
 
-    if(framework_arguments.nts_mode == NTS_MODE_MANAGER) {
-        xpath_to_get = NTS_MANAGER_VES_ENDPOINT_CONFIG_XPATH;
+    if(custom_path == 0) {
+        if(framework_arguments.nts_mode == NTS_MODE_MANAGER) {
+            xpath_to_get = NTS_MANAGER_VES_ENDPOINT_CONFIG_XPATH;
+        }
+        else {
+            xpath_to_get = NTS_NF_VES_ENDPOINT_CONFIG_XPATH;
+        }
     }
     else {
-        xpath_to_get = NTS_NF_VES_ENDPOINT_CONFIG_XPATH;
+        xpath_to_get = (char *)custom_path;
     }
 
     rc = sr_get_subtree(current_session, xpath_to_get, 0, &data);

@@ -70,7 +70,6 @@ typedef enum {
     NTS_MODE_MANAGER,
     NTS_MODE_NETWORK_FUNCTION,
     NTS_MODE_BLANK,
-    NTS_MODE_GENERATE_DATA,
     NTS_MODE_TEST,
 } nts_mode_t;
 

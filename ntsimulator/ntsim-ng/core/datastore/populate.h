@@ -1,6 +1,6 @@
 /*************************************************************************
 *
-* Copyright 2020 highstreet technologies GmbH and others
+* Copyright 2021 highstreet technologies GmbH and others
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -17,11 +17,9 @@
 
 #pragma once
 
-#include <string.h>
-#include <stdint.h>
-#include <stdbool.h>
+#include <sysrepo.h>
 
-#define DATASTORE_OPERATIONAL_PATH      "log/datastore-operational.json"
-#define DATASTORE_RUNNING_PATH          "log/datastore-running.json"
+int datastore_populate_all();   //fresh populate of all modules; handles late-resolving and validation over own-created job; should only be ran once
+int datastore_populate_update_operational(const char **xpath, int xpath_len);
 
-int datastore_populate(int retries);
+int datastore_dynamic_operational_auto_callback(sr_session_ctx_t *session, const char *module_name, const char *xpath, sr_event_t event, uint32_t request_id, void *private_data);

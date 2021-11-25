@@ -218,7 +218,7 @@ static int ves_file_ready_send_message(sr_session_ctx_t *session, const char *fi
     }
 
 
-    ves_details_t *ves_details = ves_endpoint_details_get(session);
+    ves_details_t *ves_details = ves_endpoint_details_get(session, 0);
     if(!ves_details) {
         log_error("ves_endpoint_details_get failed\n");
         free(post_data);

@@ -185,7 +185,7 @@ static int ves_heartbeat_send_ves_message(int port) {
         return NTS_ERR_FAILED;
     }
 
-    ves_details_t *ves_details = ves_endpoint_details_get(0);
+    ves_details_t *ves_details = ves_endpoint_details_get(0, 0);
     if(!ves_details) {
         log_error("ves_endpoint_details_get failed\n");
         free(post_data);

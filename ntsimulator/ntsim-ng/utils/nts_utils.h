@@ -55,7 +55,7 @@ cJSON* ves_create_common_event_header(const char *domain, const char *event_type
 
 nts_mount_point_addressing_method_t nts_mount_point_addressing_method_get(sr_session_ctx_t *current_session);
 
-ves_details_t *ves_endpoint_details_get(sr_session_ctx_t *current_session);
+ves_details_t *ves_endpoint_details_get(sr_session_ctx_t *current_session, const char *custom_path);
 void ves_details_free(ves_details_t *instance);
 
 controller_details_t *controller_details_get(sr_session_ctx_t *current_session);

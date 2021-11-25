@@ -46,7 +46,6 @@ static struct argp_option options[] = {
     { "manager", 'm', 0, 0, "Run the daemon as manager." },
     { "network-function", 'f', 0, 0, "Run the daemon as network function." },
     { "blank", 'b', 0, 0, "Run the deamon as a blank network function." },
-    { "generate", 'g', 0, 0, "Generate population data without commiting." },
     { "test-mode", 't', 0, 0, "Test mode." },
     
     // tools
@@ -210,11 +209,6 @@ int framework_init(int argc, char **argv) {
         case NTS_MODE_SUPERVISOR:
             log_file = "log/log-supervisor.txt";
             stderr_file = "log/stderr-supervisor.txt";
-            break;
-
-        case NTS_MODE_GENERATE_DATA:
-            log_file = "log/log-generate.txt";
-            stderr_file = "log/stderr-generate.txt";
             break;
 
         default:
@@ -915,10 +909,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 
         case 'b':
             iter_arguments->nts_mode = NTS_MODE_BLANK;
-            break;
-
-        case 'g':
-            iter_arguments->nts_mode = NTS_MODE_GENERATE_DATA;
             break;
 
         case 't':

@@ -20,8 +20,13 @@
 #include <string.h>
 #include <stdint.h>
 
-int datastore_schema_get_xpaths(char ***root_xpath);  //returns number of xpaths, 0 if none, -1 if error
-int datastore_schema_get_running_xpaths(char ***root_xpath, char ***modules);
+#include <libyang/libyang.h>
+#include <sysrepo.h>
 
-int datastore_schema_print_root_paths(void);
-int datastore_schema_print_xpath(const char *xpath);
+void debug_print_sr_val(const sr_val_t *value);
+void debug_print_sr_change(sr_change_oper_t op, sr_val_t *old_val, sr_val_t *new_val);
+
+void debug_print_lyd_value(struct lyd_node *node);
+void debug_print_lyd_node(struct lyd_node *node);
+
+void debug_print_siblings(const struct lyd_node *node);

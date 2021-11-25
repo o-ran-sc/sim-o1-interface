@@ -88,12 +88,13 @@ char *file_read_content(const char *fname) {
         fseek(f, 0, SEEK_END);
         length = ftell(f);
         fseek(f, 0, SEEK_SET);
-        buffer = (char*)malloc(sizeof(char) * length);
+        buffer = (char*)malloc(sizeof(char) * (length + 1));
         if(buffer) {
             fread(buffer, 1, length, f);
         }
         fclose(f);
     }
+    buffer[length] = 0;
 
     return buffer;
 }

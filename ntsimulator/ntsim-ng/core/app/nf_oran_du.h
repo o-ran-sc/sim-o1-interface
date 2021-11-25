@@ -1,6 +1,6 @@
 /*************************************************************************
 *
-* Copyright 2020 highstreet technologies GmbH and others
+* Copyright 2021 highstreet technologies GmbH and others
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -17,11 +17,5 @@
 
 #pragma once
 
-#include <string.h>
-#include <stdint.h>
-
-int datastore_schema_get_xpaths(char ***root_xpath);  //returns number of xpaths, 0 if none, -1 if error
-int datastore_schema_get_running_xpaths(char ***root_xpath, char ***modules);
-
-int datastore_schema_print_root_paths(void);
-int datastore_schema_print_xpath(const char *xpath);
+int nf_oran_du_init(void);
+void nf_oran_du_free(void);

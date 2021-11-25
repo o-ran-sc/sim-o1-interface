@@ -261,7 +261,7 @@ static int ves_pnf_registration_send(sr_session_ctx_t *current_session, const ch
     }
 
 
-    ves_details_t *ves_details = ves_endpoint_details_get(current_session);
+    ves_details_t *ves_details = ves_endpoint_details_get(current_session, 0);
     if(!ves_details) {
         log_error("ves_endpoint_details_get failed\n");
         free(post_data);

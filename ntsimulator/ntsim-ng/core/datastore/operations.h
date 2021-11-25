@@ -1,6 +1,6 @@
 /*************************************************************************
 *
-* Copyright 2020 highstreet technologies GmbH and others
+* Copyright 2021 highstreet technologies GmbH and others
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -17,12 +17,15 @@
 
 #pragma once
 
-#include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
+
 #include <libyang/libyang.h>
+#include <sysrepo.h>
+#include <sysrepo/values.h>
 
-struct lyd_node *datastore_load_external(const char *filename, bool operational);
+int datastore_operations_add_sr_val(struct lyd_node *datastore, const sr_val_t *val);
+int datastore_operations_change_sr_val(struct lyd_node *datastore, const sr_val_t *val);
+int datastore_operations_free_path(struct lyd_node *datastore, const char *xpath);
 
-//generate all available root nodes (taking into consideration excluded, deprecated and unimplemented modules and containers)
-int datastore_generate_data(const char *running_filename, const char *operational_filename);
-int datastore_generate_external(void);
+struct lyd_node *datastore_operations_get_lyd_node(struct lyd_node *datastore, const char *xpath);

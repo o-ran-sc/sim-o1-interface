@@ -237,6 +237,8 @@ static int manager_populate_sysrepo_network_function_list(void) {
             log_error("sr_apply_changes failed\n");
             return NTS_ERR_FAILED;
         }
+
+        sr_free_values(values, value_count);
     }
 
     //populate everything if needed

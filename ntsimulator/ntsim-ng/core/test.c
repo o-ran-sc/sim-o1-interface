@@ -18,6 +18,7 @@
 #define _GNU_SOURCE
 
 #include "test.h"
+#include "utils/debug_utils.h"
 #include "utils/log_utils.h"
 #include "utils/rand_utils.h"
 #include "utils/type_utils.h"
@@ -26,13 +27,15 @@
 #include <assert.h>
 
 #include <libyang/libyang.h>
+#include <sysrepo.h>
+#include <sysrepo/values.h>
 #include "core/session.h"
 #include "core/framework.h"
 #include "core/docker.h"
 
 #include "core/datastore/schema.h"
 #include "core/datastore/populate.h"
-
+#include "core/datastore/operations.h"
 
 int exhaustive_test_run(void) {
     //first get all xpaths
@@ -68,13 +71,13 @@ int exhaustive_test_run(void) {
     free(xpaths);
 
     //testing schema_populate
-    int rc = datastore_populate(1);
+    int rc = datastore_populate_all();
     if(rc != NTS_ERR_OK) {
-        log_error("error in datastore_populate\n");
+        log_error("error in datastore_populate_all\n");
         return rc;
     }
-    
-    log_add_verbose(0, "datastore_populate executed with "LOG_COLOR_BOLD_GREEN"success"LOG_COLOR_RESET"\n");
+
+    log_add_verbose(0, "datastore_populate_all executed with "LOG_COLOR_BOLD_GREEN"success"LOG_COLOR_RESET"\n");
     log_add_verbose(0, LOG_COLOR_BOLD_GREEN"ALL TESTS WENT GOOD!"LOG_COLOR_RESET"\n\n\n");
 
     //switching back verbosity level

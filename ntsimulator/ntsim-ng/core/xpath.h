@@ -52,6 +52,10 @@
 #define NTS_NF_RPC_FILE_READY_SCHEMA_XPATH                      "/nts-network-function:invoke-ves-pm-file-ready"
 #define NTS_NF_RPC_EMULATE_TOTAL_LOSS_SCHEMA_XPATH              "/nts-network-function:emulate-total-loss"
 
+#define NTS_NF_ORAN_DU_MODULE                                   "o-ran-sc-du-hello-world"
+#define NTS_NF_ORAN_DU_PM_JOBS_SCHEMA_XPATH                     "/o-ran-sc-du-hello-world:network-function/performance-measurement-jobs"
+#define NTS_NF_ORAN_DU_SUBSCRIPTION_STREAMS_SCHEMA_XPATH        "/o-ran-sc-du-hello-world:network-function/subscription-streams"
+
 #define IETF_KEYSTORE_MODULE                                    "ietf-keystore"
 #define IETF_KEYSTORE_SCHEMA_XPATH                              "/ietf-keystore:keystore"
 #define IETF_KEYSTORE_ASYMETRIC_KEY_SCHEMA_XPATH                "/ietf-keystore:keystore/asymmetric-keys/asymmetric-key[name='%s']"

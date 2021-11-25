@@ -37,7 +37,6 @@
 #include "core/app/network_function.h"
 #include "core/app/blank.h"
 #include "core/datastore/schema.h"
-#include "core/datastore/generate.h"
 #include "core/datastore/populate.h"
 
 int main(int argc, char **argv) {
@@ -53,7 +52,6 @@ int main(int argc, char **argv) {
     switch(framework_arguments.nts_mode) {
         case NTS_MODE_MANAGER:
         case NTS_MODE_NETWORK_FUNCTION:
-        case NTS_MODE_GENERATE_DATA:
         case NTS_MODE_TEST:
         case NTS_MODE_DEFAULT:
             sr_log_stderr(SR_LL_INF);   //checkAL WRN
@@ -81,6 +79,7 @@ int main(int argc, char **argv) {
     switch(framework_arguments.nts_mode) {
         case NTS_MODE_MANAGER:
         case NTS_MODE_NETWORK_FUNCTION:
+        case NTS_MODE_TEST: //checkAL remove this
             //configure local netconf server
             if(netconf_configure() != NTS_ERR_OK) {
                 log_error("netconf_configure() failed\n")
@@ -138,15 +137,6 @@ int main(int argc, char **argv) {
             }
 
             goto main_clean_framework;
-            break;
-
-        case NTS_MODE_GENERATE_DATA:
-            if(datastore_generate_data(DATASTORE_RUNNING_PATH, DATASTORE_OPERATIONAL_PATH) != NTS_ERR_OK) {
-                log_error("datastore_generate_data() failed\n");
-                return_code = EXIT_FAILURE;
-            }
-
-            goto main_clean;
             break;
 
         case NTS_MODE_TEST:

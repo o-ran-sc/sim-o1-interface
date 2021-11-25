@@ -83,6 +83,83 @@ int datastore_schema_get_xpaths(char ***root_xpath) {
     return total;
 }
 
+int datastore_schema_get_running_xpaths(char ***root_xpath, char ***modules) {
+    assert_session();
+    assert(root_xpath);
+    assert(modules);
+
+    const struct lys_module *module;
+    const struct lys_node *root;
+    uint32_t idx = 0;
+    char **xpath_list = 0;
+    char **mod_list = 0;
+    int total = 0;
+
+    while((module = ly_ctx_get_module_iter(session_context, &idx)) != 0) {
+        if(!generate_is_excluded_module(module->name) && (module->implemented)) {
+            LY_TREE_FOR(module->data, root) {
+                if(((root->nodetype == LYS_CONTAINER) || (root->nodetype == LYS_LIST)) && ((root->flags & LYS_STATUS_DEPRC) == 0) && ((root->flags & LYS_CONFIG_W) == 1)) {
+                    xpath_list = (char **)realloc(xpath_list, sizeof(char *) * (total + 1));
+                    if(!xpath_list) {
+                        log_error("bad realloc\n");
+                        return NTS_ERR_FAILED;
+                    }
+                    asprintf(&xpath_list[total], "/%s:%s", module->name, root->name);
+                    if(!xpath_list[total]) {
+                        log_error("bad asprintf\n");
+                        return NTS_ERR_FAILED;
+                    }
+
+                    mod_list = (char **)realloc(mod_list, sizeof(char *) * (total + 1));
+                    if(!mod_list) {
+                        log_error("bad realloc\n");
+                        return NTS_ERR_FAILED;
+                    }
+                    asprintf(&mod_list[total], "%s", module->name);
+                    if(!mod_list[total]) {
+                        log_error("bad asprintf\n");
+                        return NTS_ERR_FAILED;
+                    }
+                    total++; 
+                }
+                else if(root->nodetype == LYS_USES) {
+                    struct lys_node *chd;
+                    LY_TREE_FOR(root->child, chd) {
+                        if(((chd->nodetype == LYS_CONTAINER) || (chd->nodetype == LYS_LIST)) && ((chd->flags & LYS_STATUS_DEPRC) == 0) && ((root->flags & LYS_CONFIG_W) == 1)) {
+                            xpath_list = (char **)realloc(xpath_list, sizeof(char *) * (total + 1));
+                            if(!xpath_list) {
+                                log_error("bad realloc\n");
+                                return NTS_ERR_FAILED;
+                            }
+                            asprintf(&xpath_list[total], "/%s:%s", module->name, chd->name);                            
+                            if(!xpath_list[total]) {
+                                log_error("bad asprintf\n");
+                                return NTS_ERR_FAILED;
+                            }
+
+                            mod_list = (char **)realloc(mod_list, sizeof(char *) * (total + 1));
+                            if(!mod_list) {
+                                log_error("bad realloc\n");
+                                return NTS_ERR_FAILED;
+                            }
+                            asprintf(&mod_list[total], "%s", module->name);
+                            if(!mod_list[total]) {
+                                log_error("bad asprintf\n");
+                                return NTS_ERR_FAILED;
+                            }
+                            total++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    *root_xpath = xpath_list;
+    *modules = mod_list;
+    return total;
+}
+
 int datastore_schema_print_root_paths(void) {
     assert_session();
 
@@ -156,7 +233,7 @@ int datastore_schema_print_xpath(const char *xpath) {
         return NTS_ERR_FAILED;
     }
 
-    log_add_verbose(1, "\n   "LOG_COLOR_BOLD_YELLOW"R"LOG_COLOR_RESET" - read only | "LOG_COLOR_BOLD_YELLOW"W"LOG_COLOR_RESET" - writeable | "LOG_COLOR_BOLD_YELLOW"*"LOG_COLOR_RESET" - key | "LOG_COLOR_BOLD_YELLOW"M"LOG_COLOR_RESET" - mandatory | "LOG_COLOR_BOLD_YELLOW"D"LOG_COLOR_RESET" - deprecated | "LOG_COLOR_BOLD_YELLOW"O"LOG_COLOR_RESET" - obsolete\n\n");
+    log_add_verbose(1, "\n   "LOG_COLOR_BOLD_YELLOW"O"LOG_COLOR_RESET" - operational datastore | "LOG_COLOR_BOLD_YELLOW"R"LOG_COLOR_RESET" - running datastore | "LOG_COLOR_BOLD_YELLOW"*"LOG_COLOR_RESET" - key | "LOG_COLOR_BOLD_YELLOW"M"LOG_COLOR_RESET" - mandatory | "LOG_COLOR_BOLD_YELLOW"D"LOG_COLOR_RESET" - deprecated | "LOG_COLOR_BOLD_YELLOW"S"LOG_COLOR_RESET" - obsolete\n\n");
     log_add_verbose(2, "schema_print() finished\n");
 
     return NTS_ERR_OK;
@@ -167,10 +244,10 @@ static int schema_print_recursive(struct lys_node *root) {
     assert(root);
 
     char my_status[] = "[    ]";
-    my_status[1] = ((root->flags & LYS_CONFIG_W) == 0) ? 'R' : 'W';
+    my_status[1] = ((root->flags & LYS_CONFIG_W) == 0) ? 'O' : 'R';
     my_status[2] = ((root->flags & LYS_MAND_TRUE) != 0) ? 'M' : ' ';
     my_status[3] = ((root->flags & LYS_STATUS_DEPRC) != 0) ? 'D' : ' ';
-    my_status[4] = ((root->flags & LYS_STATUS_OBSLT) != 0) ? 'O' : ' ';
+    my_status[4] = ((root->flags & LYS_STATUS_OBSLT) != 0) ? 'S' : ' ';
 
     if(((root->parent) && (root->parent->nodetype == LYS_CASE)) && ((root->parent->flags & LYS_MAND_TRUE) != 0)) {
         my_status[2] = 'M';

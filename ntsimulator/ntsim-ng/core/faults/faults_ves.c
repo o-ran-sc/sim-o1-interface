@@ -235,7 +235,7 @@ static int ves_message_send_internal(sr_session_ctx_t *session, const char *cond
     cJSON_AddItemToObject(event, "faultFields", fault_fields);
 
     char *post_data = cJSON_PrintUnformatted(post_data_json);
-    ves_details_t *ves_details = ves_endpoint_details_get(session);
+    ves_details_t *ves_details = ves_endpoint_details_get(session, 0);
     if(!ves_details) {
         log_error("ves_endpoint_details_get failed\n");
         return NTS_ERR_FAILED;

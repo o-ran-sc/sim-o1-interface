@@ -33,6 +33,7 @@
 #include "core/context.h"
 #include "core/session.h"
 #include "core/xpath.h"
+#include "core/datastore/schema.h"
 #include "core/datastore/populate.h"
 
 #include "core/faults/faults.h"
@@ -45,6 +46,7 @@
 #include "features/web_cut_through/web_cut_through.h"
 
 #include "app_common.h"
+#include "nf_oran_du.h"
 
 #define NF_FUNCTION_CONTROL_BUFFER_LENGTH                       32
 
@@ -216,6 +218,14 @@ int network_function_run(void) {
         log_add(1,"\n");
     }
 
+    if(strcmp(framework_environment.nts.function_type, "NTS_FUNCTION_TYPE_O_RAN_O_DU") == 0) {
+        rc = nf_oran_du_init();
+        if(rc != NTS_ERR_OK) {
+            log_error("nf_oran_du_init failed\n"); 
+            return NTS_ERR_FAILED; 
+        }
+    }
+
     while(!framework_sigint) {
         pthread_mutex_lock(&nf_function_control_lock);
         while(nf_function_control_buffer_in != nf_function_control_buffer_out) {
@@ -227,10 +237,36 @@ int network_function_run(void) {
             }
 
             if(strstr(nf_function_control_string, "datastore-populate") != 0) {
-                rc = datastore_populate(3);
+                rc = datastore_populate_all();
                 if(rc != NTS_ERR_OK) {
-                    log_error("datastore_populate() failed\n");
+                    log_error("datastore_populate_all() failed\n");
                 }
+
+                //subscribe to any changes so the operational is dynamic
+                char **xpaths = 0;
+                char **modules = 0;
+                int xpaths_count = datastore_schema_get_running_xpaths(&xpaths, &modules);
+                if(xpaths_count < 0) {
+                    log_error("datastore_schema_get_running_xpaths failed\n");
+                    return NTS_ERR_FAILED;
+                }
+
+                for(int i = 0; i < xpaths_count; i++) {
+                    //subscribe
+                    log_add_verbose(1, "subscribing to %s on module %s... ", xpaths[i], modules[i]);
+                    rc = sr_module_change_subscribe(session_running, modules[i], xpaths[i], datastore_dynamic_operational_auto_callback, 0, 0, SR_SUBSCR_DONE_ONLY | SR_SUBSCR_CTX_REUSE, &session_subscription);
+                    if(rc != SR_ERR_OK) {
+                        log_error("sr_module_change_subscribe error\n");
+                    }
+                    else {
+                        log_add(1, "done\n");
+                    }
+
+                    free(xpaths[i]);
+                    free(modules[i]);
+                }
+                free(modules);
+                free(xpaths);
             }
 
             if(strstr(nf_function_control_string, "ves-file-ready") != 0) {
@@ -330,6 +366,7 @@ int network_function_run(void) {
     }
 
     faults_free();
+    nf_oran_du_free();
 
     return NTS_ERR_OK;
 }
