@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "4ac0cd2a_e336cfe0",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000124
+      },
+      "writtenOn": "2021-11-25T16:14:25Z",
+      "side": 1,
+      "message": "Verify will fail until merged, a new file was added.",
+      "revId": "62cb6f6b857e24e8028b5607937309baa3f11386",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
