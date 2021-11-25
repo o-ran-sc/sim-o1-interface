@@ -1,0 +1,38 @@
+{
+  "event": {
+    "commonEventHeader": {
+      "domain": "stndDefined",
+      "eventId": "%%job-id%%_%%starttime%%",
+      "eventName": "stndDefined_performanceMeasurementStreaming",
+      "eventType": "performanceMeasurementStreaming",
+      "sequence": $$uint32_counter$$,
+      "priority": "Low",
+      "reportingEntityId": "",
+      "reportingEntityName": "$$hostname$$",
+      "sourceId": "",
+      "sourceName": "$$hostname$$",
+      "startEpochMicrosec": %%starttime%%000000,
+      "lastEpochMicrosec": %%endtime%%000000,
+      "nfNamingCode": "SIM-O-DU",
+      "nfVendorName": "O-RAN-SC SIM Project",
+      "stndDefinedNamespace": "o-ran-sc-du-hello-world-pm-streaming-oas3",
+      "timeZoneOffset": "+00:00",
+      "version": "4.1",
+      "vesEventListenerVersion": "7.2.1"
+    },
+    "stndDefinedFields": {
+      "stndDefinedFieldsVersion": "1.0",
+      "schemaReference": "https://gerrit.o-ran-sc.org/r/gitweb?p=scp/oam/modeling.git;a=blob_plain;f=data-model/oas3/experimental/o-ran-sc-du-hello-world-pm-streaming-oas3.yaml",
+      "data": {
+        "id": "%%job-id%%_%%starttime%%",
+        "start-time": "%%starttime-literal%%",
+        "administrative-state": "%%administrative-state%%",
+        "operational-state": "enabled",
+        "user-label": "%%user-label%%",
+        "job-tag": "%%job-tag%%",
+        "granularity-period": %%granularity-period%%,
+        "measurements": [$$du_ves_measurements$$]
+      }
+    }
+  }
+}
