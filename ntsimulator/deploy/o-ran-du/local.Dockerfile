@@ -24,6 +24,8 @@ LABEL maintainer="alexandru.stancu@highstreet-technologies.com / adrian.lita@hig
 COPY ./yang /opt/dev/deploy/yang
 COPY ./data /opt/dev/deploy/data
 COPY ./config.json /opt/dev/ntsim-ng/config/config.json
+COPY ./config.json /opt/dev/ntsim-ng/config/config.json
+
 
 # ntsim-ng init docker
 RUN /opt/dev/ntsim-ng/ntsim-ng --container-init -w /opt/dev/ntsim-ng

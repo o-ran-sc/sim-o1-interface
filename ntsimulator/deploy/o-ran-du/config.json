@@ -40,15 +40,16 @@
             "ietf-truststore",
             "ietf-system",
             "ietf-netconf-server",
-            "nts-network-function"
+            "nts-network-function",
+            "o-ran-sc-du-hello-world"
         ],
         
-        "default-list-instances": 2,
+        "default-list-instances": 1,
         "custom-list-instances" : []
     },
 
     "datastore-populate-rules": {
-        "random-generation-enabled": true,
+        "random-generation-enabled": false,
 
         "pre-generated-operational-data": [
             "../deploy/data/o-ran-sc-du-hello-world-operational.xml"

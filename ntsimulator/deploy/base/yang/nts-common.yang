@@ -20,7 +20,7 @@ module nts-common {
 
   revision 2021-10-29 {
     description
-      "Added separete SDN Controller IP address for NETCONF Call Home.";
+      "Added separate SDN Controller IP address for NETCONF Call Home.";
     reference
       "O-RAN-SC SIM project";
   }
@@ -346,7 +346,7 @@ module nts-common {
     leaf controller-netconf-call-home-ip {
       type inet:host;
       description
-        "The IP address of the SDN Controller for the NETCONF Call Home connection.";
+        "The IP address of the SDN Controller for NETCONF Call Home.";
     }
     leaf controller-netconf-call-home-port {
       type inet:port-number;
