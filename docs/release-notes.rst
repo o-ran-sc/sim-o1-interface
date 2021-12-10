@@ -21,6 +21,9 @@ Version history
 | **Date**           | **Ver.**           | **Author**         | **Comment**        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
+| 2021-12-09         | 1.4.3vvv           | Alex Stancu        | "E" Release        |
+|                    |                    |                    |                    |
++--------------------+--------------------+--------------------+--------------------+
 | 2021-04-27         | 1.2.3              |  Alex Stancu       | "D" release        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
@@ -52,6 +55,36 @@ The O1 interface simulator is a framework that provides simulated network functi
 
 Release Data
 ------------
+
+version 1.4.3
+
+- [feature-add] aligned o-ran-sc-du-hello-world YANG model
+- [feature-add] o-ran-du standalone mode with subscription-streams and performance-management-jobs streamlined
+- [feature-add] dynamic VES template generation with parameters and functions for o-ran-du
+
+version 1.4.1
+
+- [feature-add] network-function dynamic operational datastore: when running in network-function mode, after the initial datastore population, NTS subscribes to all populated modules changes (running datastore), and whenever changed are detected, the operational store is dynamically updated accordingly
+
+
+version 1.4.0
+
+- [update] datastore population code revised and rearragned and simplified wherever possible with various fixes
+
+
+version 1.3.7
+
+- [feature-add] add SDN Controller CallHome IP different than the SDN Controller RESTCONF port. This is defined as a new ENV variable: SDN_CONTROLLER_CALLHOME_IP
+
+
+version 1.3.6
+
+- [feature-add] add support for hostname addressing instead of IP for SDN Controller and VES Collector. A hostname can be specified instead of the IP address. If the Port ENV variables (i.e. SDN_CONTROLLER_PORT and VES_ENDPOINT_PORT) are not set for the NF, the URL for addressing the SDN Controller and VES Collector will be constructed without it (e.g. http://sdn-controller-hostname/rests/data...). If the Port ENV variables are set, they will be used when constructing the URL (e.g. http://sdn-controller-hostname:8181/rests/data...).
+
+
+version 1.3.5
+
+- [feature-add] add support for NETCONF CallHome via TLS. Please note that this works only with ODL Silicon and above, because of API changes in the ODL CallHome module. 4335 is the port for CallHome via TLS. If any other port is used, CallHome via SSH will be used.
 
 version 1.2.3
 
