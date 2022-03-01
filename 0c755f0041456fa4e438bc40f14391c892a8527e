@@ -1,0 +1,78 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "82e6b84c_1448cff8",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000060
+      },
+      "writtenOn": "2022-03-01T10:54:47Z",
+      "side": 1,
+      "message": "Very cool docker-build yaml!! I \u003c3 it",
+      "revId": "0c755f0041456fa4e438bc40f14391c892a8527e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "9e963422_2fdfe175",
+        "filename": "ntsimulator/deploy/smo-nts-ng-topology-server/local.Dockerfile",
+        "patchSetId": 1
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1000060
+      },
+      "writtenOn": "2022-03-01T10:54:47Z",
+      "side": 1,
+      "message": "can this be an env var?",
+      "revId": "0c755f0041456fa4e438bc40f14391c892a8527e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "b795f69b_4a782d78",
+        "filename": "ntsimulator/docker-compose.yaml",
+        "patchSetId": 1
+      },
+      "lineNbr": 141,
+      "author": {
+        "id": 1000060
+      },
+      "writtenOn": "2022-03-01T10:54:47Z",
+      "side": 1,
+      "message": "Please remove this comments (and ending spaces)",
+      "range": {
+        "startLine": 141,
+        "startChar": 8,
+        "endLine": 141,
+        "endChar": 14
+      },
+      "revId": "0c755f0041456fa4e438bc40f14391c892a8527e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "c6339a46_238bc058",
+        "filename": "ntsimulator/nts_build.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1000060
+      },
+      "writtenOn": "2022-03-01T10:54:47Z",
+      "side": 1,
+      "message": "how about an Copyright/License header (Apache 2.0)?",
+      "revId": "0c755f0041456fa4e438bc40f14391c892a8527e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    }
+  ]
+}
