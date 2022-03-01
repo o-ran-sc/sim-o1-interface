@@ -27,6 +27,19 @@
         "ntsim-network-function": {
             "path": "/opt/dev/ntsim-ng/ntsim-ng",
             "args": ["-w/opt/dev/ntsim-ng", "-f"],
+            "autorestart": true,
+            "nomanual": false
+        },
+
+        "opendaylight": {
+            "path": "/opt/opendaylight/bin/karaf",
+            "args": ["server"],
+            "autorestart": true
+        },
+
+        "callhome-config": {
+            "path": "/opt/dev/workspace/callhomeConfig.py",
+            "autorestart": false,
             "nomanual": false
         }
     },
@@ -47,7 +60,7 @@
         ],
 
         "debug-max-string-size" : 50,
-        
+
         "default-list-instances": 1,
         "custom-list-instances" : []
     },
@@ -56,10 +69,10 @@
         "random-generation-enabled": false,
 
         "pre-generated-operational-data": [
-            
+            "/opt/dev/deploy/data/tapi-common-operational.json"
         ],
         "pre-generated-running-data": [
-            
+            "/opt/dev/deploy/data/tapi-common-running.json"
         ]
     }
 }
