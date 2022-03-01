@@ -89,3 +89,12 @@ services:
       labels:
        - "description=nts-ng"
       dockerfile: local.Dockerfile
+
+  ###################################################
+  ####### Topology service image
+  ###################################################
+  o-ran-sc-topology-service:
+    image: ${DOCKER_REPO}o-ran-sc-topology-service:${NTS_BUILD_VERSION}
+    build:
+      context: ./deploy/smo-nts-ng-topology-server
+      dockerfile: local.Dockerfile

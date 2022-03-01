@@ -21,7 +21,7 @@ services:
       IPv6_ENABLED: ${IPv6_ENABLED}
       SSH_CONNECTIONS: ${SSH_CONNECTIONS}
       TLS_CONNECTIONS: ${TLS_CONNECTIONS}
-            
+
       SDN_CONTROLLER_PROTOCOL: ${SDN_CONTROLLER_PROTOCOL}
       SDN_CONTROLLER_IP: ${SDN_CONTROLLER_IP}
       SDN_CONTROLLER_PORT: ${SDN_CONTROLLER_PORT}
@@ -37,8 +37,6 @@ services:
       VES_ENDPOINT_AUTH_METHOD: ${VES_ENDPOINT_AUTH_METHOD}
       VES_ENDPOINT_USERNAME: ${VES_ENDPOINT_USERNAME}
       VES_ENDPOINT_PASSWORD: ${VES_ENDPOINT_PASSWORD}
-    # networks:
-    #   app_net:
 
   ntsim-ng-o-ru:
     image: "${DOCKER_REPO}nts-ng-o-ran-ru-fh:${NTS_BUILD_VERSION}"
@@ -79,9 +77,6 @@ services:
       VES_ENDPOINT_USERNAME: ${VES_ENDPOINT_USERNAME}
       VES_ENDPOINT_PASSWORD: ${VES_ENDPOINT_PASSWORD}
 
-    # networks:
-    #   app_net:
-
   ntsim-ng-o-du:
     image: "${DOCKER_REPO}nts-ng-o-ran-du:${NTS_BUILD_VERSION}"
     cap_add:
@@ -104,7 +99,7 @@ services:
       NTS_HOST_NETCONF_TLS_BASE_PORT: ${NTS_HOST_NETCONF_TLS_BASE_PORT}
       NTS_HOST_TRANSFER_FTP_BASE_PORT: ${NTS_HOST_TRANSFER_FTP_BASE_PORT}
       NTS_HOST_TRANSFER_SFTP_BASE_PORT: ${NTS_HOST_TRANSFER_SFTP_BASE_PORT}
-      
+
       SDN_CONTROLLER_PROTOCOL: ${SDN_CONTROLLER_PROTOCOL}
       SDN_CONTROLLER_IP: ${SDN_CONTROLLER_IP}
       SDN_CONTROLLER_PORT: ${SDN_CONTROLLER_PORT}
@@ -120,16 +115,18 @@ services:
       VES_ENDPOINT_AUTH_METHOD: ${VES_ENDPOINT_AUTH_METHOD}
       VES_ENDPOINT_USERNAME: ${VES_ENDPOINT_USERNAME}
       VES_ENDPOINT_PASSWORD: ${VES_ENDPOINT_PASSWORD}
-    # networks:
-    #   app_net:
-  
-# networks:
-#   app_net:
-#     driver: bridge
-#     ipam:
-#       driver: default
 
-# We can attach to any other docker network, like in the example below        
+  o-ran-sc-topology-service:
+    image: "${DOCKER_REPO}o-ran-sc-topology-service:${NTS_BUILD_VERSION}"
+    stop_grace_period: 5m
+    hostname: "o-ran-sc-topology-service"
+    ports:
+      - ":::58181:8181"
+    volumes:
+        - ./deploy/smo-nts-ng-topology-server/data/tapi-common-operational.json:/opt/dev/deploy/data/tapi-common-operational.json
+        - ./deploy/smo-nts-ng-topology-server/data/tapi-common-running.json:/opt/dev/deploy/data/tapi-common-running.json
+
+# We can attach to any other docker network, like in the example below
 networks:
   default:
     external:
