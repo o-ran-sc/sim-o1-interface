@@ -53,6 +53,24 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "ce79bc71_35baa907",
+        "filename": "ntsimulator/deploy/smo-nts-ng-topology-server/local.Dockerfile",
+        "patchSetId": 1
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 1000124
+      },
+      "writtenOn": "2022-03-01T14:18:14Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "8258f129_37a97761",
+      "revId": "0c755f0041456fa4e438bc40f14391c892a8527e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "b795f69b_4a782d78",
@@ -100,6 +118,30 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "400007f7_2394e168",
+        "filename": "ntsimulator/docker-compose.yaml",
+        "patchSetId": 1
+      },
+      "lineNbr": 141,
+      "author": {
+        "id": 1000124
+      },
+      "writtenOn": "2022-03-01T14:18:14Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "46af48f3_02db5b25",
+      "range": {
+        "startLine": 141,
+        "startChar": 8,
+        "endLine": 141,
+        "endChar": 14
+      },
+      "revId": "0c755f0041456fa4e438bc40f14391c892a8527e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "c6339a46_238bc058",
@@ -131,6 +173,24 @@
       "side": 1,
       "message": "Done.",
       "parentUuid": "c6339a46_238bc058",
+      "revId": "0c755f0041456fa4e438bc40f14391c892a8527e",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d74e8402_c0b5131b",
+        "filename": "ntsimulator/nts_build.sh",
+        "patchSetId": 1
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 1000124
+      },
+      "writtenOn": "2022-03-01T14:18:14Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "d00202ee_0c76ec1a",
       "revId": "0c755f0041456fa4e438bc40f14391c892a8527e",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     }
