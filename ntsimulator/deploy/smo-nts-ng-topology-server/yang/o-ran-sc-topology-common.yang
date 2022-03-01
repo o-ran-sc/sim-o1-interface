@@ -1,0 +1,316 @@
+module o-ran-sc-topology-common {
+  yang-version 1.1;
+  namespace "urn:o-ran-sc:yang:o-ran-sc-topology-common:1.0";
+  prefix osctc;
+
+  import ietf-interfaces {
+    prefix if;
+  }
+
+  import tapi-common {
+    prefix tapi-common;
+  }
+
+  organization
+    "O-RAN Software Community";
+  contact
+    "www.o-ran.org";
+  description
+    "This module contains YANG definitions for the O-RAN Topology augmentation
+     of TAPI Topology used as network model.
+
+     Copyright 2022 the O-RAN Software Community.
+
+     Licensed under the Apache License, Version 2.0 (the 'License');
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an 'AS IS' BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.";
+
+  revision 2022-02-05 {
+    description
+      "Initial revision";
+    reference
+      "O-RAN-SC: https://jira.o-ran-sc.org/browse/OAM-248
+       O-RAN.WG1.O-RAN-Architecture-Description
+       Chapter: 1.3.1\tDefinitions";
+  }
+
+  // O-RAN functional identity types
+
+  identity function-type {
+    description
+      "Base identity as abstract function type for by O-RAN Alliance and others
+       entities.
+       An unique identification of a (network) function.
+
+       This identity is abstract and MUST NOT be used for alarms.";
+    reference
+      "O-RAN.WG1.O-RAN-Architecture-Description
+       Chapter: 1.3.1\tDefinitions
+       https://jira.o-ran-sc.org/browse/OAM-248";
+  }
+
+  identity smo {
+    base function-type;
+    description
+      "An identity corresponding to an
+       O-RAN Service Management and Orchestration Function (SMO).";
+  }
+
+  identity o-cloud {
+    base function-type;
+    description
+      "An identity corresponding to an O-RAN Cloud component (O-Cloud).";
+  }
+
+  identity non-rt-ric {
+    base function-type;
+    description
+      "An identity corresponding to an
+       O-RAN Service Management and Orchestration SMO component corresponding to
+       a Non-real-time RAN Intelligent Controller Function (Near-RT-RIC).";
+  }
+
+  identity oam-controller {
+    base function-type;
+    description
+      "An identity corresponding to an
+       O-RAN Service Management and Orchestration SMO component corresponding to
+       an Operation and Maintenance Controller Controller Function
+       (OAM Controller).";
+  }
+
+  identity ves-collector {
+    base function-type;
+    description
+      "An identity corresponding to an
+       O-RAN Service Management and Orchestration SMO component corresponding to
+       an (Virtual) Event Streaming Collector Function
+       (VES Collector).";
+  }
+
+  identity message-router {
+    base function-type;
+    description
+      "An identity corresponding to an
+       O-RAN Service Management and Orchestration SMO component corresponding to
+       Message Router Function (MR).";
+  }
+
+  identity transport-node {
+    base function-type;
+    description
+      "An identity corresponding to a Transport Node Function
+       (such as  Transponders, Muxponders, ROADM, Wavelength Selected Switch,
+       Optical Amplifier, Optical Terminal, Optical Repeater, Optical Filter,
+       Optical Multiplexer, Microwave Terminal, Carrier Ethernet Routers, ... .";
+  }
+
+  identity fronthaul-gateway {
+    base function-type;
+    description
+      "An identity corresponding to an O-RAN Fronthaul Gateway Function.";
+  }
+
+  identity fronthaul-multiplexer {
+    base function-type;
+    description
+      "An identity corresponding to an O-RAN Fronthaul Multiplexer Function.";
+  }
+
+  identity near-rt-ric {
+    base function-type;
+    description
+      "An identity corresponding to an O-RAN Near real-time RAN intelligent
+       controller Function (NEar-RT-RIC).";
+  }
+
+  identity managed-application {
+    base function-type;
+    description
+      "An identity corresponding to an O-RAN Managed Application Function (MA),
+       also called 'xApp'.";
+  }
+
+  identity o-cu {
+    base function-type;
+    description
+      "An identity corresponding to an O-RAN Central Unit Functions.";
+  }
+
+  identity o-cu-up {
+    base function-type;
+    description
+      "An identity corresponding to an O-RAN Central Unit User Plane Function.";
+  }
+
+  identity o-cu-cp {
+    base function-type;
+    description
+      "An identity corresponding to an O-RAN Central Unit Control Plane
+       Function.";
+  }
+
+  identity o-du {
+    base function-type;
+    description
+      "An identity corresponding to an O-RAN Distributed Unit Function.";
+  }
+
+  identity o-ru {
+    base function-type;
+    description
+      "An identity corresponding to an O-RAN Radio Unit Function.";
+  }
+
+  identity o-enb {
+    base function-type;
+    description
+      "An identity corresponding to an O-RAN E-UTRAN Node B Function.
+       E-UTRAN: evolved UMTS Terrestrial Radio Access";
+  }
+
+  identity user-equipment {
+    base function-type;
+    description
+      "An identity corresponding to an User Equipment Function.";
+  }
+
+  identity o-cloud-ims {
+    base function-type;
+    description
+      "An identity corresponding to an Infrastructure Management Service
+       Function (IMS).";
+  }
+
+  identity o-cloud-dms {
+    base function-type;
+    description
+      "An identity corresponding to a
+       Deployment Management Service Function (DMS).";
+  }
+
+  // O-RAN interface types
+
+  identity interface-type {
+    base if:interface-type;
+    description
+      "Base identity for interface types used in RAN, Transport and Core.
+       A unique identification of the management interface.
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  identity a1 {
+    base interface-type;
+    description
+      "An identity for the a1 interface between Non-RT-RIC and Near-RT-RIC.";
+  }
+
+  identity e1 {
+    base interface-type;
+    description
+      "An identity for the e1 interface defined by 3GPP.";
+  }
+
+  identity e2 {
+    base interface-type;
+    description
+      "An identity for the e2 interface as defined by O-RAN Alliance.";
+  }
+
+  identity o1 {
+    base interface-type;
+    description
+      "An identity for the operation and maintenance management interface
+       for network functions as defined by the O-RAN-Alliance as extension
+       to 3GPP NG NRM.";
+  }
+
+  identity o2 {
+    base interface-type;
+    description
+      "An identity for the operation and maintenance management interface
+       for a cloud infrastructure service and a could deployment service
+       (O-Cloud).";
+  }
+
+  identity open-fronthaul-management-plane {
+    base interface-type;
+    description
+      "An identity for the operation and maintenance management interface for
+       O-RU functions.";
+  }
+
+  identity transport-management-interface {
+    base interface-type;
+    description
+      "An identity for a yang based management interface for transport nodes.";
+  }
+
+  // O-RAN-SC LAYER_PROTOCOL_QUALIFIER
+  identity LAYER_PROTOCOL_QUALIFIER {
+    base tapi-common:LAYER_PROTOCOL_QUALIFIER;
+    description
+      "Base identity for layer protocol qualifiers used in RAN, Transport and Core.
+       A unique identification of layer protocol qualifiers. 
+       Typically the layer protocol qualifier is used to identify the interface 
+       protocol, like VES or NETCONF. 
+       This identity is abstract and MUST NOT be used as a value.";
+  }
+
+  identity unknown {
+    base LAYER_PROTOCOL_QUALIFIER;
+    description
+      "An identity for an unknown qualifier.";
+  }
+  
+  identity file {
+    base LAYER_PROTOCOL_QUALIFIER;
+    description
+      "An identity for a FILE transfer protocol qualifier.";
+  }
+
+  identity grpc {
+    base LAYER_PROTOCOL_QUALIFIER;
+    description
+      "An identity for an generic remote procedure call (gRPC) protocol qualifier.";
+  }
+
+  identity netconf {
+    base LAYER_PROTOCOL_QUALIFIER;
+    description
+      "An identity for a NETCONF protocol qualifier.";
+  }
+
+  identity rest {
+    base LAYER_PROTOCOL_QUALIFIER;
+    description
+      "An identity for a REST protocol qualifier.";
+  }
+
+  identity restconf {
+    base LAYER_PROTOCOL_QUALIFIER;
+    description
+      "An identity for a RESTCONF protocol qualifier.";
+  }
+
+  identity ves {
+    base LAYER_PROTOCOL_QUALIFIER;
+    description
+      "An identity for an REST based event stream (VES) protocol qualifier.";
+  }
+
+  identity ofh {
+    base LAYER_PROTOCOL_QUALIFIER;
+    description
+      "An identity for an O-RAN Fronthaul based protocol qualifier.";
+  }
+
+}
