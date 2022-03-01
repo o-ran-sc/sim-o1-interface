@@ -122,6 +122,17 @@ services:
       VES_ENDPOINT_PASSWORD: ${VES_ENDPOINT_PASSWORD}
     # networks:
     #   app_net:
+
+  o-ran-sc-topology-service:
+    image: "${DOCKER_REPO}o-ran-sc-topology-service:${NTS_BUILD_VERSION}"
+    stop_grace_period: 5m
+    hostname: "o-ran-sc-topology-service"
+    ports:
+      - ":::58181:8181"
+    volumes:
+        - ./deploy/smo-nts-ng-topology-server/data/tapi-common-operational.json:/opt/dev/deploy/data/tapi-common-operational.json
+        - ./deploy/smo-nts-ng-topology-server/data/tapi-common-running.json:/opt/dev/deploy/data/tapi-common-running.json
+    
   
 # networks:
 #   app_net:
