@@ -18,6 +18,24 @@
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "f14824fb_76c40d72",
+        "filename": "ntsimulator/deploy/smo-nts-ng-topology-server/Dockerfile",
+        "patchSetId": 1
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 1000124
+      },
+      "writtenOn": "2022-03-01T13:54:33Z",
+      "side": 1,
+      "message": "Correct.",
+      "parentUuid": "9560b100_def75503",
+      "revId": "a0498f3728a0bee228c748490cfb8d1de7248e30",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "0a218b7c_0bf1e891",
@@ -31,6 +49,24 @@
       "writtenOn": "2022-03-01T10:50:28Z",
       "side": 1,
       "message": "Can this be an env var?",
+      "revId": "a0498f3728a0bee228c748490cfb8d1de7248e30",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "20d92a8a_aa2c1b92",
+        "filename": "ntsimulator/deploy/smo-nts-ng-topology-server/Dockerfile",
+        "patchSetId": 1
+      },
+      "lineNbr": 66,
+      "author": {
+        "id": 1000124
+      },
+      "writtenOn": "2022-03-01T13:54:33Z",
+      "side": 1,
+      "message": "Not really, because of Jenkins build reasons.",
+      "parentUuid": "0a218b7c_0bf1e891",
       "revId": "a0498f3728a0bee228c748490cfb8d1de7248e30",
       "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
     },
@@ -65,6 +101,30 @@
       "writtenOn": "2022-03-01T10:50:28Z",
       "side": 1,
       "message": "sorry, just a very minor stuff :)",
+      "range": {
+        "startLine": 63,
+        "startChar": 0,
+        "endLine": 63,
+        "endChar": 8
+      },
+      "revId": "a0498f3728a0bee228c748490cfb8d1de7248e30",
+      "serverId": "84e4e190-e623-4c37-9eda-58b1937c1b53"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "0bae4c03_ebf46a4a",
+        "filename": "ntsimulator/deploy/smo-nts-ng-topology-server/config.json",
+        "patchSetId": 1
+      },
+      "lineNbr": 63,
+      "author": {
+        "id": 1000124
+      },
+      "writtenOn": "2022-03-01T13:54:33Z",
+      "side": 1,
+      "message": "Done.",
+      "parentUuid": "0beef7e4_1abb077d",
       "range": {
         "startLine": 63,
         "startChar": 0,
