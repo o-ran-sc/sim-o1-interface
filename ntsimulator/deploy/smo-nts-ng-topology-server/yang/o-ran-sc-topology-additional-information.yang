@@ -1,0 +1,210 @@
+module o-ran-sc-topology-additional-information {
+  yang-version 1.1;
+  namespace "urn:o-ran-sc:yang:o-ran-sc-topology-additional-information:1.0";
+  prefix osctai;
+
+  import ietf-yang-types {
+    prefix yang;
+    reference
+      "RFC 6991: Common YANG Data Types.";
+  }
+
+  organization
+    "O-RAN Software Community";
+  contact
+    "www.o-ran.org";
+  description
+    "This module contains YANG definitions for the O-RAN Topology and its
+     additional information exposed northbound of the Service Management and
+     Orchestration framework (SMO).
+     By intention this yang model has no strict dependencies to other yang
+     modules defining data structures. The dependencies are only to type
+     definitions.
+     In order to extend existing data tree the identifier of the data are
+     used. For example values of uuids or values of yang:instance-identifier are
+     used as references to the extended data tree.
+
+     Copyright 2022 the O-RAN Software Community.
+
+     Licensed under the Apache License, Version 2.0 (the 'License');
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an 'AS IS' BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.";
+
+  revision 2022-05-20 {
+    description
+      "Initial revision";
+    reference
+      "O-RAN-SC: https://jira.o-ran-sc.org/browse/OAM-248";
+  }
+
+  /* Type Definitions */
+
+  typedef resource {
+    type union {
+      type instance-identifier {
+        require-instance false;
+      }
+      type yang:uuid;
+      type string;
+    }
+    description
+      "This is an identification of the referenced resource, such as an
+       interface or a network function.  It should be as fine-grained as
+       possible to both guide the operator and guarantee uniqueness of the
+       additional information.
+
+       If the extended resource is modeled in YANG, this type should
+       be an instance-identifier.
+
+       If the extended object is identified by a Universally Unique
+       Identifier (UUID), use the uuid type.
+
+       If the resource is anything else, for example, a distinguished
+       name or a Common Information Model (CIM) path, this type will
+       be a string.
+
+       If the server supports several models, the precedence should
+       be in the order as given in the union definition.";
+    reference
+      "This type definition is inspired by
+       RFC 8632: A YANG Data Model for Alarm Management
+       type definition 'resource'";
+  }
+
+  /* Type definitions */
+
+  typedef label {
+    type string {
+      length "1..255";
+    }
+    description
+      "A human readable string.";
+  }
+
+  typedef slice-differentiator {
+    type string {
+      pattern '([0-9a-fA-F]{2}){3}';
+    }
+    default "FFFFFF";
+    description
+      "The slice-differentiator type represents an 3GPP TS 23.003 slice
+       differentiator. The canonical representation uses lowercase
+       characters.";
+    reference
+      "3GPP TS 28.003 V17.5.0 clause 28.4.2";
+  }
+
+  typedef tracking-area-code {
+    type string {
+      pattern '([0-9a-fA-F]{2}){3}';
+    }
+    description
+      "The tracking-area-code type represents an 3GPP TS 38.413 tracking
+       area code. The canonical representation uses lowercase characters.";
+    reference
+      "3GPP TS 38.413 V17.0.0 clause 9.3.3.10";
+  }
+
+  /* Groupings (object classes) */
+
+  grouping area-label {
+    leaf tracking-area-code {
+      type tracking-area-code;
+      description
+        "An 3-octet string identifying a tracking area.";
+    }
+    leaf label {
+      type label;
+      mandatory true;
+      description
+        "A human readable label of the tracking area.";
+    }
+    description
+      "A mapping table for tracking-area-codes to human readable labels.";
+  }
+
+  grouping slice-label {
+    leaf slice-differentiator {
+      type slice-differentiator;
+      description
+        "An 3-octet string identifying a slice.";
+    }
+    leaf label {
+      type label;
+      mandatory true;
+      description
+        "A human readable label of the slice.";
+    }
+    description
+      "A mapping table for slice-differentiator to human readable labels.";
+  }
+
+  grouping node {
+    leaf resource {
+      type resource;
+      description
+        "A reference to an object instance. ";
+    }
+    leaf name {
+      type string;
+      description
+        "An human readable identifier of the resource.";
+    }
+    leaf tracking-area-code {
+      type tracking-area-code;
+      description
+        "An 3-octet string identifying a tracking area.";
+    }
+    leaf slice-differentiator {
+      type slice-differentiator;
+      description
+        "An 3-octet string identifying a network slice.";
+    }
+    leaf-list tag {
+      type label;
+      description
+        "A list of short group identifiers for grouping of resources on runtime,
+         even the group identifiers are unknown during compile time.";
+    }
+    description
+      "An abstract object class with additional information of a resource.
+       The extended resource object instance is referenced by the 'resource'
+       attribute.";
+  }
+
+  /* Data tree */
+
+  container additional-information {
+    list node {
+      key "resource";
+      uses node;
+      description
+        "A list for additional information where each row is identified by a
+         reference to the extended object instance.";
+    }
+    list area-label {
+      key "tracking-area-code";
+      uses area-label;
+      description
+        "A list for additional information where each row is identified by a
+         tracking area code.";
+    }
+    list slice-label {
+      key "slice-differentiator";
+      uses slice-label;
+      description
+        "A list for additional information where each row is identified by a
+         slice differentiator.";
+    }
+    description
+      "The root container of this module.";
+  }
+}

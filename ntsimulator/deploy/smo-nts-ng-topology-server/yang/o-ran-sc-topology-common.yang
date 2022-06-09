@@ -6,7 +6,6 @@ module o-ran-sc-topology-common {
   import ietf-interfaces {
     prefix if;
   }
-
   import tapi-common {
     prefix tapi-common;
   }
@@ -33,6 +32,18 @@ module o-ran-sc-topology-common {
      See the License for the specific language governing permissions and
      limitations under the License.";
 
+  revision 2022-05-26 {
+    description
+      "SCTP protocol added for E2 interfaces";
+    reference
+      "O-RAN-SC: https://jira.o-ran-sc.org/browse/OAM-269";
+  }
+  revision 2022-03-06 {
+    description
+      "Initial revision";
+    reference
+      "O-RAN-SC: https://jira.o-ran-sc.org/browse/OAM-255";
+  }
   revision 2022-02-05 {
     description
       "Initial revision";
@@ -125,11 +136,23 @@ module o-ran-sc-topology-common {
       "An identity corresponding to an O-RAN Fronthaul Multiplexer Function.";
   }
 
+  identity access-and-mobility-management-function {
+    base function-type;
+    description
+      "An identity corresponding to a 3GPP 5G-Core Access and mobility Management Function (AMF).";
+  }
+
+  identity user-plane-function {
+    base function-type;
+    description
+      "An identity corresponding to a3GPP 5G-Core User Plane Function (UPF).";
+  }
+
   identity near-rt-ric {
     base function-type;
     description
       "An identity corresponding to an O-RAN Near real-time RAN intelligent
-       controller Function (NEar-RT-RIC).";
+       controller Function (Near-RT-RIC).";
   }
 
   identity managed-application {
@@ -225,6 +248,30 @@ module o-ran-sc-topology-common {
       "An identity for the e2 interface as defined by O-RAN Alliance.";
   }
 
+  identity n1 {
+    base interface-type;
+    description
+      "An identity for the n1 interface as defined by 3GPP.";
+    reference
+      "3GPP TS 23.501 System architecture for the 5G System (5GS)";
+  }
+
+  identity n2 {
+    base interface-type;
+    description
+      "An identity for the n1 interface as defined by 3GPP.";
+    reference
+      "3GPP TS 23.501 System architecture for the 5G System (5GS)";
+  }
+
+  identity n3 {
+    base interface-type;
+    description
+      "An identity for the n1 interface as defined by 3GPP.";
+    reference
+      "3GPP TS 23.501 System architecture for the 5G System (5GS)";
+  }
+
   identity o1 {
     base interface-type;
     description
@@ -255,13 +302,14 @@ module o-ran-sc-topology-common {
   }
 
   // O-RAN-SC LAYER_PROTOCOL_QUALIFIER
+
   identity LAYER_PROTOCOL_QUALIFIER {
     base tapi-common:LAYER_PROTOCOL_QUALIFIER;
     description
       "Base identity for layer protocol qualifiers used in RAN, Transport and Core.
-       A unique identification of layer protocol qualifiers. 
-       Typically the layer protocol qualifier is used to identify the interface 
-       protocol, like VES or NETCONF. 
+       A unique identification of layer protocol qualifiers.
+       Typically the layer protocol qualifier is used to identify the interface
+       protocol, like VES or NETCONF.
        This identity is abstract and MUST NOT be used as a value.";
   }
 
@@ -270,7 +318,7 @@ module o-ran-sc-topology-common {
     description
       "An identity for an unknown qualifier.";
   }
-  
+
   identity file {
     base LAYER_PROTOCOL_QUALIFIER;
     description
@@ -283,10 +331,24 @@ module o-ran-sc-topology-common {
       "An identity for an generic remote procedure call (gRPC) protocol qualifier.";
   }
 
+  identity nas {
+    base LAYER_PROTOCOL_QUALIFIER;
+    description
+      "An identity for a Non-access stratum protocol qualifier.";
+    reference
+      "3GPP TS 24.301\tNon-Access-Stratum (NAS) protocol for Evolved Packet System (EPS); Stage 3";
+  }
+
   identity netconf {
     base LAYER_PROTOCOL_QUALIFIER;
     description
       "An identity for a NETCONF protocol qualifier.";
+  }
+
+  identity radio {
+    base LAYER_PROTOCOL_QUALIFIER;
+    description
+      "An identity for a Radio protocol qualifier.";
   }
 
   identity rest {
@@ -313,4 +375,13 @@ module o-ran-sc-topology-common {
       "An identity for an O-RAN Fronthaul based protocol qualifier.";
   }
 
+  identity sctp {
+    base LAYER_PROTOCOL_QUALIFIER;
+    description
+      "An identity for an Stream Control Transmission Protocol (SCTP)  based
+       protocol qualifier.";
+    reference
+      "RFC 8261,
+       RFC 4960";
+  }
 }
