@@ -21,6 +21,9 @@ Version history
 | **Date**           | **Ver.**           | **Author**         | **Comment**        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
+| 2022-06-27         | 1.5.0              | Alex Stancu        | "F" Release        |
+|                    |                    |                    |                    |
++--------------------+--------------------+--------------------+--------------------+
 | 2021-12-09         | 1.4.3              | Alex Stancu        | "E" Release        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
@@ -47,6 +50,7 @@ Version history
 +--------------------+--------------------+--------------------+--------------------+
 
 
+
 Summary
 -------
 
@@ -55,6 +59,11 @@ The O1 interface simulator is a framework that provides simulated network functi
 
 Release Data
 ------------
+
+version 1.5.0
+
+- [feature-add] new topology-service image available, with latest YANG specifications from OAM project. It exposes a RESTCONF endpoint with specific topology information as configured.
+
 
 version 1.4.3
 
@@ -89,13 +98,13 @@ version 1.3.5
 version 1.2.3
 
 - [change] moved all NETCONF x-paths to xpath.h for easier management and cleaner codebase
-  
+
 - [feature-add] Manager now automatically tries to pull missing images (last version) when not found, if **DOCKER_REPOSITORY** env var is set to a certain Docker repository; note that repository authentication currently not supported
-  
+
 - [feature-add] log-rotation application; does not include supervisor redirected paths, not stderr; log is hard-coded at ~5000 lines per file
-  
+
 - [feature-add] host-mapping is now available when running NF is running in standalone mode via the **NTS_NF_MOUNT_POINT_ADDRESSING_METHOD** variable
-  
+
 
 version 1.2.1
 
