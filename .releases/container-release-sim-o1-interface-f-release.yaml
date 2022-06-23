@@ -1,0 +1,22 @@
+---
+distribution_type: container
+container_release_tag: 1.5.0
+container_pull_registry: nexus3.o-ran-sc.org:10004
+container_push_registry: nexus3.o-ran-sc.org:10002
+project: sim/o1-interface
+ref: 10be28f66513ca5344aebf45e2919c1af6d4496f
+containers:
+    - name: ntsim-ng-manager
+      version: 1.5.0
+    - name: nts-ng-o-ran-ru-fh
+      version: 1.5.0
+    - name: nts-ng-o-ran-du
+      version: 1.5.0
+    - name: nts-ng-o-ran-fh
+      version: 1.5.0
+    - name: nts-ng-blank
+      version: 1.5.0
+    - name: nts-ng-x-ran
+      version: 1.5.0
+    - name: smo-nts-ng-topology-server
+      version: 1.5.0
