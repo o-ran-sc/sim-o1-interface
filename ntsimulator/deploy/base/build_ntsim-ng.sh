@@ -62,6 +62,7 @@ files=(
     "features/manual_notification/manual_notification.c"
     "features/netconf_call_home/netconf_call_home.c"
     "features/web_cut_through/web_cut_through.c"
+    "features/ves_o1_pnf_registration/ves_o1_pnf_registration.c"
     "main.c"
 )
 

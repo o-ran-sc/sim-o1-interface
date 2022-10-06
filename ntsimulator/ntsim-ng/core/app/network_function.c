@@ -44,6 +44,7 @@
 #include "features/manual_notification/manual_notification.h"
 #include "features/netconf_call_home/netconf_call_home.h"
 #include "features/web_cut_through/web_cut_through.h"
+#include "features/ves_o1_pnf_registration/ves_o1_pnf_registration.h"
 
 #include "app_common.h"
 #include "nf_oran_du.h"
@@ -292,6 +293,16 @@ int network_function_run(void) {
                     rc = ves_pnf_registration_feature_start(session_running);
                     if(rc != 0) {
                         log_error("ves_pnf_registration_feature_start() failed\n");
+                    }
+                }
+            }
+
+            if(strstr(nf_function_control_string, "ves-o1-pnf-registration") != 0) {
+                if(nf_function_control_string[0] == '1') {
+                    // check if O1 PNF registration is enabled and send PNF registration message if so
+                    rc = ves_o1_pnf_registration_feature_start(session_running);
+                    if(rc != 0) {
+                        log_error("ves_o1_pnf_registration_feature_start() failed\n");
                     }
                 }
             }
@@ -698,7 +709,11 @@ static int network_function_info_get_items_cb(sr_session_ctx_t *session, const c
     if(web_cut_through_feature_get_status()) {
         strcat(started_features, "web-cut-through ");
     }
-    
+
+    if(ves_o1_pnf_registration_feature_get_status()) {
+        strcat(started_features, "ves-o1-pnf-registration ");
+    }
+
     if(strlen(started_features)) {
         started_features[strlen(started_features) - 1] = 0;
     }

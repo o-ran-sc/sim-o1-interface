@@ -60,6 +60,11 @@ The O1 interface simulator is a framework that provides simulated network functi
 Release Data
 ------------
 
+version 1.5.2
+
+- [feature-add] new VES O1 PNF Registration (stndDefined) message available. It can be enabled by using ves-o1-pnf-registration feature name.
+
+
 version 1.5.0
 
 - [feature-add] new topology-service image available, with latest YANG specifications from OAM project. It exposes a RESTCONF endpoint with specific topology information as configured.

@@ -137,7 +137,7 @@ Under **simulation** there are 3 configuration containers and a couple of statis
 
 - **network-functions** - represents the simulation data, which will be best described below
 - **sdn-controller** - this container groups the configuration related to the ODL based SDN controller that the simulated devices can connect to:
-  
+
     - **controller-protocol** - SDN controller protocol (http/https)
     - **controller-ip** - the IP address of the ODL based SDN controller where the simulated devices can be mounted. Both IPv4 and IPv6 are supported
     - **controller-port** - the port of the ODL based SDN controller
@@ -157,7 +157,7 @@ Under **simulation** there are 3 configuration containers and a couple of statis
         + *cert-only* - certificate only authentication in this case the certificate to be used for the communication must be configured
         + *basic-auth* - classic username/password authentication in this case both the username and password need to be configured
         + *cert-basic-auth* - authentication that uses both username/password and a certificate all three values need to be configured in this case
-        + 
+        +
     - **ves-endpoint-username** - the username to be used when authenticating to the VES endpoint
     - **ves-endpoint-password** - the password to be used when authenticating to the VES endpoint
     - **ves-endpoint-certificate** - the certificate to be used when authenticating to the VES endpoint
@@ -180,7 +180,7 @@ Under the **network-functions** there is the **network-function** list. This lis
 - **started-devices** - represents the number of simulated devices. The default value is 0, meaning that when the NTS is started, there are no simulated devices. When this value is increased to **n**, the NTS Manager starts docker containers in order to reach **n** simulated devices. If the value is decreased to **k**, the NTS Manager will remove docker containers in a LIFO manner, until the number of simulated devices reaches **k**
 - **mounted-devices** - represents the number of devices to be mounted to an ODL based SDN Controller. The same phylosophy as in the case of the previous leaf applies. If this number is increased, the number of ODL mountpoints increases. Else, the simulated devices are being unmounted from ODL. The number of mounted devices cannot exceed the number of started devices. The details about the ODL controller where to mount/unmount are given by the **sdn-controller** container
 - **mount-point-addressing-method** - addressing method of the mount point. Possible values are:
-  
+
     + *docker-mapping* - [default value] future started simulated devices will be mapped on the Docker container
     + *host-mapping* - future started simulated devices will me mapped on the host's IP address and port based on *base-port*
 - **docker-instance-name** - the prefix for future simulated devices (to this name a dash and an increasing number is added)
@@ -202,12 +202,12 @@ The **available-images** container has a list containing available (installed) s
 There are 2 defined **notifications**:
 
 - **instance-changed** notification: is called by the manager whenever a change is done to any of the network functions. This contains data about the change:
-  
+
     - **change-status**: is a string which has the following structure: operation STATUS - info. operation can be *start*, *stop*, *mount*, *unmount*, *config* and *reconfig*; STATUS can be SUCCESS or FAILED; info can be present or not, depending on what further information is available about the change
     - **function-type**: the function-type for the instance
     - **name**: name of the instance that is changed
     - **networking**: when starting and configuring an instance, this container has all the necessary networking data, such as IP and ports
-  
+
 - **operation-status-changed** notification is called by the manager at the end of an operation:
 
     - **status** returns the status of the operation: SUCCESS/FAILED. This status can also be statically read from the operational datastore under *nts-manager:simulation/last-operation-status*
@@ -304,6 +304,7 @@ All de details and mechanisms of the **network-function** container are explaine
     - **ves-file-ready** - enables VES file ready, and stats a FTP and a SFTP server on the network function
     - **ves-heartbeat** - enabled VES heartbeat feature
     - **ves-pnf-registration*** - enables VES PNF registration
+    - **ves-o1-pnf-registration*** - enables O1 VES PNF registration (stndDefined)
     - **manual-notification-generation** - enables the manual notification generation feature
     - **netconf-call-home*** - enables NETCONF's Call Home feature
     - **web-cut-through** - enables web cut through, adding the info to the ietf-system module
@@ -311,11 +312,11 @@ All de details and mechanisms of the **network-function** container are explaine
 - **invoke-notification** - this RPC is used for forcing a simulated device to send a NETCONF notification, as defined by the user:
 
     - The **input** needed by the RPC:
-  
+
         - **notification-format** - can be either *json* or *xml*
         - **notification-object** - this is a string containing the notification object that we are trying to send from the simulated device, in JSON format. **Please note that the user has the responsibility to ensure that the JSON object is valid, according to the definition of the notification in the YANG module.** There is no possibility to see what was wrong when trying to send an incorrect notification. The RPC will only respond with an "ERROR" status in that case, without further information. E.g. of a JSON containing a notification object of type ***otdr-scan-result*** defined in the ***org-openroadm-device*** YANG module: ***{"org-openroadm-device:otdr-scan-result":{"status":"Successful","status-message":"Scan result was successful","result-file":"/home/result-file.txt"}}***. **Please note that the notification object contains also the name of the YANG model defning it, as a namespace, as seen in the example.**
     - The **output** returned by the RPC:
-  
+
         - **status** - if the notification was send successfully by the simulated device, the RPC will return a **SUCCESS** value. Else, the RPC will return a **ERROR** value.
 
 - **invoke-ves-pm-file-ready** - as name impiles, it invokes a file ready VES request, with a specified *file-location*
@@ -367,7 +368,7 @@ The datastore will be populated with random values on each of its leafs. However
         ],
 
         "debug-max-string-size" : 50,       //max size of string. if not set, default is 255
-        
+
         "default-list-instances": 1,    //default number of instances a list or a leaflist should be populated with
         "custom-list-instances" : [     //custom number of list instances. instance is schema name, and should reflect a list or a leaflist
             {"/ietf-interfaces:interfaces/interface": 2}, //2 instances of this. if 0, list will be excluded from populating
@@ -385,7 +386,7 @@ The datastore will be populated with random values on each of its leafs. However
             "path/to/data.json",
             "path/to/data.xml"
         ],
-        
+
         "pre-generated-running-data": [ //path with files containing NETCONF data, either JSON or XML
             "path/to/data.json",
             "path/to/data.xml"
@@ -475,7 +476,7 @@ The paramers are described below:
 - --help - shows the help (also described here)
 - --version - describes ntsng version and build time
 - **main modes**:
-  
+
     - --container-init - is automatically used by Docker when building the images to install modules and enable features. Described in the next chapter. **Do not run manually**
     - --supervisor - runs in supervisor mode (configuration is done via config.json)
     - --manager - runs in manager mode
@@ -489,7 +490,7 @@ The paramers are described below:
     - --verbose - set the verbose level. can range from 0 (errors-only) to 2 (verbose), default is 1 (info)
     - --workspace - set the current working workspace. the workspace **MUST** be writeable and should contain *config/config.json* file, otherwise a blank json file will be created
 - tools:
-  
+
     - --ls - list all modules in the datastore with their attributes
     - --schema - list the schema of an xpath given as parameter
 
@@ -620,7 +621,7 @@ Before starting, the user should set the environment variables defined in the do
 
 - **NTS_HOST_IP**: an IP address from the host, which should be used by systems outside the local machine to address the simulators;
 - **NTS_HOST_BASE_PORT**: the port from where the allocation for the simulated network functions should start, if not specified otherwise sepparately (see below); any port not defined will automatically be assigned to *BASE_PORT*; **NOTE** that in order for a port to be eligible, it must be greater than or equal to **1000**:
-  
+
     - **NTS_HOST_NETCONF_SSH_BASE_PORT**
     - **NTS_HOST_NETCONF_TLS_BASE_PORT**
     - **NTS_HOST_TRANSFER_FTP_BASE_PORT**

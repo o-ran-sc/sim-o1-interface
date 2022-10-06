@@ -39,6 +39,7 @@
 #define NTS_NF_VES_FAULTS_ENABLED_SCHEMA_XPATH                  "/nts-network-function:simulation/network-function/ves/faults-enabled"
 #define NTS_NF_VES_HEARTBEAT_SCHEMA_XPATH                       "/nts-network-function:simulation/network-function/ves/heartbeat-period"
 #define NTS_NF_VES_PNF_REGISTRATION_SCHEMA_XPATH                "/nts-network-function:simulation/network-function/ves/pnf-registration"
+#define NTS_NF_VES_O1_PNF_REGISTRATION_SCHEMA_XPATH             "/nts-network-function:simulation/network-function/ves/o1-pnf-registration"
 #define NTS_NF_NETWORK_EMULATION_SCHEMA_XPATH                   "/nts-network-function:simulation/network-emulation"
 #define NTS_NF_HARDWARE_EMULATION_SCHEMA_XPATH                  "/nts-network-function:simulation/hardware-emulation"
 #define NTS_NF_HE_NETCONF_DELAY_SCHEMA_XPATH                    "/nts-network-function:simulation/hardware-emulation/netconf-delay"

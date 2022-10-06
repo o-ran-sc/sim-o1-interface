@@ -18,6 +18,12 @@ module nts-common {
   description
     "This module contains common yang definitions YANG definitions for the Network Topology Simulator.";
 
+  revision 2022-09-29 {
+    description
+      "Added O1 pnfRegistration standard defined capabilities.";
+    reference
+      "O-RAN-SC SIM project";
+  }
   revision 2021-10-29 {
     description
       "Added separate SDN Controller IP address for NETCONF Call Home.";
@@ -173,6 +179,11 @@ module nts-common {
         description
           "Controls the Web Cut Through feature.";
       }
+      bit ves-o1-pnf-registration {
+        position 6;
+        description
+          "Controls the ves-o1-pnf-registration (stndDefined) feature.";
+      }
     }
     description
       "Describes the features that can be enabled/disabled in the Network Function.";
@@ -306,6 +317,11 @@ module nts-common {
         type boolean;
         description
           "For enabling the PNF Registration messages. If set to 'true', each simulated device, when booting up, will send a PNF Registration message to the VES Collector.";
+      }
+      leaf o1-pnf-registration {
+        type boolean;
+        description
+          "For enabling the O1 PNF Registration (stndDefined) messages. If set to 'true', each simulated device, when booting up, will send a O1 PNF Registration (stndDefined) message to the VES Collector.";
       }
       leaf heartbeat-period {
         type uint16;

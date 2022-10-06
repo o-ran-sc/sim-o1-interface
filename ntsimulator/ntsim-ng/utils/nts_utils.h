@@ -38,7 +38,7 @@ typedef struct {
     char *url;
 } ves_details_t;
 
-typedef struct {   
+typedef struct {
     char *ip;
     uint16_t port;
     char *nc_callhome_ip;
@@ -52,6 +52,7 @@ typedef struct {
 } controller_details_t;
 
 cJSON* ves_create_common_event_header(const char *domain, const char *event_type, const char *hostname, int port, const char *priority, int seq_id);
+cJSON* ves_create_common_event_header_721(const char *domain, const char *event_type, const char *hostname, int port, const char *priority, int seq_id, const char *stnd_defined_namespace);
 
 nts_mount_point_addressing_method_t nts_mount_point_addressing_method_get(sr_session_ctx_t *current_session);
 

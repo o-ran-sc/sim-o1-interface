@@ -161,6 +161,168 @@ cJSON* ves_create_common_event_header(const char *domain, const char *event_type
     return common_event_header;
 }
 
+cJSON* ves_create_common_event_header_721(const char *domain, const char *event_type, const char *hostname, int port, const char *priority, int seq_id, const char *stnd_defined_namespace) {
+    assert(domain);
+    assert(event_type);
+    assert(hostname);
+    assert(priority);
+
+    char *eventId = 0;
+    long useconds = get_microseconds_since_epoch();
+
+    asprintf(&eventId, "%s-%d", event_type, seq_id);
+    if(eventId == 0) {
+        log_error("asprintf failed\n");
+        return 0;
+    }
+
+    cJSON *common_event_header = cJSON_CreateObject();
+    if(common_event_header == 0) {
+        log_error("could not create JSON object\n");
+        free(eventId);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "domain", domain) == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        free(eventId);
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "eventId", eventId) == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        free(eventId);
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    free(eventId);
+
+    char *eventName = 0;
+    asprintf(&eventName, "ves-stndDefined-%s", event_type);
+    if(eventId == 0) {
+        log_error("asprintf failed\n");
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "eventName", eventName) == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        free(eventName);
+        return 0;
+    }
+    free(eventName);
+
+    if(cJSON_AddStringToObject(common_event_header, "eventType", event_type) == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddNumberToObject(common_event_header, "sequence", (double)(seq_id)) == 0) {
+        log_error("cJSON AddNumberToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "priority", priority) == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "reportingEntityId", "") == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    char source_name[512];
+    if(port) {
+        sprintf(source_name, "%s-%d", hostname, port);
+    }
+    else {
+        sprintf(source_name, "%s", hostname);
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "reportingEntityName", source_name) == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "sourceId", "") == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "sourceName", source_name) == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddNumberToObject(common_event_header, "startEpochMicrosec", (double)(useconds)) == 0) {
+        log_error("cJSON AddNumberToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddNumberToObject(common_event_header, "lastEpochMicrosec", (double)(useconds)) == 0) {
+        log_error("cJSON AddNumberToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "nfNamingCode", "sdn controller") == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "nfVendorName", "sdn") == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "timeZoneOffset", "+00:00") == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "version", "4.1") == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "vesEventListenerVersion", "7.2.1") == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "stndDefinedNamespace", stnd_defined_namespace) == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    if(cJSON_AddStringToObject(common_event_header, "nfcNamingCode", "NFC") == 0) {
+        log_error("cJSON AddStringToObject error\n");
+        cJSON_Delete(common_event_header);
+        return 0;
+    }
+
+    return common_event_header;
+}
+
+
+
 nts_mount_point_addressing_method_t nts_mount_point_addressing_method_get(sr_session_ctx_t *current_session) {
     assert_session();
 
@@ -306,9 +468,9 @@ ves_details_t *ves_endpoint_details_get(sr_session_ctx_t *current_session, const
             // normal addressing with IP and Port
             asprintf(&ret->url, "%s://%s:%d/eventListener/v7", ret->protocol, ret->ip, ret->port);
         }
-        
+
     }
-    
+
     if((ret->protocol == 0) || (ret->ip == 0) || (ret->auth_method == 0) || (ret->username == 0) || (ret->password == 0) || (ret->url == 0)) {
         free(ret->protocol);
         free(ret->ip);
