@@ -374,19 +374,22 @@ static cJSON* ves_create_o1_pnf_registration_fields(const char *nf_ip_v4_address
         return 0;
     }
 
-    if (nf_ip_v4_address != 0 && strlen(nf_ip_v4_address) > 0) {
-        if(cJSON_AddStringToObject(data, "oam-host", nf_ip_v4_address) == 0) {
-            log_error("cJSON_AddItemToObject failed\n");
-            cJSON_Delete(stnd_defined_fields);
-            return 0;
+    if (!framework_environment.settings.ip_v6_enabled) {
+        if (nf_ip_v4_address != 0 && strlen(nf_ip_v4_address) > 0) {
+            if(cJSON_AddStringToObject(data, "oam-host", nf_ip_v4_address) == 0) {
+                log_error("cJSON_AddItemToObject failed\n");
+                cJSON_Delete(stnd_defined_fields);
+                return 0;
+            }
         }
     }
-
-    if (nf_ip_v6_address != 0 && strlen(nf_ip_v6_address) > 0) {
-        if(cJSON_AddStringToObject(data, "oam-host", nf_ip_v6_address) == 0) {
-            log_error("cJSON_AddItemToObject failed\n");
-            cJSON_Delete(stnd_defined_fields);
-            return 0;
+    else {
+        if (nf_ip_v6_address != 0 && strlen(nf_ip_v6_address) > 0) {
+            if(cJSON_AddStringToObject(data, "oam-host", nf_ip_v6_address) == 0) {
+                log_error("cJSON_AddItemToObject failed\n");
+                cJSON_Delete(stnd_defined_fields);
+                return 0;
+            }
         }
     }
 
