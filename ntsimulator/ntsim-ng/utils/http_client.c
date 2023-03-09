@@ -33,7 +33,7 @@ struct memory {
 };
 
 static size_t curl_write_cb(void *data, size_t size, size_t nmemb, void *userp);
- 
+
 int http_request(const char *url, const char *username, const char* password, const char *method, const char *send_data, int *response_code, char **recv_data) {
     assert(url);
     assert(method);
@@ -65,10 +65,13 @@ int http_request(const char *url, const char *username, const char* password, co
         return NTS_ERR_FAILED;
     }
 
+    int curl_connect_timeout = get_int_from_string_with_default(getenv("CURL_CONNECT_TIMEOUT"), 1);
+    int curl_operation_timeout = get_int_from_string_with_default(getenv("CURL_OPERATION_TIMEOUT"), 1);
+
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 1L);     //seconds timeout for a connection
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1L);            //seconds timeout for an operation
-    curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, 1L);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, (long)curl_connect_timeout);     //seconds timeout for a connection
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)curl_operation_timeout);            //seconds timeout for an operation
+    curl_easy_setopt(curl, CURLOPT_FRESH_CONNECT, (long)curl_connect_timeout);
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
 
     // disable SSL verifications
@@ -99,7 +102,7 @@ int http_request(const char *url, const char *username, const char* password, co
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&response_data);
     }
-    
+
     log_add_verbose(2, "%s-ing cURL to url=\"%s\" with body=\"%s\"... ", method, url, send_data_good);
     CURLcode res = curl_easy_perform(curl);
     curl_slist_free_all(header);
@@ -175,7 +178,7 @@ int http_socket_request(const char *url, const char *sock_fname, const char *met
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&response_data);
     }
-    
+
     log_add_verbose(2, "%s-ing cURL to url=\"%s\" with body=\"%s\"\n", method, url, send_data_good);
     CURLcode res = curl_easy_perform(curl);
     curl_slist_free_all(header);

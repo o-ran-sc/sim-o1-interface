@@ -82,7 +82,7 @@ typedef struct {
     bool no_rand;
     unsigned int fixed_seed;
     int verbosity_level;
-    
+
     bool print_root_paths;
     char *print_structure_xpath;
 } framework_arguments_t;
@@ -205,7 +205,7 @@ typedef struct {
 
         int preg_running_count;
         char **preg_running;
-    } datastore_populate;   
+    } datastore_populate;
 } framework_config_t;
 
 extern framework_arguments_t framework_arguments;
