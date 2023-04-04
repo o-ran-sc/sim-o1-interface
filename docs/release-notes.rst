@@ -63,6 +63,10 @@ The O1 interface simulator is a framework that provides simulated network functi
 Release Data
 ------------
 
+version 1.6.1
+
+- [feature-add] new O-DU docker image containing 3GPP YANG models. This needs to be built locally!
+
 version 1.5.2
 
 - [feature-add] new VES O1 PNF Registration (stndDefined) message available. It can be enabled by using ves-o1-pnf-registration feature name.

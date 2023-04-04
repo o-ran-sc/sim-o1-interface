@@ -20,10 +20,10 @@ services:
   ###################################################
   nts-ng-base:
     image: ${DOCKER_REPO}nts-ng-base
-    build: 
+    build:
       context: .
       dockerfile: ./deploy/base/ubuntu.Dockerfile
-  
+
   ###################################################
   ####### NTS-NG Manager
   ###################################################
@@ -98,3 +98,16 @@ services:
     build:
       context: ./deploy/smo-nts-ng-topology-server
       dockerfile: local.Dockerfile
+
+  ###################################################
+  ####### O-RAN DU
+  ###################################################
+  nts-ng-o-ran-du-rel-18:
+    image: ${DOCKER_REPO}nts-ng-o-ran-du-rel-18:${NTS_BUILD_VERSION}
+    build:
+      context: ./deploy/o-ran-du-rel-18
+      labels:
+       - "description=nts-ng"
+      dockerfile: local.Dockerfile
+    depends_on:
+    - nts-ng-base
