@@ -637,7 +637,7 @@ Starting standalone NFs
 One could start 1 instance of a simulated O-RU-FH and 1 instance of a simulated O-DU by running the `nts-start.sh` script. Pre-configured values can be set in the `.env` file.
 
 Building O-DU O1 Simulator image with 3GPP YANG models
------------------------
+------------------------------------------------------
 
 Because of the license of the 3GPP YANG models, we cannot use the same approach as for the other simulated NFs (hosting docker images in LF Nexus repositories) for the simulated O-DU containing 3GPP YANG models. In order to provide such a simulator nevertheless, we provide here the recipe to build such an image locally, thus not breaking any license.
 
