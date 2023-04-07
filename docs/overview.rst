@@ -643,5 +643,4 @@ Because of the license of the 3GPP YANG models, we cannot use the same approach 
 
 Building such an image is pretty straightforward:
 
-1. `cd` into the `ntsimulator/deploy/o-ran-du-rel-18` folder and then run the `get_3gpp_yangs.sh` bash script. This will download the necessary 3GPP YANG models locally.
-2. run the `nts_build_o_du_rel_18.sh` bash script from `ntsimulator` folder. It will produce a docker image with the name `nts-ng-o-ran-du-rel-18` and the version tag defined in the `.env` file, under the `NTS_BUILD_VERSION` environment variable.
+1. run the `nts_build_o_du_rel_18.sh` bash script from `ntsimulator` folder. It will download the necessary 3GPP YANG models and then produce a docker image with the name `nts-ng-o-ran-du-rel-18` and the version tag defined in the `.env` file, under the `NTS_BUILD_VERSION` environment variable.
