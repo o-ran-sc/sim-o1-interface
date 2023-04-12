@@ -91,10 +91,10 @@ char *file_read_content(const char *fname) {
         buffer = (char*)malloc(sizeof(char) * (length + 1));
         if(buffer) {
             fread(buffer, 1, length, f);
+    		buffer[length] = 0;
         }
         fclose(f);
     }
-    buffer[length] = 0;
 
     return buffer;
 }
@@ -177,7 +177,7 @@ bool get_local_ips(const char *ifname, char **ipv4, char **ipv6) {
                 ret = false;
                 goto get_local_ips_free;
             }
-            
+
             *ipv4 = strdup(host);
             break;
         }
@@ -195,7 +195,7 @@ bool get_local_ips(const char *ifname, char **ipv4, char **ipv6) {
                 ret = false;
                 goto get_local_ips_free;
             }
-            
+
             *ipv6 = strdup(host);
             break;
         }
@@ -217,7 +217,7 @@ bool check_port_open(const char *host, uint16_t port) {
     assert(host);
 
     int simpleSocket = 0;
-    int returnStatus = 0; 
+    int returnStatus = 0;
     struct addrinfo simpleServer;
     struct addrinfo *res;
 
@@ -243,7 +243,7 @@ bool check_port_open(const char *host, uint16_t port) {
     char s[INET6_ADDRSTRLEN];
     switch(res->ai_addr->sa_family) {
         case AF_INET: {
-            struct sockaddr_in *addr_in = (struct sockaddr_in *)res->ai_addr; 
+            struct sockaddr_in *addr_in = (struct sockaddr_in *)res->ai_addr;
             inet_ntop(AF_INET, &(addr_in->sin_addr), s, INET_ADDRSTRLEN);
             returnStatus = connect(simpleSocket, res->ai_addr, res->ai_addrlen);
             break;
@@ -262,10 +262,10 @@ bool check_port_open(const char *host, uint16_t port) {
 
     freeaddrinfo(res);
     close(simpleSocket);
-    if(returnStatus == 0) {    
+    if(returnStatus == 0) {
         return true;
     }
-    
+
     return false;
 }
 
@@ -455,7 +455,7 @@ char *read_key(const char *filename) {
                     return 0;
                 }
             }
-            
+
             free(line);
             line = 0;
             len = 0;
