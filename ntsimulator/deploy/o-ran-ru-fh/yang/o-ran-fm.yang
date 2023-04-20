@@ -1,0 +1,343 @@
+module o-ran-fm {
+  yang-version 1.1;
+  namespace "urn:o-ran:fm:1.0";
+  prefix "o-ran-fm";
+
+  import ietf-yang-types {
+    prefix yang;
+    revision-date 2013-07-15;
+  }
+
+  organization "O-RAN Alliance";
+
+  contact
+    "www.o-ran.org";
+
+  description
+    "This module defines alarm reporting mechanism.
+
+    Copyright 2021 the O-RAN Alliance.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 'AS IS'
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the above disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the above disclaimer in the documentation
+    and/or other materials provided with the distribution.
+    * Neither the Members of the O-RAN Alliance nor the names of its
+    contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.";
+
+  revision "2022-08-15" {
+    description
+      "version 10.0.0
+
+      1) removed min-elements 1 from affected-objects list
+      2) added identifier to affected-objects list
+      3) added new additional-information list";
+
+    reference "ORAN-WG4.M.0-v10.00";
+  }
+
+  revision "2022-04-18" {
+    description
+      "version 9.0.0
+
+      1) added feature HISTORICAL-ALARM-LIST
+      2) added corresponding  historical-alarm-list container";
+
+    reference "ORAN-WG4.M.0-v09.00";
+  }
+
+
+  revision "2021-12-01" {
+    description
+      "version 8.0.0
+
+      1) typographical corrections in descriptions.
+      2) add new leafs probable-cause, specific-problem, proposed-repair-actions
+         and alarm-type";
+
+    reference "ORAN-WG4.M.0-v08.00";
+  }
+
+  revision "2021-03-22" {
+    description
+      "version 1.1.0
+
+      1) typographical corrections in descriptions.";
+
+    reference "ORAN-WG4.M.0-v01.00";
+  }
+
+  revision "2019-02-04" {
+    description
+      "version 1.0.0
+
+      1) imported model from xRAN
+      2) changed namespace and reference from xran to o-ran";
+
+    reference "ORAN-WG4.M.0-v01.00";
+  }
+
+  feature HISTORICAL-ALARM-LIST {
+    description
+      "O-RU supports Historical Alarm List to keep a historical
+       record of alarms events over M-plane.";
+  }
+
+  grouping alarm {
+    description
+      "Grouping which can uniquely identify alarm";
+
+    leaf fault-id {
+      type uint16;
+      mandatory true;
+
+      description
+        "Fault specific Id that identifies the fault.";
+    }
+
+    leaf fault-source {
+      type string {
+        length "1..255";
+      }
+      mandatory true;
+
+      description
+        "Represents the Object or source that is suspected to be faulty.
+        If the fault source is external and can not be represented by an object in the model, external alarm source info should be set as the value.
+        If the fault source can be represented by an object in the model, the YANG instance-identifier should be set as the value";
+    }
+
+    list affected-objects {
+
+      leaf name {
+        type string {
+          length "1..255";
+        }
+
+       mandatory true;
+        description
+          "Represents the Object or source that is suspected to be affected by this fault.";
+      }
+
+      leaf identifier {
+        type yang:xpath1.0;
+        description "An optional parameter used to indicate a YANG instance-identifier for the affected
+        object. Used when the object or source is represented in the object model.";
+      }
+
+      max-elements 100;
+
+      description
+        "List of affected-objects";
+    }
+
+    leaf fault-severity {
+      type enumeration {
+        enum CRITICAL {
+          description
+            "Critical alarm means that this device is not able to perform any further service";
+        }
+        enum MAJOR {
+          description
+            "Major alarm appeared on the device";
+        }
+        enum MINOR {
+          description
+            "Minor alarm appeared on the device";
+        }
+        enum WARNING {
+          description
+            "Warning is being reported by the device";
+        }
+      }
+      mandatory true;
+
+      description
+        "Fault severity defines the severity level of the fault. A notification, whose fault severity has the value 'warning',
+        is a special type of alarm notification. For these alarm notifications,
+        the Master Agent does not expect to receive a clear alarm notification.";
+    }
+
+    leaf is-cleared {
+      type boolean;
+      mandatory true;
+
+      description
+        "Fault state determines the type of the event. Not used if faultSeverity is WARNING.";
+    }
+
+    leaf fault-text {
+      type string {
+        length "0..255";
+      }
+
+      description
+        "Textual description of the fault.";
+    }
+
+    leaf probable-cause {
+      type string {
+        length "0..255";
+      }
+      description
+        "Probable cause of an alarm as defined in ITU-T Rec. X.733.
+        It qualifies alarm and provides further information than alarm-type.
+
+        The value of the probable cause strings are not standardized in this YANG model.
+
+        An O-RU shall populate this leaf, if the fault-text string does not indicate
+        the probable cause.";
+    }
+
+    leaf specific-problem {
+      type string {
+        length "0..255";
+      }
+      description
+        "An optional leaf providing further qualification on the alarm than probable-cause,
+         as defined in ITU-T Recommendation X.733 ";
+    }
+
+    leaf proposed-repair-actions {
+      type string {
+        length "0..255";
+      }
+      description
+        "Optional leaf, used if the cause is known and the O-RU can suggest one or
+        more solutions to fix the problem causing the alarm as defined in ITU-T Rec. X. 733";
+    }
+
+    leaf event-time {
+      type yang:date-and-time;
+      mandatory true;
+
+      description
+        "Timestamp to indicate the time when the fault is detected/cleared.";
+    }
+
+    list additional-information {
+         key "identifier";
+         description
+           "This parameter allows the inclusion of an additional
+            information set in the alarm.  It is a series of data
+            structures, each of which contains  items of
+            information: an identifier,
+            and the problem information. Refer to RFC8632.";
+         leaf identifier {
+           type string;
+           description
+             "Identifies the data type of the information parameter.";
+         }
+         leaf information {
+           type string;
+           description
+             "Additional information about the alarm.";
+         }
+       }
+
+    leaf alarm-type {
+      type enumeration {
+        enum COMMUNICATIONS-ALARM {
+          description
+            "See Table 12.2.1.4.4.6-1 in 3GPP 28.532 for description";
+        }
+        enum PROCESSING-ERROR-ALARM {
+          description
+            "See Table 12.2.1.4.4.6-1 in 3GPP 28.532 for description";
+        }
+        enum ENVIRONMENTAL-ALARM {
+          description
+            "See Table 12.2.1.4.4.6-1 in 3GPP 28.532 for description";
+        }
+        enum QUALITY-OF-SERVICE-ALARM {
+          description
+            "See Table 12.2.1.4.4.6-1 in 3GPP 28.532 for description";
+        }
+        enum EQUIPMENT-ALARM {
+          description
+            "See Table 12.2.1.4.4.6-1 in 3GPP 28.532 for description";
+        }
+        enum INTEGRITY-VIOLATION {
+          description
+            "See Table 12.2.1.4.4.6-1 in 3GPP 28.532 for description";
+        }
+        enum OPERATIONAL-VIOLATION {
+          description
+            "See Table 12.2.1.4.4.6-1 in 3GPP 28.532 for description";
+        }
+        enum PHYSICAL-VIOLATION {
+          description
+            "See Table 12.2.1.4.4.6-1 in 3GPP 28.532 for description";
+        }
+        enum SECURITY-SERVICE-OR-MECHANISM-VIOLATION {
+          description
+            "See Table 12.2.1.4.4.6-1 in 3GPP 28.532 for description";
+        }
+        enum TIME-DOMAIN-VIOLATION {
+          description
+            "See Table 12.2.1.4.4.6-1 in 3GPP 28.532 for description";
+        }
+      }
+      description
+        "An optional alarm type that can be used with vendor specific alarms.
+        See Table 12.2.1.4.4.6-1 in 3GPP 28.532 for definitions.
+
+        WG4 common O-RU alarms have pre-defined alarm types, see Annex A of
+        O-RAN.WG4.MP.O";
+    }
+  }
+
+  container active-alarm-list {
+    list active-alarms {
+      uses alarm;
+
+      description
+        "List of currently active alarms";
+    }
+    config false;
+
+    description
+      "List of currently active alarms. An alarm is removed from this table when the state transitions to clear.";
+  }
+
+  container historical-alarm-list {
+    if-feature HISTORICAL-ALARM-LIST;
+    description
+      "an optional container to notify the event subscriber of historical alarms information. When the O-RU
+       is reset, the alarm entries from historical-alarm-list will be purged. O-RU vendor can make this
+       list persistent optionally.";
+
+    list historical-alarms {
+      uses alarm;
+
+      config false;
+      description
+        "List of historical alarm events. This list only captures the alarm events when <is-cleared>=TRUE.";
+    }
+
+  }
+
+  notification alarm-notif {
+    uses alarm;
+
+    description
+      "Notification sent on initial alarm creation, as well as any time the alarm changes state, including clear";
+  }
+}

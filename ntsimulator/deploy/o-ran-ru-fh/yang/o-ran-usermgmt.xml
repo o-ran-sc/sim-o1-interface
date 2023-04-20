@@ -1,0 +1,6 @@
+<users xmlns="urn:o-ran:user-mgmt:1.0">
+    <user>
+      <name>admin</name>
+      <enabled>true</enabled>
+    </user>
+</users>

@@ -1,0 +1,883 @@
+module o-ran-shared-cell {
+  yang-version 1.1;
+  namespace "urn:o-ran:shared-cell:1.0";
+  prefix "o-ran-sc";
+
+  import o-ran-compression-factors {
+    prefix "cf";
+  }
+  import o-ran-processing-element {
+    prefix "o-ran-pe";
+  }
+
+  import o-ran-common-yang-types {
+    prefix "o-ran-cmn";
+  }
+
+  import o-ran-wg4-features {
+    prefix "feat";
+  }
+
+  import o-ran-usermgmt {
+    prefix "or-user";
+  }
+
+  organization "O-RAN Alliance";
+
+  contact
+    "www.o-ran.org";
+
+  description
+    "This module defines the YANG definitions for shared cell capable O-RU (Cascade and FHM).
+
+    Copyright 2020 the O-RAN Alliance.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 'AS IS'
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the above disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the above disclaimer in the documentation
+    and/or other materials provided with the distribution.
+    * Neither the Members of the O-RAN Alliance nor the names of its
+    contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.";
+
+  revision "2022-12-05" {
+    description
+      "version 11.0.0
+
+      1) eaxc-id-group support in shared cell";
+
+    reference "ORAN-WG4.M.0-v11.00";
+  }
+
+
+  revision "2022-08-15" {
+    description
+      "version 10.0.0
+
+      1) added SHARED-ORU-MULTI-OPERATOR anf SHARED-ORU-MULTI-ODU features";
+
+    reference "ORAN-WG4.M.0-v10.00";
+  }
+  revision "2021-12-01" {
+    description
+      "version 8.0.0
+
+      1) typographical corrections in descriptions.
+      2) add support for multi-cell in cascade mode.
+      3) add SCS info and mapping with eaxc-id into Combine-entity.
+      4) add enhanced-t-combine feature Add T_combine-net (capability)
+      5) add Tx-duration, enhanced-t-combine-enabled";
+
+    reference "ORAN-WG4.M.0-v08.00";
+  }
+
+  revision "2020-12-10" {
+    description
+      "version 5.0.0
+
+      1) added selective combining using beamId.";
+
+    reference "ORAN-WG4.M.0-v05.00";
+  }
+
+  revision "2020-04-17" {
+    description
+      "version 3.0.0
+
+      1) initial version for shared cell O-RU related yang module.";
+
+    reference "ORAN-WG4.M.0-v03.00";
+  }
+
+  feature FHM {
+    description
+      "Presence of feature indicates that O-RU acts as FHM and doesn't have
+       the capability of radio transmission and reception. Absence of feature
+       indicates that O-RU does not act as FHM and supports radio transmission
+       and reception function.";
+  }
+
+  feature SELECTIVE-BEAM-ID {
+    description
+      "Presence of feature indicates that FHM supports the selective combining
+      function by using beamId";
+  }
+
+  // radio offsets
+  grouping radio-offset {
+    description
+      "shared cell FHM mode needs the configuration for radio related offset";
+    leaf downlink-radio-frame-offset {
+      type uint32 {
+        range 0..12288000;
+      }
+      mandatory true;
+
+      description
+        "This parameter is used for offsetting the starting position of
+         10ms radio frame.
+         Note: Unit is 1/1.2288e9 sec.";
+    }
+
+    leaf downlink-sfn-offset {
+      type int16 {
+        range -32768..32767;
+      }
+      mandatory true;
+
+      description
+        "This parameter is used for offsetting SFN value.
+        Unit is 10ms.";
+    }
+  }
+
+  // shared cell capability
+  grouping shared-cell-module-capability{
+    description
+      "shared cell related module capability of O-RU";
+    container shared-cell-module-cap {
+      config false;
+      description
+      "indicates shared cell specific module capability";
+
+      leaf t-copy {
+        type uint32;
+        units nanoseconds;
+        mandatory true;
+        description
+          "Corresponding to the maximum FHM or cascade O-RU processing delay
+           between receiving an IQ sample over the fronthaul interface from
+           the north-node, coping it and transmitting it over the fronthaul
+           interface to the south-node.";
+      }
+
+      leaf t-combine {
+        type uint32;
+        units nanoseconds;
+        mandatory true;
+        description
+          "Corresponding to the maximum FHM or cascade O-RU processing delay
+           between receiving an IQ sample over the fronthaul interface from
+           the south-node(s), combing them and transmitting it over the
+           fronthaul interface to the north-node.
+
+           When enhanced-t-combine-enabled is 'true' by O-DU, FHM/Cascade O-RU supporting
+           ENHANCED-T-COMBINE uses t-combine-net and tx-duration instead of this value.";
+      }
+
+      leaf t-combine-net {
+        type uint32;
+        units nanoseconds;
+        description
+          "Corresponding to the maximum FHM or cascade O-RU processing delay
+           between starting time to combine IQ data from received message(s)
+           and starting time to transmit them with a message over the fronthaul
+           interface to O-DU or the north-node.";
+         }
+
+      leaf ta3-prime-max-upper-range {
+        type uint32;
+        units nanoseconds;
+        mandatory true;
+        description
+          "The upper limit for the configurable ta3-prime-max value.
+           This is the capability information of O-RU that comes from
+           the O-RU internal memory for the combine operation.";
+      }
+
+      leaf max-number-node-copy-and-combine {
+        type uint8{
+          range "1..max";
+        }
+        mandatory true;
+        description
+          "Indicates the maximum number of south-node for the copy-and-combine
+           functions of cascade O-RU or FHM.
+           For cascade mode, this value is one. It means
+           O-RU copies the stream of eCPRI messages only once for the connected
+           south-node and copied stream are forwarded to the south-node.
+           Similarly, the cascade O-RU combines once for the streams of
+           eCPRI messages received from the south node and the streams of radio
+           reception function.
+           For FHM mode, FHM is able to copy the stream of eCPRI messages
+           according to this parameter and forward each copied stream
+           to each south-node. FHM is able to combine the streams of eCPRI
+           messages received from the multiple south-nodes corresponding to
+           this parameter at most.";
+      }
+
+      leaf max-number-eaxcid-copy {
+        type uint8{
+          range "1..max";
+        }
+        mandatory true;
+        description
+          "Indicates the maximum number of eaxc-ids for the copy functions
+           of cascade O-RU or FHM.
+           For Cascade O-RU, it is same number of static-low-level-tx-endpoints plus
+           static-low-level-rx-endpoints, for which low-level-tx(rx)-endpoints
+           are configured with eaxc-id in u-plane configuration.
+           For FHM, it is max configurable number of eaxc-ids in
+           tx-eaxc-id and rx-eaxc-id in shared-cell-copy-uplane-config.";
+      }
+
+      leaf max-number-eaxcid-combine {
+        type uint8{
+          range "1..max";
+        }
+        mandatory true;
+        description
+          "Indicates the maximum number of eaxc-ids for the combine functions
+           of cascade O-RU or FHM.
+           For Cascade O-RU, it is same number of static-low-level-rx-endpoints,
+           for which low-level-rx-endpoints are configured with eaxc-id in
+           u-plane configuration.
+           For FHM, it is max configurable number of eaxc-ids in rx-eaxc-id
+           in shared-cell-combine-uplane-config across all combine-enities.
+
+           When multiple scs or multiple c-plane section types with a single eaxc-id
+           are used for FHM supporting MULTIPLE-SCS-IN-EAXC, all eaxc-id instances
+           across scs, C-Plane section types and combine entities are counted even
+           though they are same eaxc-id. The counted number shall not excced this value.";
+      }
+
+      container eaxc-id-group-capabilities {
+        if-feature FHM;
+        description
+          "Presence of this container indicates that FHM can refer to C-Plane in UL direction
+          to support combining U-Plane messages commanded by C-Plane with Section Extension 10.";
+        leaf max-num-rx-eaxc-id-groups {
+          type uint8;
+          description
+            "Maximum number of configurable rx-eaxc-id-group supported by FHM.";
+        }
+
+        leaf max-num-rx-eaxc-ids-per-group {
+          type uint8;
+          description
+            "Maximum number of member-rx-eaxc-id in single rx-eaxc-id-group supported by FHM.";
+        }
+      }
+
+      list compression-method-supported {
+        if-feature FHM;
+        description
+          "List of supported compression methods for FHM";
+        uses cf:compression-details;
+      }
+
+      leaf multi-cell-in-cascade-mode-supported {
+        type boolean;
+        description
+          "This parameter indicates whether O-RU supports multi cell
+           operation in shared cell cascade mode.
+           If multi-cell-in-cascade-mode-supported = false then each shared cell
+           O-RU in a physical cascaded chain can only be used for operating
+           carriers that correspond to a single cell.
+           If multi-cell-in-cascade-mode-supported = true, it means that the O-RU
+           may be configured such that the shared-cell carriers can be used to
+           support mutiple different cells, where each cell is served by its own
+           separate cascade chain. See CUS-Plane Specification for more details.";
+      }
+    }
+  }
+
+  // shared cell mode configuration
+  grouping shared-cell-mode{
+    description
+      "A grouping defining the schema nodes for shared cell configuration";
+    choice shared-cell-copy-combine-mode {
+      case COMMON {
+        description
+         "all eCPRI payload are the target for copy and combine functions.
+          Common set of eaxc-ids are used in O-RU in the shared cell network.
+          For cascade mode, eaxc-ids of low-level-tx(rx)-links in
+          o-ran-uplane-configuration that has relation to the
+          processing-element are used.
+          For FHM mode, eaxc-ids of shared-cell-copy-uplane-config and
+          those of shared-cell-combine-config are used.";
+
+          uses shared-cell-copy-configuration;
+          uses shared-cell-combine-configuration;
+      }
+      case SELECTIVE-BEAM-ID {
+        if-feature "FHM and SELECTIVE-BEAM-ID";
+        description
+        "Case that FHM has selective transmission and reception function
+         by using beamId";
+
+         uses shared-cell-copy-configuration-for-selective-beam-id;
+         uses shared-cell-combine-configuration-for-selective-beam-id;
+      }
+      case SELECTIVE {
+        description "for future use";
+      }
+      description
+       "configuration mode can be selected.";
+    }
+  }
+
+  // processing elements set
+  grouping processing-element-set{
+    description
+      "shared-cell-copy/combine-configuration refers the pair of processing
+      element set of a north-node and a south-node.";
+
+    leaf north-node-processing-element{
+      type leafref {
+        path "/o-ran-pe:processing-elements/o-ran-pe:ru-elements/o-ran-pe:name";
+        }
+      description
+        "north-node processing element indicates the set of
+         'north-node-mac-address', 'ru-mac-address' and 'vlan-id' in case
+         north-eth-flow is selected for the transport flow.";
+    }
+
+    leaf-list south-node-processing-elements{
+      type leafref {
+        path "/o-ran-pe:processing-elements/o-ran-pe:ru-elements/o-ran-pe:name";
+      }
+      description
+        "south-node processing elements indicate the sets of
+         'south-node-mac-address', 'ru-mac-address' and 'vlan-id' in case
+          south-eth-flow is selected for the transport flow.";
+    }
+  } // processing-element-set
+
+  // processing elements set for SELECTIVE-BEAM-ID
+  grouping processing-element-set-for-selective-beam-id{
+    description
+      "shared-cell-copy/combine-configuration refers the pair of processing
+      element set of a north-node and a south-node.";
+
+    leaf north-node-processing-element{
+      type leafref {
+        path "/o-ran-pe:processing-elements/o-ran-pe:ru-elements/o-ran-pe:name";
+        }
+      description
+        "north-node processing element indicates the set of
+         'north-node-mac-address', 'ru-mac-address' and 'vlan-id' in case
+         north-eth-flow is selected for the transport flow.";
+    }
+
+    leaf-list south-node-processing-elements{
+      type leafref {
+        path "/o-ran-pe:processing-elements/o-ran-pe:ru-elements/o-ran-pe:name";
+      }
+      description
+        "south-node processing elements indicate the sets of
+         'south-node-mac-address', 'ru-mac-address' and 'vlan-id' in case
+          south-eth-flow is selected for the transport flow.";
+    }
+
+    list mapping-table-for-selective-beam-id {
+      key "global-beam-id south-node-processing-elements";
+      description "the mapping information between global-beam-id and local-beam-id";
+
+      leaf global-beam-id{
+      type uint16;
+      description
+      "This parameter indicates the beam ID to be applied to the U-Plane data
+      on O-DU as same as existing beamId. One global beamId can be mapped
+      to one or multiple local beamId.
+      The mapping information between each global beamId, O-RU(s),
+      and local beamId is configured to the FHM during M-Plane start-up procedure.";
+    }
+    leaf south-node-processing-elements {
+      type leafref {
+        path "/o-ran-pe:processing-elements/o-ran-pe:ru-elements/o-ran-pe:name";
+      }
+      description
+        "south-node processing elements indicate the sets of
+         'south-node-mac-address', 'ru-mac-address' and 'vlan-id' in case
+          south-eth-flow is selected for the transport flow.";
+    }
+    leaf local-beam-id {
+      type uint16;
+      description "This parameter indicates the beam ID to be applied to
+      the U-Plane data on O-RU as same as existing beamId.
+      In one O-RU, different beams can not map to one global beamId.
+      Local beamId shall be unique within O-RU.";
+    }
+  }
+  } // processing-element-set for SELECTIVE-BEAM-ID
+
+  // shared cell copy and combine config
+  grouping shared-cell-copy-configuration{
+    description
+      "shared-cell-copy-configuration";
+    list shared-cell-copy-entities{
+      key name;
+      description
+        "copy entity. The north-node is an O-DU or an O-RU.
+         The south-nodes are O-RUs.
+         The number of south-nodes is at most one for cascade O-RU and
+         more than one for FHM";
+
+      leaf name{
+        type string;
+        description
+         "the name of shared-cell-copy-entity.";
+      }
+
+      leaf odu-id {
+        if-feature feat:SHARED-ORU-MULTI-ODU;
+        type string;
+        description
+          "An optional o-du identity associated with this list entry.
+          When present, indicates that the list entry is associated with
+          a particular odu-id.";
+      }
+
+      leaf sro-id {
+        if-feature feat:SHARED-ORU-MULTI-OPERATOR;
+        type leafref {
+          path "/or-user:users/or-user:user/or-user:sro-id";
+        }
+        description
+          "An optional shared resource identity associated with this list entry.
+          When present, indicates that the list entry corresponds to a shared cell copy entity
+          associated with a shared resouce operator where the sro-id
+          identifies the specific shared resouce operator.
+
+          This schema-node is used to refince NACM privileges for shared
+          resource operators";
+      }
+
+      uses processing-element-set;
+
+      container shared-cell-copy-uplane-config {
+        if-feature FHM;
+        description
+          "Container consists of uplane-info for copy-configuration for FHM.";
+
+        list tx-eaxc-id {
+          key eaxc-id;
+          description
+            "used for low-level-tx-endpoints to copy";
+
+          leaf eaxc-id {
+            type uint16;
+            description
+              "encoded value of eaxcid to be read by CU-Plane";
+          }
+      }
+        list rx-eaxc-id {
+          key eaxc-id;
+          description
+            "used for low-level-rx-endpoints to copy";
+
+          leaf eaxc-id {
+            type uint16;
+            description
+              "encoded value of eaxcid to be read by CU-Plane";
+          }
+        }
+        uses radio-offset;
+      }
+
+    } // shared-cell-copy-entities
+  } // shared-cell-copy-configuration (groupings)
+
+  grouping shared-cell-copy-configuration-for-selective-beam-id{
+    description
+      "shared-cell-copy-configuration for selective function by beam id";
+    list shared-cell-copy-entities-selective-beam-id{
+      key name;
+      description
+        "copy entity. The north-node is an O-DU or an O-RU.
+         The south-nodes are O-RUs.
+         The number of south-nodes is at most one for cascade O-RU and
+         more than one for FHM";
+
+      leaf name{
+        type string;
+        description
+         "the name of shared-cell-copy-entity.";
+      }
+
+      leaf odu-id {
+        if-feature feat:SHARED-ORU-MULTI-ODU;
+        type string;
+        description
+          "An optional o-du identity associated with this list entry.
+          When present, indicates that the list entry is associated with
+          a particular odu-id.";
+      }
+
+      leaf sro-id {
+        if-feature feat:SHARED-ORU-MULTI-OPERATOR;
+        type leafref {
+          path "/or-user:users/or-user:user/or-user:sro-id";
+        }
+        description
+          "An optional shared resource identity associated with this list entry.
+          When present, indicates that the list entry corresponds to a shared cell copy entity
+          with selective bean id associated with a shared resouce operator where the sro-id
+          identifies the specific shared resouce operator.
+
+          This schema-node is used to refince NACM privileges for shared
+          resource operators";
+      }
+
+      uses processing-element-set-for-selective-beam-id;
+
+      container shared-cell-copy-uplane-config {
+        if-feature FHM;
+        description
+          "Container consists of uplane-info for copy-configuration for FHM.";
+
+        list tx-eaxc-id {
+          key eaxc-id;
+          description
+            "used for low-level-tx-endpoints to copy";
+
+          leaf eaxc-id {
+            type uint16;
+            description
+              "encoded value of eaxcid to be read by CU-Plane";
+          }
+      }
+        list rx-eaxc-id {
+          key eaxc-id;
+          description
+            "used for low-level-rx-endpoints to copy";
+
+          leaf eaxc-id {
+            type uint16;
+            description
+              "encoded value of eaxcid to be read by CU-Plane";
+          }
+        }
+        uses radio-offset;
+      }
+
+    } // shared-cell-copy-entities for SELECTIVE-BEAM-ID
+  } // shared-cell-copy-configuration (groupings) for SELECTIVE-BEAM-ID
+
+  grouping shared-cell-combine-configuration{
+    description
+      "shared-cell-combine-configuration";
+
+    list shared-cell-combine-entities{
+      key name;
+      description
+        "combine configuration. The north-node is O-DU or O-RU.
+         The south-nodes are O-RUs.
+         The number of south-nodes is at most one for cascade O-RU and
+         more than one for FHM";
+
+      leaf name{
+        type string;
+        description
+         "name of shared-cell-combine-entity";
+      }
+
+      leaf odu-id {
+        if-feature feat:SHARED-ORU-MULTI-ODU;
+        type string;
+        description
+          "An optional o-du identity associated with this list entry.
+          When present, indicates that the list entry is associated with
+          a particular odu-id.";
+      }
+
+      leaf sro-id {
+        if-feature feat:SHARED-ORU-MULTI-OPERATOR;
+        type leafref {
+          path "/or-user:users/or-user:user/or-user:sro-id";
+        }
+        description
+          "An optional shared resource identity associated with this list entry.
+          When present, indicates that the list entry corresponds to a shared cell combine entity
+          associated with a shared resouce operator where the sro-id
+          identifies the specific shared resouce operator.
+
+          This schema-node is used to refince NACM privileges for shared
+          resource operators";
+      }
+
+
+      uses processing-element-set;
+
+      leaf scs {
+            type o-ran-cmn:scs-config-type;
+            description
+            "sub-carrier spacing of U-Plane messages belong to combine-entity";
+        }
+
+      leaf ta3-prime-max {
+        type uint32;
+        units nanoseconds;
+        description
+          "indicates the latest time that FHM or cascade O-RU is allowed to
+           send UL U-plane message to north-node relative to reception
+           timing at O-RU antenna.";
+      }
+
+      leaf tx-duration {
+        type uint32;
+        units nanoseconds;
+        description
+          "informs FHM/Cascade O-RU of the maximum duration time of transmission
+          over the fronthaul interface to O-DU or north-node for messages
+          to be sent within Ta3-prime-max.";
+      }
+
+      uses shared-cell-combine-uplane-config;
+    }
+  }
+
+  grouping shared-cell-combine-configuration-for-selective-beam-id{
+    description
+      "shared-cell-combine-configuration for selective function by beam id";
+
+    list shared-cell-combine-entities-for-selective-beam-id{
+      key name;
+      description
+        "combine configuration. The north-node is O-DU or O-RU.
+         The south-nodes are O-RUs.
+         The number of south-nodes is at most one for cascade O-RU and
+         more than one for FHM";
+
+      leaf name{
+        type string;
+        description
+         "name of shared-cell-combine-entity";
+      }
+
+      leaf odu-id {
+        if-feature feat:SHARED-ORU-MULTI-ODU;
+        type string;
+        description
+          "An optional o-du identity associated with this list entry.
+          When present, indicates that the list entry is associated with
+          a particular odu-id.";
+      }
+
+      leaf sro-id {
+        if-feature feat:SHARED-ORU-MULTI-OPERATOR;
+        type leafref {
+          path "/or-user:users/or-user:user/or-user:sro-id";
+        }
+        description
+          "An optional shared resource identity associated with this list entry.
+          When present, indicates that the list entry corresponds to a shared cell combine entity
+          for selective beam id associated with a shared resouce operator where the sro-id
+          identifies the specific shared resouce operator.
+
+          This schema-node is used to refince NACM privileges for shared
+          resource operators";
+      }
+
+      uses processing-element-set;
+
+      leaf scs {
+            type o-ran-cmn:scs-config-type;
+            description
+            "sub-carrier spacing of U-Plane messages belong to combine-entity";
+        }
+
+      leaf ta3-prime-max {
+        type uint32;
+        units nanoseconds;
+        description
+          "indicates the latest time that FHM or cascade O-RU is allowed to
+           send UL U-plane message to north-node relative to reception
+           timing at O-RU antenna.";
+      }
+
+      leaf tx-duration {
+        type uint32;
+        units nanoseconds;
+        description
+          "informs FHM/Cascade O-RU of the maximum duration time of transmission
+          over the fronthaul interface to O-DU or north-node for messages
+          to be sent within Ta3-prime-max.";
+      }
+
+      uses shared-cell-combine-uplane-config;
+    }
+  }
+
+
+  grouping shared-cell-combine-uplane-config{
+    description
+      "shared cell related uplane configuration applicable to O-RU which
+       doesn't have radio transmission capability";
+    container shared-cell-combine-uplane-config {
+      if-feature FHM;
+      description
+        "when O-RU doesn't have radio transmission availability for FHM mode,
+         the required u-plane configuration for copy and combine function
+         are defined, instead of the lists of o-ran-uplane-conf.yang";
+
+      list rx-eaxc-id {
+        key eaxc-id;
+        description
+          "used for low-level-rx-endpoints to combine";
+        leaf eaxc-id {
+          type uint16;
+          description
+            "encoded value of eaxc-id to be read by CU-Plane";
+        }
+
+      leaf  number-of-prb {
+        type uint16;
+        description
+          "Determines max number of PRBs that can be scheduled in all sections
+          per one symbol.
+          This value is used when uplink C-plane message indicates that all PRBs
+          is indicated in the field of numPrbc or tx-duration is calculated.";
+      }
+
+      leaf-list cp-ul-section-type {
+         type enumeration {
+            enum ST1 {
+              description
+                "section type 1 is used.";
+            }
+            enum ST3P{
+             description
+                "section type 3 is used for PRACH .";
+            }
+            enum ST3M{
+             description
+                "section type 3 is used for PUxCH when mixed numeroloy is applied.";
+            }
+          }
+        description
+            "indicates what section type is used for a specific eaxc-id with a specfic
+            SCS/frameStructure which belongs to this combine-entity.";
+       }
+
+        container comression-method {
+          description
+            "for combine mechanism, compression method per eaxc-id applied in
+             south-node is known to FHM ";
+          uses cf:compression-details;
+        }
+      }
+
+      uses radio-offset;
+
+      leaf n-ta-offset {
+        type uint32;
+        units Tc;
+        mandatory true;
+        description
+          "Value of configurable N-TA offset
+          units are Tc=~0.5ns=1/1.96608GHz";
+      }
+
+      leaf  number-of-prb {
+        type uint16;
+        mandatory true;
+        status deprecated;
+        description
+          "Determines max number of PRBs that will be used in all sections
+          per one symbol.
+          This value is used only when uplink C-plane message indicates that
+          all PRB is used in the field of numPrbc
+
+          This node is deprecated and replaced by number-of-prb in the list of rx-eaxc-id.
+          This movement is intended to prevent the fragmentation of shared-cell-combine-entities
+          according to the different value of number-of-prb.";
+      }
+    }
+  }
+
+// top-level container
+  container shared-cell{
+    description
+      "This container for shared-cell consists of capability information and
+       configurable parameters";
+    uses shared-cell-module-capability;
+
+    container shared-cell-config {
+      description "configuration for shared cell.";
+      uses shared-cell-mode;
+
+      leaf max-num-rx-eaxc-ids-per-group {
+        if-feature FHM;
+        type leafref {
+          path "/o-ran-sc:shared-cell/o-ran-sc:shared-cell-module-cap/o-ran-sc:eaxc-id-group-capabilities/o-ran-sc:max-num-rx-eaxc-ids-per-group";
+          require-instance false;
+        }
+        description "RW value of max-num-rx-eaxc-ids-per-group";
+      }
+      leaf max-num-rx-eaxc-id-groups {
+        if-feature FHM;
+        type leafref {
+          path "/o-ran-sc:shared-cell/o-ran-sc:shared-cell-module-cap/o-ran-sc:eaxc-id-group-capabilities/o-ran-sc:max-num-rx-eaxc-id-groups";
+          require-instance false;
+        }
+        description "RW value of max-num-rx-eaxc-id-groups";
+      }
+
+      list rx-eaxc-id-group {
+        if-feature FHM;
+        must "count(../rx-eaxc-id-group) <= ../max-num-rx-eaxc-id-groups" {
+          error-message "too many rx-eaxcid-id groups";
+        }
+        key "representative-rx-eaxc-id";
+        description
+          "This is a list of the groups of the eAxC IDs.
+          Each group is a union of a 'representative-rx-eaxc-id'and 'member-rx-eaxc-id's.
+          When section type 3 C-Plane in UL direction is used with Section Extension 10 in the shared cell,
+          this group shall be informed to FHM.";
+        leaf representative-rx-eaxc-id {
+          type uint16;
+          description
+            "This parameter contains eAxC_ID that populates content of C-Plane section
+            extension 10 to eAxC_IDs configured in the group as 'member-rx-eaxc-id'(s).";
+        }
+        leaf-list member-rx-eaxc-id {
+          type uint16;
+          must "count(../member-rx-eaxc-id) <= ../../max-num-rx-eaxc-ids-per-group" {
+            error-message "too many rx-eaxcid-id members";
+          }
+          must "current()!=../representative-rx-eaxc-id" {
+            error-message "the representative eaxcid does not need to be a list member";
+          }
+          description
+            "This is a list of member eAxC IDs,which is associated with 'representative-rx-eaxc-id' in a group.";
+        }
+      }
+
+      leaf enhanced-t-combine-enabled {
+        if-feature feat:ENHANCED-T-COMBINE;
+        type boolean;
+        default false;
+           description
+             "O-DU informs FHM/Cascade O-RU that t-combine-net and tx-duration
+             are used to calculate T-waiting instead of t-combine.";
+      }
+
+      leaf multiple-scs-in-eaxc-used {
+        if-feature feat:MULTIPLE-SCS-IN-EAXC;
+        type boolean;
+        default false;
+        description
+          "O-DU informs FHM/Cascade O-RU that multiple scs or
+          multiple section types in a single eAxC id are used.";
+      }
+    }
+  }
+}
