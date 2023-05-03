@@ -38,6 +38,7 @@ char *file_read_content(const char *fname);
 
 int get_int_from_string_with_default(const char *string, int default_value);
 char *get_current_date_and_time(void);
+char *get_current_date_and_time_delay_seconds(int seconds);
 long int get_microseconds_since_epoch(void);
 
 //networking functions

@@ -1,7 +1,7 @@
 {
     "container-rules": {
         "excluded-modules": [],
-        "excluded-features": []
+        "excluded-features": ["o-ran-wg4-features:SUPERVISION-WITH-SESSION-ID"]
     },
 
     "supervisor-rules": {
@@ -12,7 +12,7 @@
             "stdout": "log/netopeer-stdout.log",
             "stderr": "log/netopeer-stderr.log"
         },
-    
+
         "sshd": {
             "path": "/usr/sbin/sshd",
             "args": ["-D"],
@@ -20,7 +20,7 @@
             "stdout": "log/sshd-stdout.log",
             "stderr": "log/sshd-stderr.log"
         },
-    
+
         "ntsim-network-function": {
             "path": "/opt/dev/ntsim-ng/ntsim-ng",
             "args": ["-w/opt/dev/ntsim-ng", "-f"],
@@ -53,7 +53,7 @@
             "o-ran-shared-cell",
             "nts-network-function"
         ],
-        
+
         "default-list-instances": 2,
         "custom-list-instances" : [
             {"/ietf-interfaces:interfaces/interface": 4}
@@ -89,7 +89,7 @@
                 "severity"  : "MAJOR",
                 "date-time" : "$$time$$",
                 "specific-problem" : "Interface Fault",
-                
+
                 "fault-id": "30",
                 "fault-severity" : "MAJOR",
                 "affected-object" : "$$hostname$$",

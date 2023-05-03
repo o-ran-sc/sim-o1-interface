@@ -34,6 +34,7 @@ files=(
     "core/app/manager_sysrepo.c"
     "core/app/network_function.c"
     "core/app/nf_oran_du.c"
+    "core/app/nf_oran_ru_supervision.c"
     "core/app/blank.c"
     "core/datastore/schema.c"
     "core/datastore/operations.c"

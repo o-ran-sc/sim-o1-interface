@@ -48,6 +48,7 @@
 
 #include "app_common.h"
 #include "nf_oran_du.h"
+#include "nf_oran_ru_supervision.h"
 
 #define NF_FUNCTION_CONTROL_BUFFER_LENGTH                       32
 
@@ -96,9 +97,9 @@ int network_function_run(void) {
         }
     }
 
-    if(pthread_mutex_init(&nf_function_control_lock, NULL) != 0) { 
-        log_error("mutex init has failed\n"); 
-        return NTS_ERR_FAILED; 
+    if(pthread_mutex_init(&nf_function_control_lock, NULL) != 0) {
+        log_error("mutex init has failed\n");
+        return NTS_ERR_FAILED;
     }
 
     //ietf-netconf-monitoring schemas populate with modules and submodules (overwrite default Netopeer2 behaviour)
@@ -167,9 +168,9 @@ int network_function_run(void) {
         return NTS_ERR_FAILED;
     }
 
-    if(pthread_mutex_init(&faults_lock, NULL) != 0) { 
-        log_error("mutex init has failed\n"); 
-        return NTS_ERR_FAILED; 
+    if(pthread_mutex_init(&faults_lock, NULL) != 0) {
+        log_error("mutex init has failed\n");
+        return NTS_ERR_FAILED;
     }
 
     if(pthread_create(&faults_thread, 0, faults_thread_routine, 0)) {
@@ -188,7 +189,7 @@ int network_function_run(void) {
             nf_function_control_buffer_in = 0;
         }
 
-        log_add_verbose(1, LOG_COLOR_BOLD_YELLOW"running in NETWORK FUNCTION STANDALONE mode!\n"LOG_COLOR_RESET);
+        log_add_verbose(1, LOG_COLOR_BOLD_YELLOW"running in NETWORK FUNCTION STANDALONE mode as a %s\n"LOG_COLOR_RESET, framework_environment.nts.function_type);
         log_add_verbose(1, "Currently enabled features are: %s\n", framework_environment.nts.nf_standalone_start_features);
         log_add_verbose(1, LOG_COLOR_BOLD_YELLOW"Docker IP:"LOG_COLOR_RESET" %s\n", framework_environment.settings.ip_v6_enabled ? framework_environment.settings.ip_v6 : framework_environment.settings.ip_v4);
         log_add_verbose(1, LOG_COLOR_BOLD_YELLOW"Docker ports"LOG_COLOR_RESET": ");
@@ -222,8 +223,16 @@ int network_function_run(void) {
     if(strcmp(framework_environment.nts.function_type, "NTS_FUNCTION_TYPE_O_RAN_O_DU") == 0) {
         rc = nf_oran_du_init();
         if(rc != NTS_ERR_OK) {
-            log_error("nf_oran_du_init failed\n"); 
-            return NTS_ERR_FAILED; 
+            log_error("nf_oran_du_init failed\n");
+            return NTS_ERR_FAILED;
+        }
+    }
+
+    if(strcmp(framework_environment.nts.function_type, "NTS_FUNCTION_TYPE_O_RAN_O_RU_FH") == 0) {
+        log_add_verbose(1, "Initializing o-ran-supervision function...\n");
+        rc = nf_oran_ru_supervision_init();
+        if(rc != NTS_ERR_OK) {
+            log_error("nf_oran_ru_supervision_init failed, continuing...\n");
         }
     }
 
@@ -397,7 +406,7 @@ static int netconf_monitoring_state_schemas_cb(sr_session_ctx_t *session, const 
         if (!strcmp("sysrepo", mod->name) || !strcmp("sysrepo-monitoring", mod->name) || !strcmp("sysrepo-plugind", mod->name)) {
             continue;
         }
-        
+
         list = lyd_new(root, NULL, "schema");
         lyd_new_leaf(list, NULL, "identifier", mod->name);
         lyd_new_leaf(list, NULL, "version", (mod->rev ? mod->rev[0].date : NULL));
@@ -428,7 +437,7 @@ static int notifications_streams_cb(sr_session_ctx_t *session, const char *modul
     struct lyd_node *stream = lyd_new_path(root, 0, NC_NOTIFICATIONS_STREAMS_SCHEMA_XPATH"/stream[name='NETCONF']", NULL, 0, 0);
     lyd_new_leaf(stream, stream->schema->module, "description", "Default NETCONF stream containing notifications from all the modules. Replays only notifications for modules that support replay.");
     lyd_new_leaf(stream, stream->schema->module, "replaySupport", "true");
-    
+
     /* all other streams */
     struct lyd_node *sr_data;
     struct lyd_node *sr_mod;
@@ -463,7 +472,7 @@ static int notifications_streams_cb(sr_session_ctx_t *session, const char *modul
                 rep_sup = set->set.d[0];
             }
             ly_set_free(set);
-            
+
             lyd_new_leaf(stream, NULL, "replaySupport", rep_sup ? "true" : "false");
             if(rep_sup) {
                 char buf[26];
@@ -594,7 +603,7 @@ static int network_function_feature_control_cb(sr_session_ctx_t *session, const 
         pthread_mutex_unlock(&nf_function_control_lock);
     }
 
-    
+
 
     return rc;
 }
@@ -689,7 +698,7 @@ static int network_function_info_get_items_cb(sr_session_ctx_t *session, const c
     if(ves_file_ready_feature_get_status()) {
         strcat(started_features, "ves-file-ready ");
     }
-    
+
     if(ves_pnf_registration_feature_get_status()) {
         strcat(started_features, "ves-pnf-registration ");
     }
@@ -697,7 +706,7 @@ static int network_function_info_get_items_cb(sr_session_ctx_t *session, const c
     if(ves_heartbeat_feature_get_status()) {
         strcat(started_features, "ves-heartbeat ");
     }
-    
+
     if(manual_notification_feature_get_status()) {
         strcat(started_features, "manual-notification-generation ");
     }
@@ -705,7 +714,7 @@ static int network_function_info_get_items_cb(sr_session_ctx_t *session, const c
     if(netconf_call_home_feature_get_status()) {
         strcat(started_features, "netconf-call-home ");
     }
-    
+
     if(web_cut_through_feature_get_status()) {
         strcat(started_features, "web-cut-through ");
     }
@@ -738,7 +747,7 @@ static int faults_update_config(sr_session_ctx_t *session) {
     assert_session();
 
     int ret = NTS_ERR_OK;
-    
+
     int rc;
     struct lyd_node *data;
     rc = sr_get_subtree(session, NTS_NF_FAULT_GENERATION_SCHEMA_XPATH, 0, &data);
@@ -771,9 +780,9 @@ static int faults_update_config(sr_session_ctx_t *session) {
                 }
             }
         }
-        
+
     }
-    
+
     faults_update_config_free:
     lyd_free(data);
 
@@ -848,7 +857,7 @@ static void *faults_thread_routine(void *arg) {
                     log_error("lyd_parse_mem failed\n");
                     goto fault_send_ves;
                 }
-                
+
                 rc = sr_event_notif_send_tree(current_session_running, notif);
                 lyd_free(notif);
                 if(rc != SR_ERR_OK) {
@@ -894,7 +903,7 @@ static int network_function_change_cb(sr_session_ctx_t *session, const char *mod
         }
 
         while((rc = sr_get_change_next(session, it, &oper, &old_value, &new_value)) == SR_ERR_OK) {
-            
+
             if(new_value->xpath && (strcmp(new_value->xpath, NTS_NF_NETWORK_FUNCTION_FTYPE_SCHEMA_XPATH) == 0)) {
                 if(old_value && !old_value->dflt) {
                     rc = sr_set_item(session, old_value->xpath, old_value, 0);

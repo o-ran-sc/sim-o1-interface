@@ -96,3 +96,7 @@
 
 #define NC_NOTIFICATIONS_MODULE                                 "nc-notifications"
 #define NC_NOTIFICATIONS_STREAMS_SCHEMA_XPATH                   "/nc-notifications:netconf/streams"
+
+#define O_RAN_SUPERVISION_NOTIFICATION_SCHEMA_XPATH             "/o-ran-supervision:supervision-notification"
+#define O_RAN_SUPERVISION_NOTIFICATION_SESSION_ID_SCHEMA_XPATH  "/o-ran-supervision:supervision-notification/session-id"
+#define O_RAN_SUPERVISION_WATCHDOG_RESET_RPC_SCHEMA_XPATH       "/o-ran-supervision:supervision-watchdog-reset"

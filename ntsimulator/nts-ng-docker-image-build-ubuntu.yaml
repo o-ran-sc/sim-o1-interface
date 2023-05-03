@@ -67,6 +67,8 @@ services:
       labels:
        - "description=nts-ng"
       dockerfile: local.Dockerfile
+    depends_on:
+      - nts-ng-base
 
   ###################################################
   ####### O-RAN DU

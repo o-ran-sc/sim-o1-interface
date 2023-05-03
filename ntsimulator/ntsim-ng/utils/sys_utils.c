@@ -135,6 +135,25 @@ char *get_current_date_and_time(void) {
     return date_and_time;
 }
 
+char *get_current_date_and_time_delay_seconds(int seconds) {
+    char *date_and_time = 0;
+
+	time_t t = time(0);
+	struct tm tm = *localtime(&t);
+	struct timeval tv;
+
+	gettimeofday(&tv, 0);
+
+    tm.tm_sec += seconds;
+    mktime(&tm);
+
+	asprintf(&date_and_time, "%04d-%02d-%02dT%02d:%02d:%02d.0Z",
+                tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+    return date_and_time;
+}
+
 long int get_microseconds_since_epoch(void) {
     time_t t = time(0);
     struct timeval tv;

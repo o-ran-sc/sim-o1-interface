@@ -116,7 +116,7 @@ int nf_oran_du_init(void) {
     if(value_count) {
         log_add_verbose(2, "pm jobs already found (%d). cleaning up for fresh start...\n", value_count);
 
-        for(int i = 0; i < value_count; i++) {           
+        for(int i = 0; i < value_count; i++) {
             rc = sr_delete_item(session_running, values[i].xpath, 0);
             if(rc != SR_ERR_OK) {
                 log_error("sr_delete_item failed\n");
@@ -336,7 +336,7 @@ static int pm_jobs_change_cb(sr_session_ctx_t *session, const char *module_name,
                 }
             }
             else if(oper == SR_OP_DELETED) {
-                int job_id = -1; 
+                int job_id = -1;
                 for(int i = 0; i < pm_jobs_count; i++) {
                     if(strcmp(pm_jobs[i]->id, old_value->data.string_val) == 0) {
                         job_id = i;
@@ -350,7 +350,7 @@ static int pm_jobs_change_cb(sr_session_ctx_t *session, const char *module_name,
 
                 pm_job_t *job = pm_jobs[job_id];
                 job->terminate = 1;
-                
+
                 //remove from list
                 for(int i = job_id; i < pm_jobs_count - 1; i++) {
                     pm_jobs[i] = pm_jobs[i + 1];
@@ -395,7 +395,7 @@ static void *pm_job_thread_routine(void *arg) {
         sleep(1);
     }
     log_add_verbose(1, "pm_job_thread_routine[%s] finished waiting...\n", job->id);
-    
+
     char *xpath_to_get = 0;
     asprintf(&xpath_to_get, "%s[id='%s']", NTS_NF_ORAN_DU_PM_JOBS_SCHEMA_XPATH, job->id);
     if(xpath_to_get == 0) {
@@ -461,7 +461,7 @@ static void *pm_job_thread_routine(void *arg) {
 
         if(strcmp(chd->schema->name, "performance-metrics") == 0) {
             const char *val = ((const struct lyd_node_leaf_list *)chd)->value_str;
-            
+
             job->performance_metrics_count++;
             job->performance_metrics = (char **)realloc(job->performance_metrics, sizeof(char **) * job->performance_metrics_count);
             if(job->performance_metrics == 0) {
@@ -534,7 +534,7 @@ static void *pm_job_thread_routine(void *arg) {
     asprintf(&details.field_value[3], "%d", job->granularity_period);
     details.field_name[4] = strdup("%%job-id%%");
     details.field_value[4] = strdup(job->id);
-    
+
     long int now = get_microseconds_since_epoch() / 1000000;
     long int start_time = now - (now % job->granularity_period);
     long int end_time = start_time + job->granularity_period;
@@ -546,7 +546,7 @@ static void *pm_job_thread_routine(void *arg) {
     asprintf(&details.field_value[6], "%lu", end_time);
 
     details.field_name[7] = strdup("%%starttime-literal%%");
-    
+
     struct tm tm = *localtime(&now);
     asprintf(&details.field_value[7], "%04d-%02d-%02dT%02d:%02d:%02d.%01dZ",
                 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
@@ -604,7 +604,7 @@ static void *pm_job_thread_routine(void *arg) {
 
 static void nf_du_template_free(nf_du_template_details_t *details) {
     assert(details);
-    
+
     for(int j = 0; j < details->field_count; j++) {
         free(details->field_name[j]);
         free(details->field_value[j]);
@@ -631,7 +631,7 @@ static char *nf_du_template_process_vars(const char *template, const nf_du_templ
 
     char **vars = 0;
     int vars_count = 0;
-    
+
     char **funcs = 0;
     int funcs_count = 0;
 
@@ -831,7 +831,7 @@ static char *nf_du_template_process_function(const char *function, const nf_du_t
                 log_error("str_replace failed\n");
                 return 0;
             }
-            
+
             int nl = strlen(ci) + 2;   //\0 and perhaps comma
             char *ret2 = (char *)malloc(sizeof(char) * (strlen(ret) + nl));
             if(ret2 == 0) {
@@ -860,7 +860,7 @@ static char *nf_du_template_process_function(const char *function, const nf_du_t
     }
     else if(strcmp(function, "$$uint32_counter$$") == 0) {
         char *ret = 0;
-        
+
         asprintf(&ret, "%d", details->job->stream->counter);
         details->job->stream->counter++;
         return ret;
