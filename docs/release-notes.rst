@@ -63,6 +63,10 @@ The O1 interface simulator is a framework that provides simulated network functi
 Release Data
 ------------
 
+version 1.6.3
+
+- [feature-add] new O-RU feature: monitoring NETCONF connectivity.
+
 version 1.6.1
 
 - [feature-add] new O-DU docker image containing 3GPP YANG models. This needs to be built locally!

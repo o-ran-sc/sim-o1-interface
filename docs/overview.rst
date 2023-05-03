@@ -644,3 +644,10 @@ Because of the license of the 3GPP YANG models, we cannot use the same approach 
 Building such an image is pretty straightforward:
 
 1. run the `nts_build_o_du_rel_18.sh` bash script from `ntsimulator` folder. It will download the necessary 3GPP YANG models and then produce a docker image with the name `nts-ng-o-ran-du-rel-18` and the version tag defined in the `.env` file, under the `NTS_BUILD_VERSION` environment variable.
+
+O-RU feature: monitoring NETCONF connectivity
+---------------------------------------------
+
+O-RAN.WG4.MP.0-R003-v11.00 defines, in chapter 6.7, a mechanism for monitoring the NETCONF connectivity to the O-RU.
+
+The simulated O-RU implements such a functionality: it listens for supervision-watchdog-reset RPC defined in the o-ran-supervision YANG model and reacts to it, replying with the time when the next supervision-notification will be sent. After the supervision-notification-interval has passed (default 60 seconds), the supervision-notification defined in the o-ran-supervision YANG model will be sent. The O-RU simulator waits then for another guard-time-overhead seconds (default 10 seconds) for receiving a new supervision-watchdog-reset RPC. If it is received, the mechanism starts again (either with the default values, or with the values that come inside the RPC). If not, a message is logged (`Failed to receive watchdog reset, terminating supervision timer for o-ran-supervision..`) and the mechanism stops sending any notifications.
