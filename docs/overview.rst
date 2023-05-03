@@ -19,7 +19,7 @@ The NETCONF/YANG management interface is simulated, and any YANG models can be l
 The NTS framework is based on several open-source projects
 
 - `cJSON <https://github.com/DaveGamble/cJSON>`_
-- `libcurl <https://curl.haxx.se>`_
+- `libcurl <https://curl.se>`_
 - `libyang <https://github.com/CESNET/libyang>`_
 - `sysrepo <https://github.com/sysrepo/sysrepo>`_
 - `libnetconf2 <https://github.com/CESNET/libnetconf2>`_
