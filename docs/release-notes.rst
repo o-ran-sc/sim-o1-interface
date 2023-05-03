@@ -63,7 +63,7 @@ The O1 interface simulator is a framework that provides simulated network functi
 Release Data
 ------------
 
-version 1.6.3
+version 1.7.0
 
 - [feature-add] new O-RU feature: monitoring NETCONF connectivity.
 
