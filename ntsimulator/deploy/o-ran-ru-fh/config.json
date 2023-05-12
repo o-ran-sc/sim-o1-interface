@@ -1,7 +1,11 @@
 {
     "container-rules": {
-        "excluded-modules": [],
-        "excluded-features": ["o-ran-wg4-features:SUPERVISION-WITH-SESSION-ID"]
+        "excluded-modules": [
+            "o-ran-antenna-calibration"
+        ],
+        "excluded-features": [
+            "o-ran-wg4-features:SUPERVISION-WITH-SESSION-ID"
+        ]
     },
 
     "supervisor-rules": {

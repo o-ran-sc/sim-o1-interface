@@ -71,7 +71,7 @@ int context_init(const struct ly_ctx *ly_ctx) {
         }
         log_add(2, "\n");
         log_add_verbose(2, "  implemented: %d\n", module->implemented);
-        
+
         if(module->implemented) {
             log_add_verbose(2, "  IDENT count: %d\n", module->ident_size);
             if(module->ident_size) {
@@ -138,7 +138,7 @@ void context_free(void) {
     for(int i = 0; i < features_size; i++) {
         free(features[i].name);
     }
-    free(features);   
+    free(features);
     log_add(2, "done\n");
 }
 
@@ -216,7 +216,7 @@ bool context_feature_enable(const char *feature) {
         i++;
     }
     mod[j] = 0;
-    
+
     i++;
     j = 0;
     while(i < strlen(feature)) {
@@ -230,7 +230,9 @@ bool context_feature_enable(const char *feature) {
     if((rc = sr_enable_module_feature(session_connection, mod, feat)) != SR_ERR_OK) {
         return false;
     }
-    
+
+    context_apply_changes();
+
     return true;
 }
 

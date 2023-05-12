@@ -247,7 +247,7 @@ static bool container_rules_is_excluded_module(const char *module) {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -259,6 +259,6 @@ static bool container_rules_is_excluded_feature(const char *feature) {
             return true;
         }
     }
-    
+
     return false;
 }
