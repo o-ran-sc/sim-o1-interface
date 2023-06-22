@@ -21,6 +21,9 @@ Version history
 | **Date**           | **Ver.**           | **Author**         | **Comment**        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
+| 2023-06-22         | 1.8.1              | Alex Stancu        | "H" Release        |
+|                    |                    |                    |                    |
++--------------------+--------------------+--------------------+--------------------+
 | 2022-12-15         | 1.5.2              | Alex Stancu        | "G" Release        |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
@@ -48,10 +51,9 @@ Version history
 | 2020-06-08         | 0.6.1              |  Alex Stancu       | Bronze release     |
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
-| 2019-11-13         | 0.0.1              |  Alex Stancu       | First draft - Amber|
+| 2019-11-13         | 0.0.1              | Alex Stancu        | First draft - Amber|
 |                    |                    |                    |                    |
 +--------------------+--------------------+--------------------+--------------------+
-
 
 
 Summary
@@ -63,7 +65,7 @@ The O1 interface simulator is a framework that provides simulated network functi
 Release Data
 ------------
 
-version 1.8.0
+version 1.8.1
 
 - [feature-add] new O-RU feature: monitoring NETCONF connectivity.
 
