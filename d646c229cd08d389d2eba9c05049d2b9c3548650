@@ -1,0 +1,8 @@
+Verified+1: ORAN Required GHA <releng+oran.required.gha@linuxfoundation.org>
+Code-Review+2: Alex Stancu <alexandru.stancu@highstreet-technologies.com>
+Verified+1: Alex Stancu <alexandru.stancu@highstreet-technologies.com>
+Submitted-by: Alex Stancu <alexandru.stancu@highstreet-technologies.com>
+Submitted-at: Tue, 19 Dec 2023 12:11:46 +0000
+Reviewed-on: https://gerrit.o-ran-sc.org/r/c/sim/o1-interface/+/12352
+Project: sim/o1-interface
+Branch: refs/heads/master
