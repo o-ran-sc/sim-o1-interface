@@ -17,4 +17,4 @@
 ################################################################################
 
 source .env
-docker-compose -f nts-ng-docker-image-build-ubuntu.yaml build --build-arg NTS_BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg NTS_BUILD_VERSION=$NTS_BUILD_VERSION nts-ng-base nts-ng-o-ran-ru-fh
+docker compose -f nts-ng-docker-image-build-ubuntu.yaml build --build-arg NTS_BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg NTS_BUILD_VERSION=$NTS_BUILD_VERSION nts-ng-base nts-ng-o-ran-ru-fh nts-ng-manager nts-ng-manager nts-ng-x-ran nts-ng-o-ran-fh o-ran-sc-topology-service nts-ng-o-ran-du-rel-18 ntsim-ng-o-du
